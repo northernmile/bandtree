@@ -1,0 +1,1527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Band Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root {
+    --bg: #0e0f13; --panel: #171920; --panel2: #1f222b; --line: #2b2f3a;
+    --text: #eceef3; --muted: #8b91a1; --band: #ff5d73; --person: #5cc8ff; --accent: #ffcf5c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 Inter, system-ui, sans-serif; }
+  a { color: inherit; }
+  header { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+    padding: 12px 20px; background: rgba(14,15,19,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .logo { font-weight: 800; letter-spacing: -.02em; font-size: 18px; white-space: nowrap; cursor: pointer; }
+  .logo span { color: var(--band); }
+  .search { position: relative; flex: 1; max-width: 560px; }
+  .search input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--text); font: inherit; outline: none; }
+  .search input:focus { border-color: var(--band); }
+  #results { position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: none; box-shadow: 0 12px 40px #0008; }
+  #results div { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid var(--line); }
+  #results div:last-child { border-bottom: 0; }
+  #results div:hover, #results div.sel { background: var(--panel2); }
+  #results small { color: var(--muted); margin-left: 6px; }
+  .status { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  main { max-width: 1400px; margin: 0 auto; padding: 24px 20px 80px; }
+  .hero h1 { font-size: 40px; margin: 0; letter-spacing: -.03em; line-height: 1.1; }
+  .hero .meta { color: var(--muted); margin-top: 6px; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 99px; background: var(--panel2);
+    border: 1px solid var(--line); font-size: 12px; margin-right: 6px; }
+  section { margin-top: 32px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  h2 b { color: var(--text); }
+  button { font: inherit; font-size: 12px; color: var(--text); background: var(--panel2); border: 1px solid var(--line);
+    padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  /* Lighter band behind the timeline + discography, running full width to the bottom of the page */
+  .lower { --panel: #242832; --panel2: #2d323e; --line: #363b48; position: relative; margin: 40px 0 -80px; padding: 36px 0 80px;
+    background: #1b1e26; box-shadow: 0 0 0 100vmax #1b1e26; clip-path: inset(0 -100vmax); }
+  .lower .tip { background: #111318f0; }
+  /* Column navigator */
+  .nav { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: var(--panel);
+    transition: height .45s cubic-bezier(.2,.8,.2,1); min-height: 420px; }
+  .track { display: flex; align-items: flex-start; transition: transform .55s cubic-bezier(.2,.8,.2,1); will-change: transform; }
+  .stage { position: relative; display: flex; align-items: stretch; flex: none; }
+  .nav.mobile .stage { align-items: flex-start; }
+  .stage svg.links { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+  .stage svg .ln { fill: none; stroke: #474c5b; stroke-width: 1.2; }
+  .stage svg .hot { fill: none; stroke: var(--accent); stroke-opacity: .75; stroke-width: 1.4; }
+  .col { flex: none; width: var(--colw, 33.33vw); padding: 22px 14px 28px; min-height: 420px; border-right: 1px solid var(--line); }
+  .col.info { background: #0a0b0e; padding: 26px 26px 28px; }
+  .col.list { background: var(--panel); }
+  .col.sub { background: #1c1f27; }
+  .col.sub.empty { display: grid; place-items: center; }
+  .nav.mobile .spacer { display: none; }
+  .hint { color: var(--muted); font-size: 13px; text-align: center; max-width: 220px; line-height: 1.5; }
+  .photo { position: relative; margin: -26px -26px 0; aspect-ratio: 4 / 3; overflow: hidden; background: #15171d; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; display: block; animation: fadein .6s; }
+  @keyframes fadein { from { opacity: 0 } }
+  .photo::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to bottom, transparent 45%, #0a0b0ecc 80%, #0a0b0e); }
+  .photo .credit { position: absolute; right: 8px; top: 8px; z-index: 1; font-size: 10px; color: #fffa; text-decoration: none;
+    background: #0008; padding: 1px 6px; border-radius: 4px; opacity: 0; transition: opacity .2s; }
+  .photo:hover .credit { opacity: 1; }
+  .photo + .kicker { margin-top: -44px; }
+  .col.info > :not(.photo) { position: relative; z-index: 1; }
+  .nav.mobile .photo { margin-top: 0; }
+  .kicker { font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+  .col.info h1 { font-size: 34px; letter-spacing: -.03em; line-height: 1.08; margin: 6px 0 4px; word-break: break-word; }
+  .dis { color: var(--muted); font-size: 13px; }
+  .stats { margin: 22px 0 18px; display: grid; gap: 12px; }
+  .stats dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+  .stats dd { margin: 1px 0 0; font-size: 14.5px; }
+  .jumps { display: flex; gap: 14px; margin-top: 18px; font-size: 12.5px; }
+  .jumps a { color: var(--muted); cursor: pointer; text-decoration: none; }
+  .jumps a:hover { color: var(--accent); }
+  .colhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 6px 10px 10px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); min-height: 22px; }
+  .colhead .open { text-transform: none; letter-spacing: 0; font-size: 12px; color: var(--accent); cursor: pointer; white-space: nowrap; }
+  .colhead span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .back { display: none; }
+  .fwdcol { display: none; }
+  .nav.mobile .fwdcol { display: block; width: 100%; margin-top: 18px; padding: 11px; font-size: 14px; font-weight: 600;
+    background: var(--text); color: var(--bg); border: 0; border-radius: 10px; }
+  .nav.mobile .back { display: inline-block; padding: 3px 9px; margin-right: 4px; text-transform: none; letter-spacing: 0; }
+  .row { position: relative; display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 36px; border-radius: 8px;
+    cursor: pointer; min-height: 44px; }
+  .row:hover { background: #ffffff0b; }
+  .row.sel { background: color-mix(in srgb, var(--accent) 13%, transparent); }
+  .row.sel .nm { color: var(--accent); }
+  .row .txt { flex: 1; min-width: 0; }
+  .row .nm { font-weight: 500; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .meta { color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .meta .now { color: #7be495; }
+  .badge { font-size: 11.5px; color: var(--text); white-space: nowrap; opacity: .8; }
+  .badge.none { color: var(--muted); opacity: .6; }
+  .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: blink .9s infinite alternate; }
+  @keyframes blink { from { opacity: .2 } to { opacity: .9 } }
+  .shared { font-size: 11px; padding: 1px 8px; border-radius: 99px; white-space: nowrap; max-width: 130px; overflow: hidden; text-overflow: ellipsis;
+    background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+  .row .go { color: var(--muted); font-size: 16px; }
+  .navtip { position: fixed; z-index: 30; max-width: 260px; white-space: normal; }
+  .timewrap { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 16px 10px; }
+  #timeline svg { display: block; width: 100%; overflow: visible; }
+  #timeline .name { fill: var(--text); font-size: 12.5px; cursor: pointer; }
+  #timeline .name:hover { fill: var(--accent); }
+  #timeline .grid line { stroke: var(--line); }
+  #timeline .axis text { fill: var(--muted); font-size: 11px; }
+  #timeline .album line.vis { stroke: #fff; stroke-opacity: .3; stroke-dasharray: 2 3; }
+  #timeline .album:hover line.vis { stroke-opacity: .9; stroke-dasharray: none; }
+  #timeline .bar { cursor: pointer; }
+  #timeline .bar:hover rect { filter: brightness(1.25); }
+  .tlegend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .tlegend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .tip { position: absolute; pointer-events: none; background: #000d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 10px; font-size: 12px; line-height: 1.45; white-space: nowrap; display: none; z-index: 5; }
+  .tip b { font-size: 13px; }
+  .chips { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip { font-size: 12px; padding: 2px 9px; border-radius: 99px; cursor: pointer;
+    background: color-mix(in srgb, var(--band) 14%, transparent); border: 1px solid color-mix(in srgb, var(--band) 40%, transparent); }
+  .chip.person { background: color-mix(in srgb, var(--person) 14%, transparent); border-color: color-mix(in srgb, var(--person) 40%, transparent); }
+  .chip:hover { border-color: var(--accent); }
+  .current { color: #7be495; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filters button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .releases { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+  .rel > button { all: unset; display: block; width: 100%; cursor: pointer; }
+  .rel > button:focus-visible .cover, .rel > button:hover .cover { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .modal { position: fixed; inset: 0; z-index: 50; background: #000c; backdrop-filter: blur(6px); overflow-y: auto;
+    display: none; padding: 48px 16px; }
+  .modal.open { display: block; }
+  .sheet { position: relative; max-width: 960px; margin: 0 auto; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 18px; padding: 28px; display: grid; grid-template-columns: 320px 1fr; gap: 32px; box-shadow: 0 30px 80px #000; }
+  .sheet .x { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; font-size: 18px; padding: 0; }
+  .bigcover { aspect-ratio: 1; border-radius: 10px; background: var(--panel2); overflow: hidden; display: grid; place-items: center;
+    font-size: 64px; font-weight: 800; color: var(--muted); position: relative; }
+  .bigcover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .gallery { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; }
+  .gallery img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; cursor: pointer; opacity: .6; border: 1px solid var(--line); }
+  .gallery img:hover, .gallery img.on { opacity: 1; border-color: var(--accent); }
+  .sheet h3 { font-size: 30px; letter-spacing: -.02em; line-height: 1.15; margin: 0; padding-right: 30px; }
+  .sheet .by { color: var(--muted); margin: 4px 0 14px; }
+  .sheet .by a { color: var(--text); cursor: pointer; text-decoration: none; }
+  .listen { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .listen a { text-decoration: none; font-weight: 600; font-size: 13px; padding: 8px 14px; border-radius: 99px; color: #fff; }
+  .listen .am { background: #fa2d48; } .listen .sp { background: #1db954; color: #000; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px 20px; margin-bottom: 20px; }
+  .facts div { font-size: 13.5px; }
+  .facts small { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .facts a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  .sheet h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 22px 0 8px; font-weight: 600; }
+  .about p { margin: 0 0 10px; color: #d4d7df; font-size: 14px; line-height: 1.6; }
+  .about .src { font-size: 12px; color: var(--muted); }
+  .about .more { font-size: 12.5px; }
+  .tracks { list-style: none; margin: 0; padding: 0; font-size: 13.5px; }
+  .tracks li { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .tracks li span:first-child { color: var(--muted); width: 22px; text-align: right; flex: none; }
+  .tracks li span:nth-child(2) { flex: 1; }
+  .tracks li span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tracks .disc { color: var(--muted); font-size: 12px; padding-top: 12px; border: 0; }
+  .skel { color: var(--muted); font-size: 13px; }
+  .picksheet { position: relative; max-width: 600px; margin: 7vh auto 0; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 18px; padding: 26px; box-shadow: 0 30px 80px #000; }
+  .picksheet .x { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; font-size: 18px; padding: 0; }
+  .picksheet h3 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; padding-right: 30px; }
+  .picksheet p { margin: 0 0 16px; font-size: 13.5px; line-height: 1.5; }
+  .picklist { display: grid; gap: 6px; }
+  .pickopt { all: unset; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel2); }
+  .pickopt:hover, .pickopt:focus-visible { border-color: var(--accent); }
+  .pickopt img, .pickopt .ph { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; flex: none; background: #0004;
+    display: grid; place-items: center; font-weight: 800; color: var(--muted); }
+  .po { flex: 1; min-width: 0; }
+  .po b { display: block; font-size: 14px; }
+  .po small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+  .srcb { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: none; }
+  .pickextra { all: unset; display: block; margin-top: 14px; color: var(--accent); cursor: pointer; font-size: 13px; }
+  #results .dgrow { color: var(--accent); font-size: 13px; }
+  .dis.profile { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; margin-top: 6px; line-height: 1.45; }
+  @media (max-width: 760px) { .sheet { grid-template-columns: 1fr; padding: 20px; gap: 20px; } .modal { padding: 16px 10px; } .sheet h3 { font-size: 24px; } }
+  .cover { aspect-ratio: 1; border-radius: 8px; background: var(--panel2); overflow: hidden; position: relative;
+    display: grid; place-items: center; color: var(--muted); font-size: 28px; font-weight: 800; }
+  .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .rel .t { margin-top: 6px; font-weight: 500; font-size: 13px; line-height: 1.3; }
+  .rel .y { color: var(--muted); font-size: 12px; }
+  .empty { text-align: center; padding: 100px 20px; }
+  .empty h1 { font-size: 48px; letter-spacing: -.03em; margin: 0 0 10px; }
+  .empty p { color: var(--muted); max-width: 520px; margin: 0 auto 20px; }
+  .muted { color: var(--muted); }
+  .err { color: var(--band); }
+  #crumbs { display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none;
+    font-size: 13px; margin: 0 0 12px; white-space: nowrap; }
+  #crumbs:empty { display: none; }
+  #crumbs::-webkit-scrollbar { display: none; }
+  #crumbs a { text-decoration: none; padding: 2px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  #crumbs a:hover { background: var(--panel2); }
+  #crumbs a.cur { background: var(--panel2); font-weight: 600; }
+  #crumbs a.fwd { color: var(--muted); }
+  #crumbs a i { width: 7px; height: 7px; display: inline-block; flex: none; }
+  #crumbs a i.band { background: var(--band); border-radius: 1px; }
+  #crumbs a i.person { background: var(--person); border-radius: 50%; }
+  #crumbs .sep { color: var(--muted); opacity: .6; }
+  #crumbs .via { color: var(--muted); font-size: 11.5px; padding: 0 2px; }
+  @media (max-width: 640px) {
+    header { flex-wrap: wrap; padding: 10px 16px; } .status { display: none; }
+    main { padding: 16px 16px 60px; }
+    .releases { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" onclick="goHome()">band<span>/</span>tree</div>
+  <div class="search">
+    <input id="q" placeholder="Search any band or musician…" autocomplete="off">
+    <div id="results"></div>
+  </div>
+  <div class="status" id="status"></div>
+</header>
+<main id="main"></main>
+<div class="tip navtip" id="navtip"></div>
+<div class="modal" id="pick"></div>
+<div class="modal" id="album"><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* ---------- API clients: one request at a time per service, spaced to respect rate limits ---------- */
+const API = 'https://musicbrainz.org/ws/2/';
+let pending = 0, gen = 0;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Priority requests (search, overlays, pickers) jump the queue so they don't wait behind dozens of
+// background lookups. Background requests carry the page "gen" and are dropped if you've moved on.
+function makeClient({ name, url, gap }) {
+  const cache = new Map(), tasks = [];
+  let pumping = false, last = 0;
+  async function fetchOne(path) {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const wait = last + gap() - Date.now();
+      if (wait > 0) await sleep(wait);
+      last = Date.now();
+      const r = await fetch(url(path));
+      if (r.status === 503 || r.status === 429) { await sleep(2000 * (attempt + 1)); continue; }
+      if (!r.ok) throw new Error(`${name} returned ${r.status}`);
+      return r.json();
+    }
+    throw new Error(`${name} is rate limiting us, try again shortly`);
+  }
+  async function pump() {
+    if (pumping) return;
+    pumping = true;
+    while (tasks.length) {
+      const t = tasks.shift();
+      if (t.opts.gen !== undefined && t.opts.gen !== gen) { t.reject(new Error('stale')); continue; }
+      try { t.resolve(await fetchOne(t.path)); } catch (e) { t.reject(e); }
+    }
+    pumping = false;
+  }
+  return function get(path, opts = {}) {
+    if (cache.has(path)) {
+      // Already waiting in line: a newer caller may need it sooner, or for the current page.
+      const i = tasks.findIndex(t => t.path === path);
+      if (i >= 0) {
+        const t = tasks[i];
+        t.opts = { ...t.opts, gen: opts.priority ? undefined : opts.gen };
+        if (opts.priority) { tasks.splice(i, 1); tasks.unshift(t); }
+      }
+      return cache.get(path);
+    }
+    pending++; setStatus();
+    const p = new Promise((resolve, reject) => {
+      const t = { path, opts, resolve, reject };
+      opts.priority ? tasks.unshift(t) : tasks.push(t);
+    }).finally(() => { pending--; setStatus(); });
+    cache.set(path, p);
+    p.catch(() => cache.delete(path));
+    pump();
+    return p;
+  };
+}
+const mb = makeClient({ name: 'MusicBrainz', gap: () => 1100, url: p => API + p + (p.includes('?') ? '&' : '?') + 'fmt=json' });
+// Discogs allows ~25 requests a minute without a token, 60 with one.
+const dg = makeClient({ name: 'Discogs', gap: () => discogsToken() ? 1100 : 2500, url: p => {
+  const t = discogsToken();
+  return 'https://api.discogs.com/' + p + (t ? (p.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(t) : '');
+} });
+function setStatus() {
+  document.getElementById('status').textContent = pending ? `Fetching… ${pending} queued` : '';
+}
+
+const lookup = (id, o) => mb(`artist/${id}?inc=artist-rels+genres+url-rels`, o);
+const year = d => d ? d.slice(0, 4) : '';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* Collapse "member of band" relations into one entry per artist, merging periods + instruments. */
+function memberships(artist, direction) {
+  const byId = new Map();
+  for (const r of artist.relations || []) {
+    if (r.type !== 'member of band' || r.direction !== direction || !r.artist) continue;
+    const e = byId.get(r.artist.id) || { id: r.artist.id, name: r.artist.name, type: r.artist.type,
+      disambiguation: r.artist.disambiguation, periods: [], attrs: new Set() };
+    e.periods.push({ begin: r.begin, end: r.end, ended: r.ended, attrs: r.attributes || [] });
+    (r.attributes || []).forEach(a => e.attrs.add(a));
+    byId.set(r.artist.id, e);
+  }
+  return finalizeRels([...byId.values()]);
+}
+// Shared by every source: derive the display span, sort order and instrument list.
+function finalizeRels(list) {
+  list = list.map(e => {
+    e.active = e.note ? e.note !== 'former' : e.periods.some(p => !p.ended);
+    const b = e.periods.map(p => p.begin).filter(Boolean).sort()[0];
+    const ends = e.periods.map(p => p.end).filter(Boolean).sort();
+    const last = ends.length ? year(ends.at(-1)) : '';
+    e.span = !b && !last ? '' : (b ? year(b) : '?') + '–' + (last || (e.active ? 'now' : '?'));
+    e.first = b || '9999';
+    e.instruments = [...e.attrs].filter(a => !['original', 'founder', 'additional', 'minor', 'guest', 'touring'].includes(a));
+    e.founder = e.attrs.has('original') || e.attrs.has('founder');
+    return e;
+  });
+  return list.sort((a, b) => (b.founder - a.founder) || a.first.localeCompare(b.first) || a.name.localeCompare(b.name));
+}
+const kindOf = type => type === 'Person' || type === 'Character' ? 'person' : 'band';
+
+/* ---------- One artist shape for every source ----------
+   MusicBrainz artists are used as-is (plus .members/.bands); Discogs artists are mapped into the same shape.
+   IDs: a bare MusicBrainz ID, "discogs:123", or "wd:Q123" (a Wikidata-only member we can't open). */
+async function getArtist(id, opts) {
+  if (id.startsWith('discogs:')) return discogsArtist(id.slice(8), opts);
+  if (id.startsWith('wd:')) return { id, src: 'wd', name: '', type: 'Person', members: [], bands: [] };
+  const a = await lookup(id, opts);
+  if (!a.src) {
+    a.src = 'mb';
+    a.members = memberships(a, 'backward');
+    a.bands = memberships(a, 'forward');
+    a.discogsId = (a.relations || []).map(r => r.type === 'discogs' && r.url?.resource?.match(/\/artist\/(\d+)/)?.[1]).find(Boolean) || null;
+  }
+  return a;
+}
+const cleanDgName = n => (n || '').replace(/\s\(\d+\)$/, '');   // Discogs disambiguates with "Name (2)"
+// Discogs profiles use BBCode-style markup: [a=Name], [a12345], [l=Label], [url=…]text[/url], [b]…[/b]
+const cleanDgText = t => (t || '').replace(/\[(?:a|l|m|r)=([^\]]+)\]/g, '$1').replace(/\[(?:a|l|m|r)\d+\]/g, '')
+  .replace(/\[url=[^\]]*\]([^\[]*)\[\/url\]/g, '$1').replace(/\[\/?[a-z]+\]/g, '').replace(/\s+/g, ' ').trim();
+const firstSentence = t => (t.match(/^.{20,240}?[.!?](\s|$)/)?.[0] || t.slice(0, 200)).trim();
+async function discogsArtist(did, opts) {
+  const a = await dg(`artists/${did}`, opts);
+  if (a._norm) return a._norm;
+  const rel = (m, type) => ({ id: 'discogs:' + m.id, name: cleanDgName(m.name), type, disambiguation: '', periods: [],
+    attrs: new Set(), note: m.active === false ? 'former' : '' });
+  const members = finalizeRels((a.members || []).map(m => rel(m, 'Person')));
+  const bands = finalizeRels((a.groups || []).map(g => rel(g, 'Group')));
+  const person = !members.length && (bands.length || a.realname);
+  const img = (a.images || []).find(i => i.type === 'primary') || a.images?.[0];
+  return a._norm = { id: 'discogs:' + did, src: 'discogs', discogsId: String(did), name: cleanDgName(a.name),
+    type: person ? 'Person' : 'Group', 'life-span': {}, disambiguation: '', genres: [], members, bands,
+    profile: cleanDgText(a.profile), image: img?.uri || '', url: a.uri };
+}
+const preload = src => new Promise((ok, fail) => { const im = new Image(); im.onload = () => ok(src); im.onerror = fail; im.src = src; });
+
+/* ---------- Search ---------- */
+const q = document.getElementById('q'), results = document.getElementById('results');
+let searchTimer, searchSeq = 0, hits = [], sel = 0, arrowed = false;
+q.addEventListener('input', () => {
+  clearTimeout(searchTimer); arrowed = false;
+  if (q.value.trim().length < 2) { results.style.display = 'none'; return; }
+  searchTimer = setTimeout(runSearch, 350);
+});
+q.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    arrowed = true;
+    sel = Math.max(0, Math.min(hits.length - 1, sel + (e.key === 'ArrowDown' ? 1 : -1))); drawHits(); e.preventDefault();
+  } else if (e.key === 'Enter') {
+    clearTimeout(searchTimer);
+    // Arrowed to a specific result: take it. Otherwise work out what they meant (and ask if it's ambiguous).
+    if (arrowed && hits[sel]) pick(hits[sel]); else resolveSearch(q.value.trim());
+  } else if (e.key === 'Escape') results.style.display = 'none';
+});
+document.addEventListener('click', e => { if (!e.target.closest('.search')) results.style.display = 'none'; });
+
+async function runSearch() {
+  const seq = ++searchSeq, term = q.value.trim();
+  const data = await mb(`artist?query=${encodeURIComponent(term)}&limit=8`, { priority: true });
+  if (seq !== searchSeq) return;
+  hits = data.artists || []; sel = 0;
+  drawHits();
+}
+function drawHits() {
+  const term = q.value.trim();
+  results.innerHTML = (hits.length ? hits.map((a, i) =>
+    `<div class="${i === sel && arrowed ? 'sel' : ''}" data-i="${i}"><b>${esc(a.name)}</b><small>${esc(mbDesc(a))}</small></div>`).join('')
+    : '<div class="muted">No matches on MusicBrainz</div>') +
+    `<div class="dgrow" data-dg>Search Discogs for “${esc(term)}” ›</div>`;
+  results.style.display = 'block';
+  results.querySelectorAll('[data-i]').forEach(el => el.onclick = () => pick(hits[+el.dataset.i]));
+  results.querySelector('[data-dg]').onclick = () => { results.style.display = 'none'; discogsSearchPicker(term); };
+}
+function pick(a) { results.style.display = 'none'; goFresh(a.id); }
+function goFresh(id) { q.value = ''; q.blur(); results.style.display = 'none'; freshTrail = true; go(id); }
+const searchAndGo = name => resolveSearch(name);
+
+// "Group · 1980s · Austin, Texas · punk — US hardcore band"
+function mbDesc(a) {
+  const y = a['life-span']?.begin?.slice(0, 4), band = kindOf(a.type) === 'band';
+  const when = y ? (band ? `${y.slice(0, 3)}0s` : `born ${y}`) : '';
+  const where = [...new Set([a['begin-area']?.name, a.area?.name].filter(Boolean))].join(', ');
+  const tags = (a.tags || []).sort((x, z) => z.count - x.count).slice(0, 2).map(t => t.name).join(', ');
+  return [a.type, when, where, tags].filter(Boolean).join(' · ') + (a.disambiguation ? ` — ${a.disambiguation}` : '');
+}
+const mbOption = a => ({ value: a.id, label: a.name, badge: 'MusicBrainz', desc: mbDesc(a) });
+const dgOption = r => ({ value: 'discogs:' + r.id, label: cleanDgName(r.title), badge: 'Discogs', thumb: r.thumb, describe: () => discogsBlurb(r.id) });
+async function discogsBlurb(did) {
+  const d = await discogsArtist(did, { priority: true });
+  const n = d.type === 'Person' ? d.bands.length : d.members.length;
+  return [d.type === 'Person' ? 'Musician' : 'Group', n ? `${n} ${d.type === 'Person' ? 'bands' : 'members'}` : '',
+    d.profile ? firstSentence(d.profile) : ''].filter(Boolean).join(' · ');
+}
+const dgSearch = term => dg(`database/search?type=artist&per_page=10&q=${encodeURIComponent(term)}`, { priority: true }).then(r => r.results || []);
+
+async function resolveSearch(term) {
+  if (!term) return;
+  results.style.display = 'none'; q.blur();
+  const all = (await mb(`artist?query=${encodeURIComponent(term)}&limit=15`, { priority: true })).artists || [];
+  const n = norm(term);
+  const exact = all.filter(a => norm(a.name) === n || (a.aliases || []).some(x => norm(x.name) === n));
+  if (exact.length === 1) return goFresh(exact[0].id);
+  if (exact.length > 1) {
+    const id = await choose({ title: `Which ${exact[0].name}?`, sub: `MusicBrainz has ${exact.length} artists with this name.`,
+      options: exact.map(mbOption), extra: { label: `Not here? Search Discogs for “${term}” ›`, run: () => discogsSearchPicker(term) } });
+    if (id) goFresh(id);
+    return;
+  }
+  // No exact match on MusicBrainz: offer close matches there plus Discogs, where a lot of indie artists live.
+  const close = all.filter(a => a.score >= 85).slice(0, 5);
+  const dgHits = await dgSearch(term).catch(() => []);
+  const dgExact = dgHits.filter(r => norm(cleanDgName(r.title)) === n);
+  if (!close.length && dgExact.length === 1) return goFresh('discogs:' + dgExact[0].id);
+  const options = [...close.map(mbOption), ...(dgExact.length ? dgExact : dgHits.slice(0, 5)).map(dgOption)];
+  if (!options.length) { results.innerHTML = `<div class="muted">Nothing found for “${esc(term)}” on MusicBrainz or Discogs.</div>`; results.style.display = 'block'; return; }
+  const id = await choose({ title: 'Did you mean…', sub: `No exact match for “${term}” on MusicBrainz.`, options });
+  if (id) goFresh(id);
+}
+async function discogsSearchPicker(term) {
+  const found = await dgSearch(term).catch(() => []);
+  if (!found.length) { results.innerHTML = `<div class="muted">Nothing found for “${esc(term)}” on Discogs.</div>`; results.style.display = 'block'; return; }
+  const id = await choose({ title: `“${term}” on Discogs`, options: found.slice(0, 8).map(dgOption) });
+  if (id) goFresh(id);
+}
+
+/* ---------- "Which one did you mean?" picker ---------- */
+let pickDone = null;
+// Resolves with the chosen value, null for an explicit "none of these", or undefined if dismissed.
+function choose({ title, sub, options, extra, none }) {
+  pickDone?.(undefined);
+  const el = document.getElementById('pick');
+  return new Promise(resolve => {
+    const done = pickDone = v => { pickDone = null; el.classList.remove('open'); document.body.style.overflow = ''; el.onclick = null; resolve(v); };
+    el.innerHTML = `<div class="picksheet"><button class="x" aria-label="Close">✕</button><h3>${esc(title)}</h3>${sub ? `<p class="muted">${esc(sub)}</p>` : ''}
+      <div class="picklist">${options.map((o, i) => `<button class="pickopt" data-i="${i}">
+        ${o.thumb ? `<img src="${esc(o.thumb)}" alt="">` : `<span class="ph">${esc(o.label[0] || '?')}</span>`}
+        <span class="po"><b>${esc(o.label)}</b><small data-desc="${i}">${esc(o.desc || (o.describe ? 'Loading details…' : ''))}</small></span>
+        <span class="srcb">${esc(o.badge || '')}</span></button>`).join('')}</div>
+      ${extra ? `<button class="pickextra" data-extra>${esc(extra.label)}</button>` : ''}
+      ${none ? `<button class="pickextra" data-none>${esc(none)}</button>` : ''}</div>`;
+    el.classList.add('open'); el.scrollTop = 0; document.body.style.overflow = 'hidden';
+    el.onclick = e => {
+      const opt = e.target.closest('.pickopt');
+      if (opt) return done(options[+opt.dataset.i].value);
+      if (e.target.closest('[data-extra]')) { done(undefined); return extra.run(); }
+      if (e.target.closest('[data-none]')) return done(null);
+      if (e.target.closest('.x') || e.target === el) done(undefined);
+    };
+    options.forEach((o, i) => o.describe && o.describe()
+      .then(t => { const d = el.querySelector(`[data-desc="${i}"]`); if (d) d.textContent = t || ''; })
+      .catch(() => { const d = el.querySelector(`[data-desc="${i}"]`); if (d) d.textContent = ''; }));
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') pickDone?.(undefined); });
+
+/* ---------- Routing ---------- */
+function go(id) { if (location.hash.slice(1) !== id) location.hash = id; else load(id); }
+function goHome() { history.pushState('', '', location.pathname); renderHome(); }
+
+/* ---------- Breadcrumb trail: behaves like browser history you can see ---------- */
+let trail = [], cur = -1, freshTrail = false;
+try { ({ trail, cur } = JSON.parse(sessionStorage.getItem('trail')) || { trail: [], cur: -1 }); } catch {}
+function trailVisit(id) {
+  const at = trail.findIndex(t => t.id === id);
+  if (freshTrail) { trail = [{ id }]; cur = 0; }
+  else if (at >= 0) cur = at;                                   // jumping back/forward along the trail
+  else { trail = trail.slice(0, cur + 1).concat({ id }); cur = trail.length - 1; }  // branching off
+  freshTrail = false;
+  renderCrumbs();
+}
+function trailName(id, name, type) {
+  const t = trail.find(t => t.id === id);
+  if (t) { t.name = name; t.kind = kindOf(type); renderCrumbs(); }
+}
+// "Ministry › Paul Raven › Killing Joke": the member you went through shows between the two bands.
+function renderCrumbs() {
+  try { sessionStorage.setItem('trail', JSON.stringify({ trail, cur })); } catch {}
+  const nav = document.getElementById('crumbs');
+  if (!nav) return;
+  const via = i => { const s = trail[i - 1].kind !== 'person' && trail[i - 1].sel; return s && s.id !== trail[i].id ? `<span class="via">${esc(s.name)}</span><span class="sep">›</span>` : ''; };
+  nav.innerHTML = trail.length < 2 ? '' : trail.map((t, i) =>
+    `${i ? '<span class="sep">›</span>' + via(i) : ''}<a data-id="${t.id}" class="${i === cur ? 'cur' : i > cur ? 'fwd' : ''}">` +
+    `<i class="${t.kind || 'band'}"></i>${esc(t.name || '…')}</a>`).join('');
+  nav.querySelectorAll('a').forEach(a => a.onclick = () => go(a.dataset.id));
+  nav.querySelector('.cur')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+window.addEventListener('hashchange', () => location.hash.length > 1 ? load(location.hash.slice(1)) : renderHome());
+
+const main = document.getElementById('main');
+function renderHome() {
+  gen++; trail = []; cur = -1; renderCrumbs();
+  const picks = ['Nirvana', 'Black Flag', 'Fleetwood Mac', 'Yes', 'Deep Purple', 'Wu-Tang Clan', 'Broken Social Scene', 'Dave Grohl'];
+  main.innerHTML = `<div class="empty"><h1>Every band. Every member.<br>Every band they've been in.</h1>
+    <p>Search any band to see every member who has passed through, where they all went next, and the full discography. Click through as deep as you like.</p>
+    <div class="chips" style="justify-content:center">${picks.map(p => `<span class="chip" data-n="${esc(p)}">${esc(p)}</span>`).join('')}</div></div>`;
+  main.querySelectorAll('[data-n]').forEach(el => el.onclick = () => searchAndGo(el.dataset.n));
+}
+
+/* ---------- Artist page: column navigator ----------
+   Every stop on the trail is a "stage" with three columns: the artist's stats, their members (or bands),
+   and whatever the selected row links to. Stages sit side by side on one track that slides left/right. */
+const state = { artist: null, rels: [], releases: [], filter: 'Album' };
+const stages = new Map();  // artist id -> stage
+let mobileCol = 0, pendingMobileCol = null;
+
+function stageFor(id) {
+  if (!stages.has(id)) {
+    const st = { id, artist: null, kind: null, rels: [], relSource: null, altIds: new Set([id]), links: new Map(), linkP: new Map(),
+      place: null, releases: null, discogsId: null, enrich: null };
+    st.ready = getArtist(id, { priority: true }).then(a => {
+      st.artist = a; st.kind = kindOf(a.type);
+      st.rels = st.kind === 'band' ? a.members : a.bands;
+      if (a.discogsId) { st.discogsId = a.discogsId; st.altIds.add('discogs:' + a.discogsId); }
+      if (a.src === 'mb') resolvePlace(a).then(p => { if (p) { st.place = p; refreshStage(id); } });
+      if (a.src === 'discogs') {
+        st.profile = a.profile;
+        if (a.image) preload(a.image).then(src => { st.image = { src, credit: a.url, by: 'Discogs' }; refreshStage(id); }).catch(() => {});
+      }
+      // Nobody listed on MusicBrainz: look for the lineup elsewhere.
+      if (a.src === 'mb' && !st.rels.length) enrichStage(st);
+      return st;
+    });
+    // Only needs the ID, so fetch the photo alongside the MusicBrainz lookup.
+    if (!id.includes(':')) artistImage(id).then(img => { if (img) { st.image = img; st.ready.then(() => refreshStage(id)); } }).catch(() => {});
+    st.ready.catch(() => stages.delete(id));
+    stages.set(id, st);
+  }
+  return stages.get(id);
+}
+// The other side of a row: a member's other bands, or a band's other members.
+function loadLinks(st, rel, opts = {}) {
+  if (!st.linkP.has(rel.id)) {
+    const p = getArtist(rel.id, opts).then(a => {
+      const list = (st.kind === 'band' ? a.bands : a.members).filter(x => !st.altIds.has(x.id));
+      st.links.set(rel.id, list);
+      return list;
+    });
+    p.catch(() => st.linkP.delete(rel.id));
+    st.linkP.set(rel.id, p);
+  }
+  return st.linkP.get(rel.id);
+}
+
+async function load(id) {
+  const myGen = ++gen;
+  hideNavTip();
+  if (twinPickFor && twinPickFor !== id) pickDone?.(undefined);   // that question was about the band you just left
+  trailVisit(id);
+  if (!document.getElementById('track')) shell();
+  mobileCol = pendingMobileCol ?? 0; pendingMobileCol = null;
+  const st = stageFor(id);
+  renderNav();
+  // Every other stop on the trail (e.g. after a refresh) loads too, so sliding back is instant.
+  trail.forEach(t => {
+    if (t.id === id) return;
+    const s = stageFor(t.id);
+    s.ready.then(() => {
+      refreshStage(t.id);
+      const r = t.sel && s.rels.find(r => r.id === t.sel.id);
+      if (r) loadLinks(s, r).then(() => refreshStage(t.id)).catch(() => {});
+    }).catch(() => {});
+  });
+  try { await st.ready; } catch (e) {
+    const el = document.querySelector(`.stage[data-i="${cur}"] .col.info`);
+    if (el) el.innerHTML = `<p class="err">${esc(e.message)}</p>`;
+    return;
+  }
+  if (myGen !== gen) return;
+  trailName(id, st.artist.name, st.artist.type);
+  refreshStage(id);
+  if (scrollY > 200) window.scrollTo({ top: 0, behavior: 'smooth' });
+  showLower(st, myGen);
+  const sel = st.kind === 'band' && trail[cur].sel && st.rels.find(r => r.id === trail[cur].sel.id);
+  if (sel) loadLinks(st, sel, { priority: true }).then(() => refreshStage(id)).catch(() => {});
+  if (st.enrich === 'deferred') enrichStage(st);
+  prefetchLinks(st, myGen);
+}
+// Background: every row's links, for the counts and the "+2 from Ministry" tags.
+function prefetchLinks(st, myGen) {
+  for (const r of st.rels) loadLinks(st, r, { gen: myGen }).then(() => scheduleRefresh(st.id)).catch(() => {});
+}
+
+/* MusicBrainz has no lineup for this artist: try Wikidata (exact match via the MusicBrainz ID), then Discogs
+   (exact via MusicBrainz's own Discogs link, else by name — asking which one if there's more than one). */
+async function enrichStage(st) {
+  st.enrich = 'running'; refreshStage(st.id);
+  const band = st.kind === 'band';
+  let rels = [], source = null;
+  try { rels = await wikidataRels(st.id, band); if (rels.length) source = 'Wikidata'; } catch {}
+  if (!rels.length) {
+    let did = st.discogsId;
+    if (!did) {
+      did = await findDiscogsTwin(st).catch(() => null);
+      if (did === undefined) { st.enrich = 'deferred'; refreshStage(st.id); return; }   // ambiguous and not on screen: ask later
+      st.matchedByName = !!did;
+    }
+    if (did) {
+      st.discogsId = did; st.altIds.add('discogs:' + did);
+      try {
+        const d = await discogsArtist(did, { priority: true });
+        rels = band ? d.members : d.bands;
+        if (rels.length) source = 'Discogs';
+        if (!st.profile && d.profile) st.profile = d.profile;
+        if (!st.image && d.image) preload(d.image).then(src => { st.image = { src, credit: d.url, by: 'Discogs' }; refreshStage(st.id); }).catch(() => {});
+      } catch {}
+      // MusicBrainz had no releases either: the Discogs discography can stand in.
+      if (st.releases && !st.releases.length) { st.releases = null; if (trail[cur]?.id === st.id) showLower(st, gen); }
+    }
+  }
+  st.enrich = 'done';
+  if (rels.length) { st.rels = rels; st.relSource = source; }
+  refreshStage(st.id);
+  if (rels.length && trail[cur]?.id === st.id) {
+    state.rels = st.rels; renderTimeline();
+    document.getElementById('tlCount').textContent = st.rels.length;
+    prefetchLinks(st, gen);
+  }
+}
+// Undo a by-name Discogs match and ask again.
+function rematchDiscogs(st) {
+  try { localStorage.removeItem('dgtwin:' + st.id); } catch {}
+  st.altIds.delete('discogs:' + st.discogsId);
+  Object.assign(st, { rels: [], relSource: null, discogsId: null, matchedByName: false, profile: null });
+  if (st.image?.by === 'Discogs') st.image = null;
+  st.links.clear(); st.linkP.clear();
+  enrichStage(st);
+}
+let twinPickFor = null;   // the band a "which one on Discogs?" question is about
+async function findDiscogsTwin(st) {
+  const key = 'dgtwin:' + st.id;
+  let saved = null;
+  try { saved = localStorage.getItem(key); } catch {}
+  if (saved !== null) return saved || null;
+  const name = st.artist.name, band = st.kind === 'band';
+  const found = (await dgSearch(name)).filter(r => norm(cleanDgName(r.title)) === norm(name));
+  let pick;
+  if (!found.length) pick = null;
+  else if (found.length === 1) pick = String(found[0].id);
+  else if (trail[cur]?.id !== st.id) return undefined;
+  else {
+    twinPickFor = st.id;
+    const v = await choose({ title: `Which ${name} is this?`,
+      sub: `MusicBrainz doesn't list ${band ? 'members' : 'bands'} for ${name} (${mbDesc(st.artist) || 'no details'}). Discogs has ${found.length} artists with this name — pick the same one to fill in the gaps.`,
+      options: found.slice(0, 8).map(dgOption), none: 'None of these' });
+    twinPickFor = null;
+    if (v === undefined) return undefined;   // dismissed (or you moved on): don't remember, ask again next visit
+    pick = v ? v.replace('discogs:', '') : null;
+  }
+  try { localStorage.setItem(key, pick || ''); } catch {}
+  return pick;
+}
+
+// Wikidata: a band's "has part(s)" (P527) or a musician's "member of" (P463), with start/end qualifiers.
+const wdCache = new Map();
+function wikidataEntity(mbid) {
+  if (!wdCache.has(mbid)) wdCache.set(mbid, (async () => {
+    const s = await getJSON(`${WD}action=query&list=search&srlimit=1&srsearch=haswbstatement:P434=${mbid}`);
+    const qid = s.query.search[0]?.title;
+    if (!qid) return null;
+    return (await getJSON(`${WD}action=wbgetentities&ids=${qid}&props=claims|sitelinks&sitefilter=enwiki`)).entities[qid];
+  })().catch(() => null));
+  return wdCache.get(mbid);
+}
+const wdTime = snak => {
+  const v = snak?.datavalue?.value;
+  if (!v?.time) return undefined;
+  const [y, m, d] = v.time.slice(1, 11).split('-');
+  return v.precision >= 11 ? `${y}-${m}-${d}` : v.precision === 10 ? `${y}-${m}` : y;
+};
+async function wikidataRels(mbid, band) {
+  const e = await wikidataEntity(mbid);
+  const items = (e?.claims?.[band ? 'P527' : 'P463'] || []).map(c => ({ qid: c.mainsnak?.datavalue?.value?.id,
+    begin: wdTime(c.qualifiers?.P580?.[0]), end: wdTime(c.qualifiers?.P582?.[0]) })).filter(x => x.qid);
+  if (!items.length) return [];
+  const ids = [...new Set(items.map(i => i.qid))].slice(0, 50);
+  const ents = (await getJSON(`${WD}action=wbgetentities&ids=${ids.join('|')}&props=labels|claims&languages=en`)).entities;
+  const byId = new Map();
+  for (const it of items) {
+    const m = ents[it.qid];
+    if (!m) continue;
+    const val = p => m.claims?.[p]?.[0]?.mainsnak?.datavalue?.value;
+    const human = (m.claims?.P31 || []).some(c => c.mainsnak?.datavalue?.value?.id === 'Q5');
+    // A band's parts must be people; a person's "member of" must be a music act (has a MusicBrainz or Discogs ID).
+    if (band ? !human : !(val('P434') || val('P1953'))) continue;
+    const id = val('P434') || (val('P1953') ? 'discogs:' + val('P1953') : 'wd:' + it.qid);
+    const r = byId.get(id) || { id, name: m.labels?.en?.value || it.qid, type: band ? 'Person' : 'Group', disambiguation: '', periods: [], attrs: new Set() };
+    r.periods.push({ begin: it.begin, end: it.end, ended: !!it.end, attrs: [] });
+    byId.set(id, r);
+  }
+  return finalizeRels([...byId.values()]);
+}
+
+function shell() {
+  main.innerHTML = `
+    <section style="margin-top:0"><nav id="crumbs"></nav><div class="nav" id="nav"><div class="track" id="track"></div></div></section>
+    <div class="lower"><section id="lowerTimeline" style="margin-top:0"><h2><span id="tlTitle"></span> <b id="tlCount"></b></h2>
+      <div class="timewrap"><div id="timeline"></div><div class="tip" id="tip"></div><div class="tlegend" id="tlegend"></div></div></section>
+    <section id="lowerDisco"><h2 style="display:flex;justify-content:space-between">
+      <span><span id="discoTitle">Discography</span> <b id="relCount">…</b></span><a id="discogsLink" href="#" onclick="setDiscogsToken();return false" style="text-transform:none;letter-spacing:0;text-decoration:none"></a></h2>
+      <div class="filters" id="filters"></div><div class="releases" id="releases"></div></section></div>`;
+  const track = document.getElementById('track');
+  track.addEventListener('click', e => {
+    const i = +e.target.closest('.stage')?.dataset.i;
+    const back = e.target.closest('.back'), jump = e.target.closest('[data-jump]');
+    const go_ = e.target.closest('[data-go]'), sel_ = e.target.closest('[data-sel]');
+    if (back) return mobileBack();
+    if (e.target.closest('[data-rematch]')) return rematchDiscogs(stages.get(trail[i].id));
+    const fwd = e.target.closest('[data-col]');
+    if (fwd) { mobileCol = +fwd.dataset.col; return focusNav(); }
+    if (jump) return document.getElementById(jump.dataset.jump).scrollIntoView({ behavior: 'smooth' });
+    if (go_) { hideNavTip(); return go(go_.dataset.go); }
+    if (sel_) return selectRow(i, sel_.dataset.sel);
+  });
+  track.addEventListener('mousemove', onNavHover);
+  track.addEventListener('mouseleave', hideNavTip);
+}
+
+function selectRow(i, relId) {
+  const t = trail[i], st = stages.get(t?.id), rel = st?.rels.find(r => r.id === relId);
+  if (!rel) return;
+  if (st.kind !== 'band') return go(relId);
+  mobileCol = 2;
+  if (t.sel?.id !== relId) {
+    t.sel = { id: relId, name: rel.name };
+    if (i < trail.length - 1) trail = trail.slice(0, i + 1);   // a new choice here drops the old path forward
+    renderCrumbs();
+    renderNav();
+    loadLinks(st, rel, { priority: true }).then(() => refreshStage(t.id)).catch(() => {});
+  } else focusNav();
+}
+// From the timeline / album lineup: pick that member in the columns rather than leaving the band.
+function selectMember(id) {
+  if (kindOf(state.artist.type) === 'band' && state.rels.some(r => r.id === id)) { selectRow(cur, id); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  else go(id);
+}
+function mobileBack() {
+  if (mobileCol > 0) { mobileCol--; focusNav(); }
+  else if (cur > 0) { pendingMobileCol = 2; go(trail[cur - 1].id); }
+}
+
+/* ----- rendering ----- */
+function renderNav() {
+  const nav = document.getElementById('nav'), track = document.getElementById('track');
+  if (!nav) return;
+  const w = nav.clientWidth, mobile = w < 700;
+  nav.classList.toggle('mobile', mobile);
+  nav.style.setProperty('--colw', (mobile ? w : w / 3) + 'px');
+  track.innerHTML = trail.map((t, i) => stageHTML(i)).join('');
+  trail.forEach((t, i) => layoutStage(i));
+  focusNav();
+}
+function refreshStage(id) {
+  const i = trail.findIndex(t => t.id === id), track = document.getElementById('track');
+  const old = track?.children[i];
+  if (!old) return;
+  const oldImg = old.querySelector('.photo img');
+  old.outerHTML = stageHTML(i);
+  const fresh = track.children[i].querySelector('.photo img');
+  if (oldImg && fresh && fresh.src === oldImg.src) fresh.replaceWith(oldImg);
+  layoutStage(i);
+  if (i === cur) focusNav();
+}
+const refreshTimers = new Map();
+function scheduleRefresh(id) {
+  if (refreshTimers.has(id)) return;
+  refreshTimers.set(id, setTimeout(() => { refreshTimers.delete(id); refreshStage(id); }, 150));
+}
+function focusNav() {
+  const nav = document.getElementById('nav'), track = document.getElementById('track');
+  const el = track?.children[cur];
+  if (!el) return;
+  const mobile = nav.classList.contains('mobile');
+  const cols = [...el.querySelectorAll(':scope > .col')].filter(c => getComputedStyle(c).display !== 'none');
+  const c = mobile ? cols[Math.min(mobileCol, cols.length - 1)] : cols[0];
+  track.style.transform = `translateX(${-(el.offsetLeft + c.offsetLeft)}px)`;
+  nav.style.height = (mobile ? c.offsetHeight : el.offsetHeight) + 'px';
+}
+
+function stageHTML(i) {
+  const t = trail[i], st = stages.get(t.id);
+  if (!st?.artist) return `<div class="stage" data-i="${i}"><div class="col info"><div class="skel">Loading…</div></div>
+    <div class="col list"></div><div class="col sub empty"></div></div>`;
+  return `<div class="stage" data-i="${i}">${infoCol(st, i)}${listCol(st, t.sel?.id, trail[i + 1]?.id)}${subCol(st, t.sel)}</div>`;
+}
+function infoCol(st, i) {
+  const a = st.artist, ls = a['life-span'] || {}, band = st.kind === 'band';
+  const place = st.place || (a['begin-area'] || a.area)?.name || '';
+  const loaded = st.links.size, total = st.rels.length;
+  const connected = new Set([...st.links.values()].flat().map(x => x.id)).size;
+  const conn = total ? `${connected}${loaded < total ? '…' : ''}` : '0';
+  const albums = st.releases ? String(st.releases.filter(r => relType(r) === 'Album').length) : '…';
+  // "Current" only counts stints with a start date and no end; MusicBrainz marks unknown ends as not-ended.
+  const current = st.rels.filter(r => r.periods.some(p => p.begin && !p.end && !p.ended)).length;
+  let stats = band ? [
+    ['Formed', [year(ls.begin), place].filter(Boolean).join(' · ') || 'Unknown'],
+    ls.ended ? ['Disbanded', year(ls.end) || 'Yes'] : ['Status', ls.begin ? 'Active' : 'Unknown'],
+    ['Members', total ? `${total}${current ? ` · ${current} current` : ''}` : 'None listed'],
+    ['Albums', albums],
+    ['Connected bands', conn],
+  ] : [
+    ['Born', [fmtDate(ls.begin), place].filter(Boolean).join(' · ') || 'Unknown'],
+    ls.ended && ['Died', fmtDate(ls.end) || 'Yes'],
+    ['Bands', String(total)],
+    ['Albums', albums],
+    ['Played with', `${conn} musicians`],
+  ].filter(Boolean);
+  if (a.src === 'discogs') stats = stats.filter(([, v]) => v !== 'Unknown');
+  const genres = (a.genres || []).sort((x, y) => y.count - x.count).slice(0, 3);
+  return `<div class="col info">
+    ${i > 0 ? `<button class="back">‹ ${esc(trail[i - 1].name || 'Back')}</button>` : ''}
+    ${st.image ? `<div class="photo"><img src="${esc(st.image.src)}" alt="">
+      <a class="credit" href="${esc(st.image.credit)}" target="_blank" rel="noopener">Photo · ${esc(st.image.by || 'Wikimedia Commons')}</a></div>` : ''}
+    <div class="kicker">${band ? a.type || 'Band' : 'Musician'}${a.src === 'discogs' ? ' · from Discogs' : ''}</div>
+    <h1><span class="title">${esc(a.name)}</span></h1>
+    ${a.disambiguation ? `<div class="dis">${esc(a.disambiguation)}</div>` : ''}
+    ${st.profile ? `<div class="dis profile" title="${esc(st.profile)}">${esc(st.profile)}</div>` : ''}
+    <dl class="stats">${stats.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+    ${genres.length ? `<div>${genres.map(g => `<span class="tag">${esc(g.name)}</span>`).join('')}</div>` : ''}
+    <button class="fwdcol" data-col="1">${band ? 'Members' : 'Bands'} · ${total} ›</button>
+    <div class="jumps"><a data-jump="lowerTimeline">Timeline ↓</a><a data-jump="lowerDisco">Discography ↓</a></div>
+  </div>`;
+}
+function rowMeta(r) {
+  const span = r.span.endsWith('now') ? `${esc(r.span.slice(0, -3))}<span class="now">now</span>` : esc(r.span);
+  return [esc(r.instruments.slice(0, 2).join(', ')), span || esc(r.note || '')].filter(Boolean).join(' · ');
+}
+function listCol(st, selId, nextId) {
+  const band = st.kind === 'band';
+  const rows = st.rels.map(r => {
+    const links = st.links.get(r.id), n = links?.length;
+    const badge = links ? (n ? `<span class="badge">${band ? `${n} band${n === 1 ? '' : 's'}` : `${n + 1} members`}</span>` : '<span class="badge none">—</span>')
+      : st.linkP.has(r.id) ? '<span class="badge"><i class="dot"></i></span>' : '';
+    // Band page: a member row opens the third column. Musician page: a band row opens that band.
+    return `<div class="row${(band ? r.id === selId : r.id === nextId) ? ' sel' : ''}" ${band ? 'data-sel' : 'data-go'}="${r.id}">
+      <div class="txt"><div class="nm">${esc(r.name)}</div><div class="meta">${rowMeta(r)}</div></div>${badge}</div>`;
+  }).join('');
+  const what = band ? 'members' : 'bands';
+  const empty = st.enrich === 'running' ? `No ${what} on MusicBrainz — checking Wikidata and Discogs…`
+    : st.enrich === 'deferred' ? `No ${what} on MusicBrainz yet.`
+    : st.artist.src === 'discogs' ? `No ${what} listed on Discogs.` : `No ${what} listed on MusicBrainz, Wikidata or Discogs.`;
+  return `<div class="col list"><div class="colhead"><span><button class="back">‹</button>${band ? 'Members' : 'Bands'} · ${st.rels.length}${st.relSource ? ` · via ${st.relSource}` : ''}</span>${st.matchedByName ? '<a class="open" data-rematch title="Matched on Discogs by name">Wrong band?</a>' : ''}</div>
+    <div class="rows">${rows || `<div class="skel" style="padding:0 10px">${empty}</div>`}</div></div>`;
+}
+function subCol(st, sel) {
+  const band = st.kind === 'band';
+  if (!band) return `<div class="col sub empty spacer"><div class="hint">Pick a band to open it.</div></div>`;
+  if (!sel) return `<div class="col sub empty"><div class="hint">${band
+    ? 'Pick a member to see every other band they’ve played in.' : 'Pick a band to see who else played in it.'}</div></div>`;
+  const links = st.links.get(sel.id);
+  let body;
+  if (!links) body = '<div class="skel" style="padding-left:10px">Loading…</div>';
+  else if (!links.length) body = `<div class="skel" style="padding-left:10px">No other ${band ? 'bands' : 'members'} listed.</div>`;
+  else {
+    // For each of this member's other bands, which *other* members of the current band also played there.
+    const rows = links.map(l => ({ l, also: band ? st.rels.filter(r => r.id !== sel.id && st.links.get(r.id)?.some(x => x.id === l.id)) : [] }))
+      .sort((a, b) => b.also.length - a.also.length || a.l.first.localeCompare(b.l.first));
+    body = rows.map(({ l, also }) => `<div class="row" data-go="${l.id}">
+      <div class="txt"><div class="nm">${esc(l.name)}</div><div class="meta">${rowMeta(l)}</div></div>
+      ${also.length ? `<span class="shared" title="Also played here: ${esc(also.map(r => r.name).join(', '))}">+${also.length} from ${esc(st.artist.name)}</span>` : ''}
+      <span class="go">›</span></div>`).join('');
+  }
+  return `<div class="col sub"><div class="colhead"><span><button class="back">‹</button>${esc(sel.name)} · ${band ? 'other bands' : 'bandmates'}</span>
+    <a class="open" data-go="${sel.id}">Open ›</a></div><div class="rows">${body}</div></div>`;
+}
+
+// Line the third column up with the selected row, then draw the bracket connectors from the sketch.
+function layoutStage(i) {
+  const el = document.getElementById('track')?.children[i];
+  if (!el) return;
+  const sub = el.querySelector('.col.sub .rows'), selRow = el.querySelector('.col.list .row.sel');
+  const listRows = el.querySelector('.col.list .rows');
+  if (sub && selRow && !document.getElementById('nav').classList.contains('mobile')) {
+    sub.style.paddingTop = '0px';
+    const room = listRows.offsetTop + listRows.offsetHeight - (sub.offsetTop + sub.offsetHeight);
+    sub.style.paddingTop = Math.max(0, Math.min(selRow.offsetTop - sub.offsetTop, room)) + 'px';
+  }
+  el.querySelector('svg.links')?.remove();
+  const S = el.getBoundingClientRect();
+  const box = r => ({ l: r.left - S.left, r: r.right - S.left, y: (r.top + r.bottom) / 2 - S.top });
+  const bracket = (x0, y0, rows) => {
+    if (!rows.length) return '';
+    const ys = rows.map(r => box(r.getBoundingClientRect()).y), bx = box(rows[0].getBoundingClientRect()).l + 10;
+    return `M${x0},${y0}H${bx}M${bx},${Math.min(y0, ys[0])}V${Math.max(y0, ys.at(-1))}` + ys.map(y => `M${bx},${y}h14`).join('');
+  };
+  let d = '', hot = '';
+  const title = el.querySelector('.info .title');
+  if (title) {
+    const rects = title.getClientRects(), t = box(rects[rects.length - 1]);
+    d = bracket(t.r + 12, t.y, [...el.querySelectorAll('.col.list .row')]);
+  }
+  if (selRow) hot = bracket(box(selRow.getBoundingClientRect()).r, box(selRow.getBoundingClientRect()).y, [...el.querySelectorAll('.col.sub .row')]);
+  el.insertAdjacentHTML('afterbegin', `<svg class="links" width="${S.width}" height="${S.height}"><path class="ln" d="${d}"/><path class="hot" d="${hot}"/></svg>`);
+}
+
+/* ----- hover preview for rows that lead to another band/person ----- */
+let hoverRow = null, hoverTimer;
+function onNavHover(e) {
+  const row = e.target.closest('.row[data-go]');
+  if (row === hoverRow) return;
+  hideNavTip(); hoverRow = row;
+  if (!row) return;
+  hoverTimer = setTimeout(async () => {
+    const tip = document.getElementById('navtip');
+    const place = () => {
+      const r = row.getBoundingClientRect();
+      tip.style.display = 'block';
+      const left = r.right + 10 + tip.offsetWidth > innerWidth ? r.left - tip.offsetWidth - 10 : r.right + 10;
+      tip.style.left = Math.max(8, left) + 'px'; tip.style.top = r.top + 'px';
+    };
+    tip.innerHTML = '<span class="muted">Loading…</span>'; place();
+    try {
+      const a = await getArtist(row.dataset.go, { priority: true });
+      if (hoverRow !== row) return;
+      if (a.src === 'wd') return hideNavTip();
+      const ls = a['life-span'] || {}, band = kindOf(a.type) === 'band';
+      const n = (band ? a.members : a.bands).length;
+      const span = ls.begin ? `${year(ls.begin)}–${ls.ended ? year(ls.end) || '?' : 'present'}` : '';
+      tip.innerHTML = `<b>${esc(a.name)}</b><br>${esc([span, band ? `${n} members` : `${n} bands`].filter(Boolean).join(' · '))}` +
+        `${(a['begin-area'] || a.area) ? `<br><span class="muted">${esc((a['begin-area'] || a.area).name)}</span>` : ''}` +
+        `${a.disambiguation ? `<br><span class="muted">${esc(a.disambiguation)}</span>` : ''}` +
+        `${a.profile ? `<br><span class="muted">${esc(firstSentence(a.profile))}</span>` : ''}`;
+      place();
+    } catch { hideNavTip(); }
+  }, 300);
+}
+function hideNavTip() { clearTimeout(hoverTimer); hoverRow = null; const t = document.getElementById('navtip'); if (t) t.style.display = 'none'; }
+
+/* ----- below the columns: timeline + discography for the band on the left ----- */
+function showLower(st, myGen) {
+  state.artist = st.artist; state.rels = st.rels; state.filter = 'Album';
+  state.releases = st.releases || [];
+  document.getElementById('tlTitle').textContent = `${st.kind === 'band' ? 'Lineup timeline' : 'Band timeline'} · ${st.artist.name}`;
+  document.getElementById('tlCount').textContent = st.rels.length || '';
+  document.getElementById('discoTitle').textContent = `Discography · ${st.artist.name}`;
+  renderTimeline();
+  if (st.releases) { if (!state.releases.some(r => relType(r) === 'Album')) state.filter = 'All'; renderReleases(); }
+  else {
+    document.getElementById('releases').innerHTML = '<span class="muted">Loading releases…</span>';
+    document.getElementById('filters').innerHTML = ''; document.getElementById('relCount').textContent = '…';
+    loadReleases(st, myGen);
+  }
+}
+
+/* Photo: Wikidata links MusicBrainz IDs (P434) to a Commons image (P18). Photos only — logos are usually SVG/PNG. */
+async function artistImage(mbid) {
+  const e = await wikidataEntity(mbid);
+  if (!e) return null;
+  let file = e.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+  if (!file && e.sitelinks?.enwiki) {
+    const pg = Object.values((await getJSON(`https://en.wikipedia.org/w/api.php?format=json&origin=*&action=query&prop=pageimages&piprop=name&titles=${encodeURIComponent(e.sitelinks.enwiki.title)}`)).query.pages)[0];
+    file = pg?.pageimage;
+  }
+  if (!file || !/\.jpe?g$/i.test(file)) return null;
+  // Ask for a standard thumbnail width: those are pre-rendered on Wikimedia's CDN, custom widths take ~15s.
+  const info = Object.values((await getJSON(`https://commons.wikimedia.org/w/api.php?format=json&origin=*&action=query&prop=imageinfo&iiprop=url&iiurlwidth=960&titles=${encodeURIComponent('File:' + file)}`)).query.pages)[0];
+  const src = info?.imageinfo?.[0]?.thumburl;
+  if (!src) return null;
+  await preload(src);  // show it only once it's ready
+  return { src, credit: info.imageinfo[0].descriptionurl };
+}
+
+/* City plus its state/region, e.g. "Hermosa Beach, California". MusicBrainz nests areas
+   (city → county → state → country), so walk up a few levels to the first subdivision. */
+async function resolvePlace(artist) {
+  const area = artist['begin-area'] || artist.area;
+  if (!area || ['Country', 'Subdivision'].includes(area.type)) return area?.name || '';
+  let at = area;
+  try {
+    for (let hop = 0; hop < 4; hop++) {
+      const a = await mb(`area/${at.id}?inc=area-rels`, { priority: true });
+      const parent = (a.relations || []).find(r => r.type === 'part of' && r.direction === 'backward')?.area;
+      if (!parent) break;
+      if (parent.type === 'Subdivision' || parent.type === 'Country') return `${area.name}, ${parent.name}`;
+      at = parent;
+    }
+  } catch {}
+  return area.name;
+}
+
+/* ---------- Lineup timeline ---------- */
+const ROLES = [
+  { name: 'Vocals', color: '#f25f5c', test: a => /vocal|singer|rap|\bmc\b|voice/.test(a) },
+  { name: 'Guitar', color: '#ffb238', test: a => /guitar|banjo|mandolin/.test(a) && !/bass/.test(a) },
+  { name: 'Bass', color: '#5cc8ff', test: a => /bass/.test(a) },
+  { name: 'Drums', color: '#7be495', test: a => /drum|percussion|membranophone|idiophone|cymbal/.test(a) },
+  { name: 'Keys', color: '#b58cff', test: a => /key|piano|synth|organ|electronic/.test(a) },
+  { name: 'Other', color: '#8b91a1', test: () => true },
+];
+const NON_ROLES = ['original', 'founder', 'additional', 'minor', 'guest', 'lead', 'solo', 'background', 'touring'];
+// Main role first: lead vocals, then instruments, then backing vocals.
+function rolesOf(attrs) {
+  const ranked = new Map();
+  for (const a of attrs.map(x => x.toLowerCase()).filter(x => !NON_ROLES.includes(x))) {
+    const i = ROLES.findIndex(r => r.test(a));
+    const rank = /lead/.test(a) ? -1 : /background|backing|additional/.test(a) ? 10 + i : i;
+    ranked.set(ROLES[i], Math.min(rank, ranked.get(ROLES[i]) ?? 99));
+  }
+  const list = [...ranked].sort((a, b) => a[1] - b[1]).map(([r]) => r);
+  return list.length ? list : [ROLES.at(-1)];
+}
+// '1987' -> 1987.0 (or 1988.0 as an end), '1987-05' -> 1987.33, etc.
+function toYear(date, isEnd) {
+  if (!date) return null;
+  const [y, m, d] = date.split('-').map(Number);
+  if (!m) return y + (isEnd ? 1 : 0);
+  if (!d) return y + (m - (isEnd ? 0 : 1)) / 12;
+  return y + (m - 1) / 12 + (d - 1) / 365;
+}
+const NOW = (() => { const d = new Date(); return d.getFullYear() + d.getMonth() / 12 + d.getDate() / 365; })();
+
+function rootSpan() {
+  const ls = state.artist['life-span'] || {};
+  // For a band, missing dates fall back to the band's own lifespan; for a person, their birth date is meaningless here.
+  return { rootStart: kindOf(state.artist.type) === 'band' ? toYear(ls.begin) : null, rootEnd: ls.ended ? toYear(ls.end, true) ?? NOW : NOW };
+}
+function stintsOf(r) {
+  const { rootStart, rootEnd } = rootSpan();
+  return r.periods.filter(p => p.begin || p.end).map(p => {
+    const start = toYear(p.begin) ?? rootStart ?? toYear(p.end) - 1;
+    const end = toYear(p.end, true) ?? rootEnd;
+    return { start, end: Math.max(end, start + 1 / 12), p, roles: rolesOf(p.attrs.length ? p.attrs : [...r.attrs]) };
+  });
+}
+function renderTimeline() {
+  const el = document.getElementById('timeline');
+  if (!el || !state.artist) return;
+  if (!state.rels.length) {
+    el.innerHTML = `<span class="muted">MusicBrainz has no ${kindOf(state.artist.type) === 'band' ? 'member' : 'band membership'} data for this artist yet.</span>`;
+    document.getElementById('tlegend').innerHTML = '';
+    return;
+  }
+  const artist = state.artist, isBand = kindOf(artist.type) === 'band';
+  const { rootStart, rootEnd } = rootSpan();
+
+  const rows = [], undated = [];
+  for (const r of state.rels) {
+    const bars = stintsOf(r);
+    if (bars.length) rows.push({ r, bars, first: Math.min(...bars.map(b => b.start)) }); else undated.push(r);
+  }
+  rows.sort((a, b) => a.first - b.first || a.r.name.localeCompare(b.r.name));
+
+  const albums = state.releases.filter(rg => relType(rg) === 'Album' && rg['first-release-date'])
+    .map(rg => ({ rg, at: toYear(rg['first-release-date']) + 1 / 24 }));
+  // Undated members go underneath as their own rows.
+  undated.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => rows.push({ r, bars: [], undated: true }));
+  const all = rows.flatMap(r => r.bars);
+  // With no dated stints at all, fall back to the band's own lifespan for the axis (or drop the axis).
+  const y0 = Math.floor(Math.min(...all.map(b => b.start), rootStart ?? Infinity));
+  const y1 = Math.ceil(Math.max(...all.map(b => b.end), all.length || rootStart != null ? rootEnd : -Infinity));
+  const hasAxis = isFinite(y0) && isFinite(y1) && y1 > y0;
+  const W = el.clientWidth, labelW = Math.min(170, W * 0.32), rowH = 26, axisH = hasAxis ? 26 : 4;
+  const H = rows.length * rowH + axisH;
+  const x = d3.scaleLinear(hasAxis ? [y0, y1] : [0, 1], [labelW, W - 4]);
+
+  el.innerHTML = '';
+  const svg = d3.select(el).append('svg').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`);
+  const ticks = hasAxis ? x.ticks(Math.min(y1 - y0, Math.floor((W - labelW) / 55))).filter(Number.isInteger) : [];
+  svg.append('g').attr('class', 'grid').selectAll('line').data(ticks).join('line')
+    .attr('x1', x).attr('x2', x).attr('y1', 0).attr('y2', H - axisH + 4);
+  svg.append('g').attr('class', 'axis').selectAll('text').data(ticks).join('text')
+    .attr('x', x).attr('y', H - 6).attr('text-anchor', 'middle').text(d => d);
+
+  const tip = document.getElementById('tip'), wrap = el.parentElement;
+  const showTip = (ev, html) => {
+    tip.innerHTML = html; tip.style.display = 'block';
+    const b = wrap.getBoundingClientRect(), tw = tip.offsetWidth;
+    tip.style.left = Math.min(ev.clientX - b.left + 14, b.width - tw - 8) + 'px';
+    tip.style.top = (ev.clientY - b.top + 14) + 'px';
+  };
+  const hideTip = () => tip.style.display = 'none';
+
+  const row = svg.append('g').selectAll('g').data(rows).join('g').attr('transform', (d, i) => `translate(0,${i * rowH})`);
+  row.append('text').attr('class', 'name').attr('x', labelW - 12).attr('y', rowH / 2).attr('dy', '.35em')
+    .attr('text-anchor', 'end').text(d => d.r.name.length > 24 ? d.r.name.slice(0, 23) + '…' : d.r.name)
+    .on('click', (ev, d) => selectMember(d.r.id));
+  const bar = row.selectAll('g.bar').data(d => d.bars.map(b => ({ ...b, r: d.r }))).join('g').attr('class', 'bar')
+    .on('mousemove', (ev, b) => showTip(ev, `<b>${esc(b.r.name)}</b><br>${esc(fmtPeriod(b.p))}<br>
+        <span class="muted">${esc(b.p.attrs.filter(a => !['original'].includes(a)).join(', ') || [...b.r.attrs].join(', ') || 'role unknown')}</span>`))
+    .on('mouseleave', hideTip).on('click', (ev, b) => selectMember(b.r.id));
+  bar.append('rect').attr('x', b => x(b.start)).attr('width', b => Math.max(3, x(b.end) - x(b.start)))
+    .attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', b => b.roles[0].color);
+  const und = row.filter(d => d.undated);
+  und.append('line').attr('x1', labelW).attr('x2', W - 4).attr('y1', rowH / 2).attr('y2', rowH / 2)
+    .attr('stroke', 'var(--muted)').attr('stroke-opacity', .5).attr('stroke-dasharray', '4 4');
+  und.append('rect').attr('x', labelW).attr('y', 4).attr('width', 104).attr('height', rowH - 8).attr('fill', 'var(--panel)');
+  und.append('text').attr('x', labelW + 4).attr('y', rowH / 2).attr('dy', '.35em').attr('fill', 'var(--muted)')
+    .attr('font-size', 12).attr('font-style', 'italic').text('dates unknown');
+  // Secondary role as a stripe through the middle, like Wikipedia's lineup charts.
+  bar.filter(b => b.roles[1]).append('rect').attr('x', b => x(b.start)).attr('width', b => Math.max(3, x(b.end) - x(b.start)))
+    .attr('y', rowH / 2 - 2).attr('height', 4).attr('fill', b => b.roles[1].color);
+
+  const alb = svg.append('g').selectAll('g').data(hasAxis ? albums.filter(a => a.at >= y0 && a.at <= y1) : []).join('g').attr('class', 'album')
+    .on('mousemove', (ev, a) => showTip(ev, `<b>${esc(a.rg.title)}</b><br><span class="muted">Album · ${esc(a.rg['first-release-date'])}</span>`))
+    .on('mouseleave', hideTip);
+  alb.append('line').attr('class', 'vis').attr('x1', a => x(a.at)).attr('x2', a => x(a.at)).attr('y1', 0).attr('y2', H - axisH + 4);
+  alb.append('line').attr('x1', a => x(a.at)).attr('x2', a => x(a.at)).attr('y1', 0).attr('y2', H - axisH + 4)
+    .attr('stroke', 'transparent').attr('stroke-width', 8);
+
+  const used = ROLES.filter(R => rows.some(r => r.bars.some(b => b.roles.includes(R))));
+  document.getElementById('tlegend').innerHTML = used.map(R => `<span><i style="background:${R.color}"></i>${R.name}</span>`).join('')
+    + (albums.length && hasAxis ? `<span><i style="background:none;border-left:1px dashed #fff8;border-radius:0;width:1px"></i>Studio album</span>` : '')
+    + (used.length ? `<span>Center stripe = second role</span>` : '');
+}
+function fmtPeriod(p) {
+  const b = p.begin || '?', e = p.end || (p.ended ? '?' : 'present');
+  return `${b} – ${e}`;
+}
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { renderTimeline(); renderNav(); }, 150); });
+
+/* ---------- Discography ---------- */
+const TYPES = ['Album', 'EP', 'Single', 'Live', 'Compilation', 'Other', 'All'];
+const LABELS = { Album: 'Albums', EP: 'EPs', Single: 'Singles', Live: 'Live', Compilation: 'Compilations', Other: 'Other', All: 'All' };
+function relType(rg) {
+  const sec = rg['secondary-types'] || [];
+  if (sec.includes('Live')) return 'Live';
+  if (sec.includes('Compilation')) return 'Compilation';
+  if (sec.length) return 'Other';
+  return ['Album', 'EP', 'Single'].includes(rg['primary-type']) ? rg['primary-type'] : 'Other';
+}
+async function loadReleases(st, myGen) {
+  let all = [];
+  try {
+    if (st.artist.src === 'mb') for (let offset = 0; offset < 1000; offset += 100) {
+      const d = await mb(`release-group?artist=${st.id}&limit=100&offset=${offset}`, { gen: myGen });
+      all.push(...d['release-groups']);
+      if (all.length >= d['release-group-count'] || !d['release-groups'].length) break;
+    }
+    if (!all.length && st.discogsId) all = await discogsReleases(st.discogsId, myGen);
+  } catch (e) { if (e.message === 'stale') return; }
+  st.releases = all.sort((a, b) => (a['first-release-date'] || '9999').localeCompare(b['first-release-date'] || '9999'));
+  refreshStage(st.id);  // album count in the info column
+  if (myGen !== gen) return;
+  state.releases = st.releases;
+  if (!state.releases.some(r => relType(r) === 'Album')) state.filter = 'All';
+  renderReleases();
+  renderTimeline();  // adds album markers
+}
+async function discogsReleases(did, myGen) {
+  const out = [];
+  for (let page = 1; page <= 5; page++) {
+    const d = await dg(`artists/${did}/releases?sort=year&sort_order=asc&per_page=100&page=${page}`, { gen: myGen });
+    for (const r of d.releases || []) {
+      if (r.role !== 'Main') continue;
+      const f = r.format || '';
+      out.push({ id: `dg-${r.type}-${r.id}`, src: 'discogs', dgType: r.type, dgId: r.id, title: r.title, thumb: r.thumb || '',
+        'first-release-date': r.year ? String(r.year) : '',
+        'primary-type': /\bEP\b/.test(f) ? 'EP' : /single|7"/i.test(f) && !/\bLP\b/.test(f) ? 'Single' : 'Album',
+        'secondary-types': /comp/i.test(f) ? ['Compilation'] : [] });
+    }
+    if (page >= (d.pagination?.pages || 1)) break;
+  }
+  return out;
+}
+function renderReleases() {
+  const el = document.getElementById('releases'); if (!el) return;
+  const counts = Object.fromEntries(TYPES.map(t => [t, t === 'All' ? state.releases.length : state.releases.filter(r => relType(r) === t).length]));
+  document.getElementById('relCount').textContent = state.releases.length;
+  document.getElementById('filters').innerHTML = TYPES.filter(t => counts[t]).map(t =>
+    `<button class="${t === state.filter ? 'on' : ''}" data-t="${t}">${LABELS[t]} ${counts[t]}</button>`).join('');
+  document.querySelectorAll('#filters button').forEach(b => b.onclick = () => { state.filter = b.dataset.t; renderReleases(); });
+  const list = state.releases.filter(r => state.filter === 'All' || relType(r) === state.filter);
+  el.innerHTML = list.length ? list.map(r => `<div class="rel"><button data-rg="${r.id}">
+      <div class="cover">${esc(r.title[0] || '')}<img loading="lazy" alt="" data-title="${esc(r.title)}" src="${r.src === 'discogs' ? esc(r.thumb || 'data:,') : `https://coverartarchive.org/release-group/${r.id}/front-250`}" onerror="coverFallback(this, '${r.id}')"></div>
+      <div class="t">${esc(r.title)}</div><div class="y">${year(r['first-release-date']) || '—'} · ${esc(relType(r))}</div></button></div>`).join('')
+    : '<span class="muted">No releases listed.</span>';
+  el.querySelectorAll('[data-rg]').forEach(b => b.onclick = e => { e.stopPropagation(); openAlbum(state.releases.find(r => r.id === b.dataset.rg)); });
+  const dl = document.getElementById('discogsLink');
+  if (dl) dl.textContent = discogsToken() ? 'Discogs token on' : '+ Discogs token';
+}
+
+/* ---------- Album overlay ----------
+   Pulls from MusicBrainz (release, tracks, label), Wikidata (producer, studio, sequence),
+   Wikipedia (overview), Cover Art Archive (gallery) and iTunes (exact Apple Music link). */
+const albumEl = document.getElementById('album'), sheet = document.getElementById('sheet');
+let albumSeq = 0;
+const fmtLen = ms => ms ? `${Math.floor(ms / 60000)}:${String(Math.round(ms / 1000) % 60).padStart(2, '0')}` : '';
+const fmtDate = d => {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  return m ? new Date(y, m - 1, day || 1).toLocaleDateString('en-US', { year: 'numeric', month: 'long', ...(day ? { day: 'numeric' } : {}) }) : y;
+};
+const getJSON = async u => { const r = await fetch(u); if (!r.ok) throw new Error(r.status); return r.json(); };
+const WIKI = 'https://en.wikipedia.org/w/api.php?format=json&origin=*&';
+const WD = 'https://www.wikidata.org/w/api.php?format=json&origin=*&';
+
+function lineupAt(dateStr) {
+  if (kindOf(state.artist.type) !== 'band' || !dateStr) return [];
+  const t = toYear(dateStr) + 1 / 24;
+  return state.rels.filter(r => stintsOf(r).some(b => b.start <= t && t < b.end));
+}
+
+async function openAlbum(rg) {
+  const seq = ++albumSeq, live = () => seq === albumSeq && albumEl.classList.contains('open');
+  const artist = state.artist.name, q = `${artist} ${rg.title}`;
+  const card = document.querySelector(`[data-rg="${rg.id}"] .cover img`);
+  const lineup = lineupAt(rg['first-release-date']);
+  sheet.innerHTML = `<button class="x" onclick="closeAlbum()" aria-label="Close">✕</button>
+    <div><div class="bigcover" id="bigcover">${esc(rg.title[0] || '')}${card ? `<img src="${esc(card.src.replace('front-250', 'front-500'))}" alt="">` : ''}</div>
+      <div class="gallery" id="gallery"></div></div>
+    <div>
+      <h3>${esc(rg.title)}</h3>
+      <div class="by"><a onclick="closeAlbum()">${esc(artist)}</a> · ${esc(relType(rg))} · ${esc(year(rg['first-release-date']) || 'date unknown')}</div>
+      <div class="listen">
+        <a class="am" id="amLink" target="_blank" rel="noopener" href="https://music.apple.com/us/search?term=${encodeURIComponent(q)}">Apple Music</a>
+        <a class="sp" id="spLink" target="_blank" rel="noopener" href="https://open.spotify.com/search/${encodeURIComponent(q)}">Spotify</a>
+      </div>
+      <div class="facts" id="facts"><div><small>Released</small>${esc(fmtDate(rg['first-release-date']) || '—')}</div></div>
+      <div class="about" id="about"><div class="skel">Looking for the story behind this record…</div></div>
+      ${lineup.length ? `<h4>Lineup at the time</h4><div class="chips">${lineup.map(r =>
+        `<span class="chip person" data-id="${r.id}">${esc(r.name)}</span>`).join('')}</div>` : ''}
+      <h4>Tracklist</h4><ol class="tracks" id="tracks"><li class="skel">Loading…</li></ol>
+    </div>`;
+  sheet.querySelectorAll('.chip[data-id]').forEach(c => c.onclick = () => { closeAlbum(); selectMember(c.dataset.id); });
+  albumEl.classList.add('open'); albumEl.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+
+  const facts = {};  // label -> html, rendered in a fixed order as data arrives
+  const setFact = (k, v) => { if (!v || !live()) return; facts[k] = v; renderFacts(rg, facts); };
+
+  // Apple Music: exact album link when iTunes has it.
+  itunesAlbum(artist, rg.title).then(hit => { if (hit && live()) document.getElementById('amLink').href = hit.collectionViewUrl; }).catch(() => {});
+
+  if (rg.src === 'discogs') return loadDiscogsAlbum(rg, seq, live, setFact);
+
+  // MusicBrainz: pick the earliest official release for tracks/label, and the best-illustrated one for the gallery.
+  let rgInfo;
+  (async () => {
+    const { releases = [] } = await mb(`release?release-group=${rg.id}&limit=100`, { priority: true });
+    const official = releases.filter(r => r.status === 'Official');
+    const pool = official.length ? official : releases;
+    const first = [...pool].sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'))[0];
+    const arty = [...releases].sort((a, b) => (b['cover-art-archive']?.count || 0) - (a['cover-art-archive']?.count || 0))[0];
+    if (arty?.['cover-art-archive']?.count) loadGallery(arty.id, seq);
+    if (!first) { if (live()) document.getElementById('tracks').innerHTML = '<li class="skel">No tracklist on file.</li>'; return; }
+    const rel = await mb(`release/${first.id}?inc=recordings+labels+url-rels`, { priority: true });
+    if (!live()) return;
+    renderTracks(rel.media || []);
+    const total = (rel.media || []).flatMap(m => m.tracks || []).reduce((n, t) => n + (t.length || 0), 0);
+    setFact('Length', total ? `${Math.round(total / 60000)} min · ${(rel.media || []).reduce((n, m) => n + (m['track-count'] || 0), 0)} tracks` : '');
+    setFact('Label', esc([...new Set((rel['label-info'] || []).map(l => l.label?.name).filter(Boolean))].join(', ')));
+    for (const r of rel.relations || []) {
+      const u = r.url?.resource || '';
+      if (u.includes('open.spotify.com/album')) document.getElementById('spLink').href = u;
+      if (/music\.apple\.com|itunes\.apple\.com/.test(u)) document.getElementById('amLink').href = u;
+    }
+  })().catch(() => { if (live()) document.getElementById('tracks').innerHTML = '<li class="skel">Couldn\'t load the tracklist.</li>'; });
+  // Queued after (so it runs before, as priority requests go to the front) — the Wikipedia chain is the slowest.
+  rgInfo = mb(`release-group/${rg.id}?inc=url-rels+genres`, { priority: true });
+
+  // Wikidata facts + Wikipedia overview.
+  (async () => {
+    const info = await rgInfo;
+    if (!live()) return;
+    setFact('Genre', esc((info.genres || []).sort((a, b) => b.count - a.count).slice(0, 3).map(g => g.name).join(', ')));
+    const wdUrl = (info.relations || []).find(r => r.type === 'wikidata')?.url?.resource;
+    let wikiTitle = null;
+    if (wdUrl) {
+      const qid = wdUrl.split('/').pop();
+      const ent = (await getJSON(`${WD}action=wbgetentities&ids=${qid}&props=claims|sitelinks&sitefilter=enwiki`)).entities[qid];
+      wikiTitle = ent.sitelinks?.enwiki?.title;
+      const ids = p => (ent.claims?.[p] || []).map(c => c.mainsnak?.datavalue?.value?.id).filter(Boolean);
+      const want = { Producer: ids('P162'), 'Recorded at': ids('P483'), Genre: ids('P136').slice(0, 3), 'Preceded by': ids('P155'), 'Followed by': ids('P156') };
+      const all = [...new Set(Object.values(want).flat())].slice(0, 50);
+      if (all.length) {
+        const labels = (await getJSON(`${WD}action=wbgetentities&ids=${all.join('|')}&props=labels&languages=en`)).entities;
+        const name = id => labels[id]?.labels?.en?.value;
+        for (const [k, list] of Object.entries(want)) {
+          const names = list.map(name).filter(Boolean);
+          if (!names.length) continue;
+          // Link preceding/following albums back into the overlay when they're in this discography.
+          setFact(k, names.map(n => {
+            const hit = /by$/.test(k) && state.releases.find(r => norm(r.title) === norm(n));
+            return hit ? `<a data-open="${hit.id}">${esc(n)}</a>` : esc(n);
+          }).join(', '));
+        }
+      }
+    }
+    if (!wikiTitle) wikiTitle = await guessWikiTitle(artist, rg.title);
+    await renderAbout(wikiTitle, live);
+  })().catch(() => { if (live()) document.getElementById('about').innerHTML = ''; });
+}
+
+async function renderAbout(wikiTitle, live) {
+  {
+    if (!live()) return;
+    const about = document.getElementById('about');
+    if (!wikiTitle) { about.innerHTML = ''; return; }
+    const page = Object.values((await getJSON(`${WIKI}action=query&prop=extracts&exintro=1&explaintext=1&redirects=1&titles=${encodeURIComponent(wikiTitle)}`)).query.pages)[0];
+    const paras = (page.extract || '').split('\n').map(p => p.trim()).filter(p => p.length > 40);
+    if (!live() || !paras.length) { about.innerHTML = ''; return; }
+    const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`;
+    about.innerHTML = `<h4 style="margin-top:0">About</h4>${paras.map((p, i) => `<p${i > 1 ? ' hidden' : ''}>${esc(p)}</p>`).join('')}
+      ${paras.length > 2 ? '<p><a class="more" href="#" onclick="this.parentElement.parentElement.querySelectorAll(\'p[hidden]\').forEach(p=>p.hidden=false);this.parentElement.remove();return false">Read more</a></p>' : ''}
+      <div class="src">From <a href="${url}" target="_blank" rel="noopener">Wikipedia</a>, CC BY-SA</div>`;
+  }
+}
+
+const durMs = d => { if (!d) return 0; const p = d.split(':').map(Number); return p.reduce((n, x) => n * 60 + (x || 0), 0) * 1000; };
+async function loadDiscogsAlbum(rg, seq, live, setFact) {
+  guessWikiTitle(state.artist.name, rg.title).then(t => renderAbout(t, live))
+    .catch(() => { if (live()) document.getElementById('about').innerHTML = ''; });
+  try {
+    const m = await dg(`${rg.dgType === 'master' ? 'masters' : 'releases'}/${rg.dgId}`, { priority: true });
+    // A master has the tracklist and images; its main release has the label and credits.
+    const rel = rg.dgType === 'master' && m.main_release ? await dg(`releases/${m.main_release}`, { priority: true }) : m;
+    if (!live()) return;
+    const tracks = (m.tracklist || []).filter(t => t.type_ === 'track');
+    renderTracks([{ tracks: tracks.map(t => ({ number: t.position, title: t.title, length: durMs(t.duration) })) }]);
+    const total = tracks.reduce((n, t) => n + durMs(t.duration), 0);
+    if (tracks.length) setFact('Length', `${total ? Math.round(total / 60000) + ' min · ' : ''}${tracks.length} tracks`);
+    setFact('Label', esc([...new Set((rel.labels || []).map(l => cleanDgName(l.name)))].join(', ')));
+    setFact('Producer', esc([...new Set((rel.extraartists || []).filter(x => /producer/i.test(x.role)).map(x => cleanDgName(x.name)))].join(', ')));
+    setFact('Genre', esc([...(m.styles || []), ...(m.genres || [])].slice(0, 3).join(', ')));
+    const imgs = (m.images?.length ? m.images : rel.images) || [];
+    showGallery(imgs.filter(i => i.uri).map(i => ({ full: i.uri, thumb: i.uri150 || i.uri, title: i.type })), seq);
+  } catch { if (live()) document.getElementById('tracks').innerHTML = '<li class="skel">Couldn\'t load the tracklist.</li>'; }
+}
+
+// When MusicBrainz has no Wikidata link, search Wikipedia but only accept a page that is clearly this album.
+async function guessWikiTitle(artist, title) {
+  const res = await getJSON(`${WIKI}action=query&list=search&srlimit=3&srsearch=${encodeURIComponent(`"${title}" ${artist} album`)}`);
+  const hit = res.query.search.find(h => norm(h.title).startsWith(norm(title)) && norm(h.snippet.replace(/<[^>]+>/g, '')).includes(norm(artist)));
+  return hit?.title || null;
+}
+
+const FACT_ORDER = ['Released', 'Label', 'Length', 'Producer', 'Recorded at', 'Genre', 'Preceded by', 'Followed by'];
+function renderFacts(rg, facts) {
+  const el = document.getElementById('facts');
+  const all = { Released: esc(fmtDate(rg['first-release-date']) || '—'), ...facts };
+  el.innerHTML = FACT_ORDER.filter(k => all[k]).map(k => `<div><small>${k}</small>${all[k]}</div>`).join('');
+  el.querySelectorAll('[data-open]').forEach(a => a.onclick = () => openAlbum(state.releases.find(r => r.id === a.dataset.open)));
+}
+function renderTracks(media) {
+  const el = document.getElementById('tracks');
+  const multi = media.length > 1;
+  el.innerHTML = media.map((m, i) => (multi ? `<li class="disc">${esc(m.format || 'Disc')} ${i + 1}${m.title ? ' · ' + esc(m.title) : ''}</li>` : '') +
+    (m.tracks || []).map(t => `<li><span>${esc(t.number)}</span><span>${esc(t.title)}</span><span>${fmtLen(t.length)}</span></li>`).join('')).join('')
+    || '<li class="skel">No tracklist on file.</li>';
+}
+async function loadGallery(releaseId, seq) {
+  const { images = [] } = await getJSON(`https://coverartarchive.org/release/${releaseId}`);
+  const front = images.find(i => i.front) || images[0];
+  showGallery([front, ...images.filter(i => i !== front)].filter(Boolean).map(i => ({
+    full: i.thumbnails?.['500'] || i.thumbnails?.large || i.image, thumb: i.thumbnails?.small || i.thumbnails?.['250'] || i.image,
+    title: (i.types || []).join(', ') })), seq);
+}
+function showGallery(list, seq) {
+  if (seq !== albumSeq || !list.length) return;
+  const big = document.getElementById('bigcover'), gal = document.getElementById('gallery');
+  const show = k => {
+    big.querySelector('img')?.remove();
+    const i = new Image(); i.alt = ''; i.src = list[k].full; big.appendChild(i);
+    gal.querySelectorAll('img').forEach((t, j) => t.classList.toggle('on', j === k));
+  };
+  if (!big.querySelector('img')) show(0);
+  if (list.length < 2) return;
+  gal.innerHTML = list.slice(0, 15).map(i => `<img loading="lazy" src="${esc(i.thumb)}" title="${esc(i.title || '')}" alt="">`).join('');
+  gal.querySelectorAll('img').forEach((t, k) => t.onclick = () => show(k));
+  gal.querySelector('img').classList.add('on');
+}
+function closeAlbum() { albumEl.classList.remove('open'); document.body.style.overflow = ''; albumSeq++; }
+albumEl.addEventListener('click', e => { if (e.target === albumEl) closeAlbum(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && albumEl.classList.contains('open')) closeAlbum(); });
+window.addEventListener('hashchange', () => albumEl.classList.contains('open') && closeAlbum());
+
+/* ---------- Cover fallbacks ----------
+   The <img> tries Cover Art Archive's pick for the release group first. If that 404s, we work down a list,
+   cheapest first: iTunes → Deezer → Wikipedia → other editions on Cover Art Archive → Discogs. */
+const norm = t => t.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+  .replace(/\s+-\s+(ep|single)$/, '').replace(/\(.*?\)|\[.*?\]/g, '').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, ' ').trim();
+const discogsToken = () => { try { return localStorage.getItem('discogsToken') || ''; } catch { return ''; } };
+// One small queue per service so a slow one doesn't hold up the others.
+const queues = {};
+const throttled = (name, fn, gap) => {
+  const p = (queues[name] || Promise.resolve()).then(fn);
+  queues[name] = p.catch(() => {}).then(() => sleep(gap));
+  return p;
+};
+// Same artist ("The" optional), and the same title — exact first, else one starting with the other
+// (catches "Trait (Deluxe Edition)", "… - Remastered" and the like).
+// Also accepts shared credits, e.g. a split: "Worsen / Whitewurm", "X & Y", "X vs. Y".
+const bare = n => norm(n || '').replace(/^the /, '');
+const artistMatch = (credit, artist) => [credit, ...(credit || '').split(/\s*(?:\/|,|&|\+|\bvs\.?|\band\b|\bwith\b)\s*/i)]
+  .some(part => part && bare(part) === bare(artist));
+function bestMatch(list, artist, title, artistOf, titleOf) {
+  const t = norm(title), ok = list.filter(x => artistMatch(artistOf(x), artist));
+  return ok.find(x => norm(titleOf(x) || '') === t)
+    || ok.find(x => { const u = norm(titleOf(x) || ''); return Math.min(u.length, t.length) >= 4 && (u.startsWith(t) || t.startsWith(u)); });
+}
+
+const itunesCache = new Map();
+function itunesAlbum(artist, title) {
+  const k = artist + '|' + title;
+  if (!itunesCache.has(k)) itunesCache.set(k, (async () => {
+    const r = await throttled('itunes', () => fetch(`https://itunes.apple.com/search?entity=album&limit=25&term=${encodeURIComponent(artist + ' ' + title)}`), 1500);
+    if (!r.ok) throw new Error('itunes ' + r.status);
+    return bestMatch((await r.json()).results, artist, title, x => x.artistName, x => x.collectionName) || null;
+  })());
+  itunesCache.get(k).catch(() => itunesCache.delete(k));
+  return itunesCache.get(k);
+}
+async function fromItunes(artist, title) {
+  const hit = await itunesAlbum(artist, title);
+  return hit ? hit.artworkUrl100.replace('100x100bb', '600x600bb') : '';
+}
+
+// Deezer's API has no CORS headers but supports JSONP.
+function jsonp(url) {
+  return new Promise((ok, fail) => {
+    const cb = 'jp' + Math.random().toString(36).slice(2), s = document.createElement('script');
+    const done = () => { clearTimeout(t); delete window[cb]; s.remove(); };
+    const t = setTimeout(() => { done(); fail(new Error('timeout')); }, 8000);
+    window[cb] = d => { done(); ok(d); };
+    s.onerror = () => { done(); fail(new Error('jsonp')); };
+    s.src = url + (url.includes('?') ? '&' : '?') + 'output=jsonp&callback=' + cb;
+    document.head.appendChild(s);
+  });
+}
+async function fromDeezer(artist, title) {
+  const d = await throttled('deezer', () => jsonp(`https://api.deezer.com/search/album?q=${encodeURIComponent(`artist:"${artist}" album:"${title}"`)}`), 300);
+  if (d.error) throw new Error('deezer');
+  const hit = bestMatch(d.data || [], artist, title, x => x.artist?.name, x => x.title);
+  return hit?.cover_big || hit?.cover_medium || '';
+}
+
+// Album articles carry their cover as a non-free image; pilicense=any includes those.
+async function fromWikipedia(artist, title) {
+  const page = await guessWikiTitle(artist, title);
+  if (!page) return '';
+  const pg = Object.values((await getJSON(`${WIKI}action=query&prop=pageimages&pilicense=any&piprop=thumbnail&pithumbsize=500&redirects=1&titles=${encodeURIComponent(page)}`)).query.pages)[0];
+  return pg?.thumbnail?.source || '';
+}
+
+// Cover Art Archive only answers for the edition MusicBrainz picked; another edition often has a scan.
+async function fromOtherEditions(rgId) {
+  if (rgId.startsWith('dg-')) return '';
+  const { releases = [] } = await mb(`release?release-group=${rgId}&limit=100`, { gen });
+  const r = releases.find(x => x['cover-art-archive']?.front);
+  return r ? `https://coverartarchive.org/release/${r.id}/front-250` : '';
+}
+
+// Discogs: search hides images without a token, but the master/release itself includes them.
+const dgImage = m => ((m.images || []).find(i => i.type === 'primary') || m.images?.[0])?.uri || '';
+async function fromDiscogs(artist, title, rg) {
+  if (rg?.src === 'discogs') return dgImage(await dg(`${rg.dgType === 'master' ? 'masters' : 'releases'}/${rg.dgId}`, { gen }));
+  for (const type of ['master', 'release']) {
+    const res = await dg(`database/search?type=${type}&per_page=10&artist=${encodeURIComponent(artist)}&release_title=${encodeURIComponent(title)}`, { gen });
+    // Search titles look like "Artist - Title".
+    const hit = bestMatch(res.results || [], artist, title, x => x.title.split(' - ')[0], x => x.title.split(' - ').slice(1).join(' - '));
+    if (!hit) continue;
+    if (hit.cover_image && !hit.cover_image.includes('spacer.gif')) return hit.cover_image;
+    return dgImage(await dg(`${type}s/${hit.id}`, { gen }));
+  }
+  // Last try: a plain keyword search, which finds splits and releases credited to several artists.
+  const res = await dg(`database/search?per_page=10&q=${encodeURIComponent(artist + ' ' + title)}`, { gen });
+  const hit = bestMatch((res.results || []).filter(x => x.type === 'master' || x.type === 'release'), artist, title,
+    x => x.title.split(' - ')[0], x => x.title.split(' - ').slice(1).join(' - '));
+  if (!hit) return '';
+  if (hit.cover_image && !hit.cover_image.includes('spacer.gif')) return hit.cover_image;
+  return dgImage(await dg(`${hit.type}s/${hit.id}`, { gen }));
+}
+
+async function coverFallback(img, rgId) {
+  const card = img.parentElement, title = img.dataset.title, artist = state.artist.name;
+  const rg = state.releases.find(r => r.id === rgId);
+  img.remove();
+  const key = 'cover3:' + rgId;
+  let url = null;
+  try { url = localStorage.getItem(key); } catch {}
+  if (url === null) {
+    const sources = [() => fromItunes(artist, title), () => fromDeezer(artist, title), () => fromWikipedia(artist, title),
+      () => fromOtherEditions(rgId), () => fromDiscogs(artist, title, rg)];
+    if (rg?.src === 'discogs') sources.unshift(sources.pop());   // it's a Discogs release: ask Discogs directly first
+    let unsure = false;
+    for (const source of sources) {
+      if (!card.isConnected) return;   // re-rendered or navigated away: the new card will pick this up
+      try { url = await source(); } catch { unsure = true; url = ''; }
+      if (url) break;
+    }
+    // Only remember a miss if every source actually answered.
+    if (url || !unsure) try { localStorage.setItem(key, url); } catch {}
+  }
+  if (!url || !card.isConnected) return;
+  const i = new Image(); i.alt = ''; i.src = url; i.onerror = () => i.remove(); card.appendChild(i);
+}
+function setDiscogsToken() {
+  const t = prompt('Paste a Discogs personal access token to speed up Discogs lookups (members and covers for obscure releases).\nGet one free at discogs.com/settings/developers. It is stored only in this browser.\n\nLeave empty to remove it.', discogsToken());
+  if (t === null) return;
+  try { t.trim() ? localStorage.setItem('discogsToken', t.trim()) : localStorage.removeItem('discogsToken'); } catch {}
+  renderReleases();
+}
+
+/* ---------- Boot ---------- */
+location.hash.length > 1 ? load(location.hash.slice(1)) : renderHome();
+</script>
+</body>
+</html>
