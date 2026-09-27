@@ -443,7 +443,7 @@ function finalizeRels(list) {
     const b = e.periods.map(p => p.begin).filter(Boolean).sort()[0];
     const ends = e.periods.map(p => p.end).filter(Boolean).sort();
     const last = ends.length ? year(ends.at(-1)) : '';
-    e.span = !b && !last ? '' : (b ? year(b) : '?') + '–' + (e.active ? 'now' : last || '?');
+    e.span = !b && !last ? '' : !e.active && b && year(b) === last ? last : (b ? year(b) : '?') + '–' + (e.active ? 'now' : last || '?');   // "1998", not "1998–1998"
     e.first = b || '9999';
     e.instruments = [...new Set([...e.attrs].filter(a => !['original', 'founder', 'additional', 'minor', 'guest', 'touring'].includes(a))
       .map(normRole).filter(a => a && a !== 'performer'))];
@@ -1488,7 +1488,9 @@ function maybeBandCredits(st) {   // (name kept: called once releases and dates 
   loadBandCredits(st).catch(() => { if (st.bandCredits) st.bandCredits.state = 'done'; });
 }
 async function loadBandCredits(st) {
-  const records = st.releases.filter(r => ['Album', 'EP'].includes(relType(r))).slice(0, 15);
+  let records = st.releases.filter(r => ['Album', 'EP'].includes(relType(r)));
+  if (!records.length) records = st.releases;   // singles-only bands: their singles are the records
+  records = records.slice(0, 15);
   const bc = st.bandCredits = { state: 'running', done: 0, total: records.length, credited: 0, perRecord: [], people: new Map() };
   for (const rg of records) {
     const list = (await recordCredits(rg, {}, st.artist.name).catch(() => []))
@@ -1523,6 +1525,23 @@ function tallyBandCredits(st) {
 function finishBandCredits(st) {
   const bc = st.bandCredits;
   tallyBandCredits(st);
+  // People who play on at least half of the band's own records are in the band, even if no member list names them
+  // (Raymond: Discogs lists 1 member, its single credits 3). Wikipedia's "additional musicians" never count.
+  const counts = new Map();
+  for (const x of bc.perRecord) for (const p of x.list) {
+    if (!p.play.length || p.group === 'extra') continue;
+    const key = creditKey(st, p);
+    if (st.rels.some(r => r.id === key)) continue;
+    const c = counts.get(key) || { p, n: 0 }; c.n++; counts.set(key, c);
+  }
+  const need = Math.max(1, Math.ceil(bc.credited / 2));
+  const joined = [...counts.values()].filter(c => c.n >= need && !c.p.id.startsWith('n:'));
+  if (joined.length) {
+    st.rels = finalizeRels([...st.rels, ...joined.map(({ p }) => ({ id: p.id, name: p.name, type: 'Person', disambiguation: '',
+      periods: [], attrs: new Set(p.play), note: '' }))]);
+    if (!/album credits/.test(st.relSource || '')) st.relSource = [st.relSource || (st.artist.src === 'discogs' ? 'Discogs' : 'MusicBrainz'), 'album credits'].join(' + ');
+    tallyBandCredits(st);
+  }
   // Members with no instrument listed get their usual role across the records.
   for (const r of st.rels) { const e = bc.people.get(r.id); if (e && !r.instruments.length) r.instruments = topRoles(e.play, 2); }
   // Members with no dates anywhere: take their years from the records they played on (first to last).
@@ -1794,7 +1813,11 @@ function artistBlurb(st) {
   const genre = (a.genres || []).sort((x, y) => y.count - x.count)[0]?.name;
   if (st.kind !== 'band') return [genre && `${genre[0].toUpperCase() + genre.slice(1)} musician`, place && `from ${place}`].filter(Boolean).join(' ') + (genre || place ? '.' : '');
   const what = `${genre ? genre[0].toUpperCase() + genre.slice(1) + ' band' : 'Band'}${place ? ` from ${place}` : ''}`;
-  return year(ls.begin) ? `${what}, formed in ${year(ls.begin)}.` : genre || place ? what + '.' : '';
+  if (year(ls.begin)) return `${what}, formed in ${year(ls.begin)}.`;
+  // Nothing else known: say what the records say ("Band with 1 release, in 1998.").
+  const ys = (st.releases || []).map(r => year(r['first-release-date'])).filter(Boolean).sort(), n = st.releases?.length || 0;
+  if (n) return `${what} with ${n} release${n === 1 ? '' : 's'}${ys.length ? `, ${ys[0] === ys.at(-1) ? 'in ' + ys[0] : ys[0] + '–' + ys.at(-1)}` : ''}.`;
+  return genre || place ? what + '.' : '';
 }
 function infoCol(st, i) {
   const tiers = memberTiers(st);
@@ -2102,7 +2125,9 @@ function renderTimeline() {
   const all = rows.flatMap(r => r.bars);
   // With no dated stints at all, fall back to the band's own lifespan for the axis (or drop the axis).
   const y0 = Math.floor(Math.min(...all.map(b => b.start), rootStart ?? Infinity));
-  const y1 = Math.ceil(Math.max(...all.map(b => b.end), all.length || rootStart != null ? rootEnd : -Infinity));
+  // Run the axis to today only if someone's still in the band (or the band itself is); otherwise stop at the last stint.
+  const open = state.rels.some(r => r.periods.some(p => (p.begin || p.end) && !p.end && !p.ended)) || (rootStart != null && !(state.artist['life-span'] || {}).ended);
+  const y1 = Math.ceil(Math.max(...all.map(b => b.end), open || (state.artist['life-span'] || {}).ended ? rootEnd : -Infinity));
   const hasAxis = isFinite(y0) && isFinite(y1) && y1 > y0;
   const W = el.clientWidth, labelW = Math.min(170, W * 0.32), rowH = 26, axisH = hasAxis ? 26 : 4;
   const H = rows.length * rowH + axisH;

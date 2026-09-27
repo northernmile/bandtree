@@ -63,6 +63,8 @@ and JS, with D3 from cdnjs used for the timeline only.
   records) on the band page, a stand-in line-up for records with no credits (nearest credited record), and years
   for members with no dates: one stint per run of records (a gap over 3 years starts a new one), drawn faded on
   the timeline. (Line-up cards were tried and dropped in favour of the timeline.)
+- **Members from records.** Anyone who plays on at least half of a band's credited records joins its member list
+  (Wikipedia's "additional musicians" never do). Singles-only bands use their singles as the records.
 - **Core members.** `memberTiers()` splits bands of 5+ members: core = founder (marked, or joined the year the band
   formed), 5+ years in the band, or on 20%+ of the credited records (min 2). Core are ranked first; everyone else
   folds under "Also in the band". Heuristic — someone who mostly played live can land in the fold.
