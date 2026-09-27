@@ -1197,14 +1197,14 @@ function openTree(st) {
     const before = f < 9999 && e.members.every(r => f < joinYear(r));
     return { ...e, first: f, before };
   }).sort((a, b) => a.first - b.first || a.l.name.localeCompare(b.l.name)).slice(0, 40);
-  const card = e => `<div class="tb side" data-band="${esc(e.l.id)}" data-m="${esc(e.members.map(m => m.id).join(' '))}" data-before="${e.before ? 1 : ''}">
+  const card = e => `<div class="tb side" data-first="${e.first}" data-band="${esc(e.l.id)}" data-m="${esc(e.members.map(m => m.id).join(' '))}" data-before="${e.before ? 1 : ''}">
     <b>${esc(e.l.name)}</b><small>${yearsOf(e.l).html || 'dates unknown'}</small><i>${esc(e.members.map(m => m.name).join(', '))}</i></div>`;
   const el = document.getElementById('tree');
   el.innerHTML = `<div class="treepage"><div class="treebar"><button data-t="print">Print</button><button data-t="close" aria-label="Close">✕</button></div>
     <h2>${esc(st.artist.name)}</h2><p class="tsub">A family tree: line-ups down the middle, members' other bands either side.</p>
     <div class="treegrid" id="treegrid"><svg class="tlines" id="tlines"></svg>
       <div class="tcol"><h4>Before</h4>${list.filter(e => e.before).map(card).join('') || '<p class="tnone">—</p>'}</div>
-      <div class="tcol mid"><h4>${esc(st.artist.name)}</h4>${boxes.map((b, i) => `<div class="tb lineup" data-i="${i}">
+      <div class="tcol mid"><h4>${esc(st.artist.name)}</h4>${boxes.map((b, i) => `<div class="tb lineup" data-i="${i}" data-from="${b.from}" data-to="${b.to}">
           <small>${esc(b.label)}</small>${b.members.map(m => `<span data-mid="${esc(m.id)}">${esc(m.name)}<em>${esc(m.instruments.slice(0, 2).join(', '))}</em></span>`).join('')}</div>`).join('')}
         ${undated.length ? `<div class="tb lineup undated"><small>dates unknown</small>${undated.map(m => `<span data-mid="${esc(m.id)}">${esc(m.name)}<em>${esc(m.instruments.slice(0, 2).join(', '))}</em></span>`).join('')}</div>` : ''}</div>
       <div class="tcol"><h4>After &amp; alongside</h4>${list.filter(e => !e.before).map(card).join('') || '<p class="tnone">—</p>'}</div>
@@ -1228,8 +1228,10 @@ function drawTreeLines() {
   for (const box of grid.querySelectorAll('.tb.side')) {
     const B = box.getBoundingClientRect(), before = !!box.dataset.before;
     for (const mid of box.dataset.m.split(' ')) {
-      const spans = [...grid.querySelectorAll(`.tb.lineup [data-mid="${CSS.escape(mid)}"]`)];
-      const s = before ? spans[0] : spans.at(-1);
+      // Tie it to the line-up closest in time to when that band started (Rapeman 1987 -> the 1987 line-up, not today's).
+      const spans = [...grid.querySelectorAll(`.tb.lineup [data-mid="${CSS.escape(mid)}"]`)], f = +box.dataset.first;
+      const gap = sp => { const L = sp.closest('.tb'), a = +L.dataset.from || 0, b = +L.dataset.to || a; return f >= 9999 ? (before ? 0 : 1) * -a : f < a ? a - f : f > b ? f - b : 0; };
+      const s = f >= 9999 ? (before ? spans[0] : spans.at(-1)) : spans.sort((x, y) => gap(x) - gap(y))[0];
       if (!s) continue;
       const S = s.getBoundingClientRect();
       const x1 = (before ? S.left : S.right) - G.left, y1 = S.top + S.height / 2 - G.top;
