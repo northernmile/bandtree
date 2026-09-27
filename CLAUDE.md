@@ -55,6 +55,12 @@ and JS, with D3 from cdnjs used for the timeline only.
   to them with the names. Label pages (`renderLabel`): headline numbers, artist swimlanes (artists with 2+ records,
   best known first, laid out by arrival; a dot per record at its original year), then a cover wall of every record by
   year (release-group covers; click opens the album). Up to 500 releases read per label.
+- **Family maps (guided trails).** `#story:trail:<n>` now opens `renderFamily`: the trail route plus every member of
+  each route band and every band those people were in (`growBand`, max 90 bands). One column per route band, rows by
+  start year (`famYears`: one Wikidata POST for start/end/fame, then background MusicBrainz look-ups for the unknowns).
+  Faint curves = branches, bold gold = the route with the linking person's name. Hover a tile or a person to light up
+  shared-member bands; tap a tile for a side panel (photo, intro, people, Listen/Open, "Grow this branch", "Next stop").
+  The old step-by-step page is `#story:steps:<n>`.
 - **Story pages.** `#story:trail:<n>` and `#story:connect:<id>:<id>` (`renderStory`). Trails use `TRAILS` waypoints,
   each hop verified with `findPath` (`trailPath`). Each band is a big stop (photo, years, 2-sentence Wikipedia intro,
   Listen / Open / "Other members' bands" side branches via `showBranches`); people between bands are link cards with

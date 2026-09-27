@@ -385,6 +385,52 @@
   .wcover span small { display: block; font-weight: 400; color: var(--muted); margin-top: 3px; }
   .wcover:hover img { transform: scale(1.06); opacity: .35; } .wcover:hover { border-color: var(--accent); } .wcover:hover span { z-index: 1; text-shadow: 0 1px 3px #000; }
   @media (max-width: 700px) { .lstats { grid-template-columns: repeat(2, 1fr); } .lane { grid-template-columns: 110px 1fr; } .wyear { grid-template-columns: 1fr; } .wcover { width: 80px; height: 80px; } }
+
+  /* Family maps */
+  .fam { max-width: 1240px; margin: 0 auto; padding-bottom: 90px; }
+  .fam > h1 { font-size: clamp(34px, 5vw, 56px); letter-spacing: -.035em; line-height: 1.02; margin: 6px 0 8px; }
+  .fam .lede { color: #c4c8d3; font-size: 17px; max-width: 700px; margin: 0 0 14px; }
+  .fviews { display: inline-flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 99px; margin-bottom: 14px; font-size: 13px; }
+  .fviews > * { padding: 5px 14px; border-radius: 99px; text-decoration: none; color: var(--muted); } .fviews .on { background: var(--text); color: #111; }
+  .fam .storybar { margin: 0 0 12px; position: static; }
+  .fpeople { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; margin-bottom: 18px; }
+  .fpeople a { padding: 3px 10px; border-radius: 99px; background: #5cc8ff14; border: 1px solid #5cc8ff33; cursor: pointer; color: var(--text); }
+  .fpeople a:hover { border-color: var(--person); } .fpeople small { color: var(--person); }
+  .fmap { position: relative; }
+  .flines { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; overflow: visible; }
+  .flines path { fill: none; }
+  .flines .br { stroke-width: 1.2; opacity: .28; stroke: var(--lc, #8b91a1); }
+  .flines .br.l0 { stroke: #ff5d73; } .flines .br.l1 { stroke: #ffcf5c; } .flines .br.l2 { stroke: #5cc8ff; } .flines .br.l3 { stroke: #93e39a; } .flines .br.l4 { stroke: #c79bff; } .flines .br.l5 { stroke: #ff9f5c; }
+  .flines .route { stroke: var(--accent); stroke-width: 4; opacity: .9; }
+  .flines .rtl { fill: var(--accent); font-size: 12px; font-weight: 700; paint-order: stroke; stroke: var(--bg); stroke-width: 4px; }
+  .flines .hl { stroke: var(--person); stroke-width: 2; stroke-dasharray: 5 4; }
+  .frow { display: grid; grid-template-columns: 64px repeat(var(--lanes), minmax(0, 1fr)); gap: 0 18px; border-top: 1px solid #ffffff0a; }
+  .frow.fhead { border: 0; position: sticky; top: 64px; z-index: 3; background: var(--bg); padding: 6px 0; }
+  .flane { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 2px solid; padding-bottom: 4px; }
+  .flane.l0 { border-color: #ff5d73; } .flane.l1 { border-color: #ffcf5c; } .flane.l2 { border-color: #5cc8ff; } .flane.l3 { border-color: #93e39a; } .flane.l4 { border-color: #c79bff; } .flane.l5 { border-color: #ff9f5c; }
+  .fy { font-size: 13px; font-weight: 700; color: var(--muted); padding-top: 14px; }
+  .fcell { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; align-content: flex-start; }
+  .ft { position: relative; z-index: 2; display: block; min-width: 118px; max-width: 190px; padding: 7px 10px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line);
+    cursor: pointer; text-decoration: none; transition: opacity .15s, border-color .15s; }
+  .ft b { display: block; font-size: 13px; line-height: 1.25; } .ft small { color: var(--muted); font-size: 11px; }
+  .ft.known b { font-size: 14.5px; }
+  .ft.seed { padding: 12px 14px 12px 40px; border: 2px solid var(--accent); background: #2a2616; min-width: 170px; }
+  .ft.seed b { font-size: 17px; } .fnum { position: absolute; left: 10px; top: 12px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #111;
+    font-style: normal; font-weight: 800; font-size: 12px; display: grid; place-items: center; }
+  .ft:hover { border-color: var(--accent); }
+  .fmap.dim .ft { opacity: .22; } .fmap.dim .ft.lit { opacity: 1; border-color: var(--person); }
+  .fpanel { position: fixed; top: 78px; right: 16px; bottom: 16px; width: 360px; z-index: 30; overflow: auto; padding: 18px; border-radius: 18px; background: #14161cf7;
+    border: 1px solid var(--line); box-shadow: 0 20px 60px #0009; transform: translateX(120%); transition: transform .3s; }
+  .fpanel.open { transform: none; }
+  .fpanel h2 { font-size: 28px; letter-spacing: -.03em; margin: 4px 0 6px; text-transform: none; color: var(--text); } .fpanel .sblurb { color: #c4c8d3; font-size: 14px; line-height: 1.55; }
+  .fx { position: absolute; top: 10px; right: 10px; z-index: 1; width: 30px; height: 30px; border-radius: 50%; border: 0; background: #0009; color: #fff; cursor: pointer; }
+  .fph { height: 190px; border-radius: 12px; overflow: hidden; background: #1b1d24; display: grid; place-items: center; font-size: 60px; font-weight: 800; color: #ffffff22; margin-bottom: 12px; }
+  .fph img { width: 100%; height: 100%; object-fit: cover; }
+  .fmem { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; } .fmem small { width: 100%; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+  .fmem a { padding: 3px 10px; border-radius: 99px; background: #5cc8ff14; border: 1px solid #5cc8ff33; cursor: pointer; font-size: 12.5px; } .fmem em { font-style: normal; color: var(--person); font-size: 11px; }
+  .fpanel .sacts { display: flex; flex-wrap: wrap; gap: 6px; }
+  @media (max-width: 800px) { .frow { grid-template-columns: 44px repeat(var(--lanes), minmax(0, 1fr)); gap: 0 8px; } .ft { min-width: 0; padding: 6px 8px; } .ft.seed { padding: 8px 8px 8px 32px; min-width: 0; }
+    .ft.seed b { font-size: 14px; } .fpanel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 70vh; transform: translateY(110%); } .fy { font-size: 11px; } }
   /* City and scene eras */
   .era { margin-top: 18px; position: relative; }
   .era .storybar { margin: 0 0 8px; }
@@ -1484,6 +1530,210 @@ async function renderStory(h) {
   addEventListener('scroll', mark, { passive: true }); mark();
   window.scrollTo(0, 0);
 }
+/* ---------- Family maps (guided trails) ----------
+   A trail's route plus everything around it: every member of each band on the route, and every band those people were
+   in. Bands are small tiles on a timeline running down the page (the year they started), in one column per route band
+   (a band sits in the column of the route band it branched from). Thin curves are the branches; the route itself is
+   drawn bold through numbered stops. Hover a tile to light up every band that shares a member with it; tap one for its
+   story in a side panel, where "Grow this branch" adds its members' other bands. #story:trail:<n>; the old step-by-step
+   page is #story:steps:<n>. */
+const FAM_MAX = 90;
+async function renderFamily(h) {
+  closeTool(); gen++; const my = gen, run = ++connectRun; leaveHome(); trail = []; cur = -1; renderCrumbs();
+  const stop = () => my !== gen || run !== connectRun, n = +h.split(':')[2], t = TRAILS[n];
+  if (!t) { main.innerHTML = '<div class="story"><p class="muted">No such trail.</p></div>'; return; }
+  main.innerHTML = `<div class="fam"><a class="bback" href="#browse">‹ Browse</a><div class="kicker">Guided trail · family map</div>
+    <h1>${esc(t.title)}</h1><p class="lede">${esc(t.blurb)}</p>
+    <div class="cprog"><i id="fprog" style="width:6%"></i></div><p class="muted" id="cmsg">Working out the trail…</p></div>`;
+  const msg = m => { const el = document.getElementById('cmsg'); if (el) el.textContent = m; };
+  const prog = p => { const el = document.getElementById('fprog'); if (el) el.style.width = Math.max(6, Math.min(98, p)) + '%'; };
+  const names = new Map(), kinds = new Map();
+  let path;
+  try { path = await trailPath(t, names, kinds, msg, stop); } catch (err) { if (!stop()) msg(`${err.message}. Our sources may be missing that link.`); return; }
+  if (!path || stop()) return;
+  const fam = { t, n, path, names, kinds, bands: new Map(), people: new Map(), stop };
+  const seeds = path.filter(id => kinds.get(id) !== 'person');
+  seeds.forEach((id, k) => fam.bands.set(id, { id, name: names.get(id), lane: k, seed: k, parent: null, via: '', members: new Set(), grown: false }));
+  // The people on the route belong to the bands either side of them, whatever the member lists say.
+  path.forEach((id, k) => { if (kinds.get(id) === 'person') famPerson(fam, id, names.get(id), [path[k - 1], path[k + 1]].filter(b => fam.bands.has(b))); });
+  for (let k = 0; k < seeds.length; k++) {
+    if (stop()) return;
+    await growBand(fam, seeds[k], (i, of, who) => { msg(`${names.get(seeds[k])}: ${who}…  ${fam.bands.size} bands so far`); prog(8 + 85 * (k + i / of) / seeds.length); });
+  }
+  if (stop()) return;
+  msg('Dating the bands…'); prog(96);
+  await famYears(fam);
+  if (stop()) return;
+  drawFamily(fam);
+  // Bands with no year yet: look them up in the background (MusicBrainz, one a second) and redraw once.
+  const unknown = [...fam.bands.values()].filter(b => !b.begin).slice(0, 30);
+  let changed = false;
+  for (const b of unknown) {
+    if (stop()) return;
+    const a = await getArtist(b.id).catch(() => null);
+    const y = year(a?.['life-span']?.begin) || a?.bands?.concat(a?.members || []).map(m => m.first).filter(f => f && f !== '9999').sort()[0]?.slice(0, 4);
+    if (y) { b.begin = y; changed = true; }
+  }
+  if (changed && !stop() && !document.getElementById('fpanel')?.classList.contains('open')) { const y = scrollY; drawFamily(fam); scrollTo(0, y); }
+}
+function famPerson(fam, id, name, bandIds) {
+  const p = fam.people.get(id) || { id, name, bands: new Set() };
+  fam.people.set(id, p);
+  for (const b of bandIds) { p.bands.add(b); fam.bands.get(b)?.members.add(id); }
+  return p;
+}
+async function growBand(fam, bandId, tick = () => {}) {
+  const home = fam.bands.get(bandId);
+  if (!home || home.grown) return;
+  home.grown = true;
+  const band = await getArtist(bandId).catch(() => null);
+  const members = (band?.members || []).filter(m => !m.id.includes(':')).slice(0, 14);
+  for (let i = 0; i < members.length; i++) {
+    if (fam.stop()) return;
+    const m = members[i];
+    tick(i, members.length, m.name);
+    famPerson(fam, m.id, m.name, [bandId]);
+    const p = await getArtist(m.id).catch(() => null);
+    const theirs = (p?.bands || []).filter(b => !b.id.includes(':')).sort(byCareer).slice(0, 14);
+    for (const b of theirs) {
+      if (!fam.bands.has(b.id)) {
+        if (fam.bands.size >= FAM_MAX) continue;
+        fam.bands.set(b.id, { id: b.id, name: b.name, lane: home.lane, seed: -1, parent: bandId, via: m.name, members: new Set(), grown: false,
+          guess: b.first && b.first !== '9999' ? b.first.slice(0, 4) : '' });
+      }
+      famPerson(fam, m.id, m.name, [b.id]);
+    }
+  }
+}
+// Each band's own start and end years, and how well known it is, in one Wikidata query.
+async function famYears(fam) {
+  const ids = [...fam.bands.keys()].filter(id => !fam.bands.get(id).dated);
+  if (!ids.length) return;
+  const q = `SELECT ?mbid ?s ?e ?n WHERE { VALUES ?mbid { ${ids.map(x => `"${x}"`).join(' ')} } ?b wdt:P434 ?mbid; wikibase:sitelinks ?n.
+    OPTIONAL { ?b wdt:P571 ?s } OPTIONAL { ?b wdt:P576 ?e } }`;
+  const d = await fetch('https://query.wikidata.org/sparql', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/sparql-results+json' },
+    body: 'query=' + encodeURIComponent(q) }).then(r => r.ok ? r.json() : null).catch(() => null);
+  for (const r of d?.results?.bindings || []) {
+    const b = fam.bands.get(r.mbid.value); if (!b) continue;
+    const s = r.s?.value.slice(0, 4), e = r.e?.value.slice(0, 4);
+    if (s && (!b.begin || s < b.begin)) b.begin = s;
+    if (e) b.end = e;
+    b.fame = Math.max(b.fame || 0, +r.n.value);
+  }
+  // The rest: MusicBrainz's dates if we already have the band loaded, else when the member joined.
+  for (const id of ids) {
+    const b = fam.bands.get(id); b.dated = true;
+    if (!b.begin) { const ls = stages.get(id)?.artist?.['life-span']; b.begin = year(ls?.begin) || b.guess || ''; }
+  }
+}
+function drawFamily(fam) {
+  const { t, path, names, kinds, bands, people } = fam;
+  const seeds = path.filter(id => kinds.get(id) !== 'person'), L = seeds.length;
+  const rows = new Map();
+  for (const b of bands.values()) { const y = b.begin || '?'; if (!rows.has(y)) rows.set(y, []); rows.get(y).push(b); }
+  const years = [...rows.keys()].sort((a, b) => (a === '?') - (b === '?') || a.localeCompare(b));
+  const span = b => b.begin ? `${b.begin}${b.end ? (b.end === b.begin ? '' : `–${b.end}`) : '–'}` : '';
+  const tile = b => `<a class="ft${b.seed >= 0 ? ' seed' : ''}${(b.fame || 0) >= 20 ? ' known' : ''}" data-fid="${esc(b.id)}" style="--lane:${b.lane}">
+      ${b.seed >= 0 ? `<i class="fnum">${b.seed + 1}</i>` : ''}<b>${esc(b.name)}</b><small>${esc(span(b))}</small></a>`;
+  const linkText = k => { const p = path[k]; return kinds.get(p) === 'person' ? names.get(p) : ''; };
+  const people_ = [...people.values()].filter(p => p.bands.size > 1).sort((a, b) => b.bands.size - a.bands.size);
+  main.innerHTML = `<div class="fam">
+    <a class="bback" href="#browse">‹ Browse</a><div class="kicker">Guided trail · family map</div>
+    <h1>${esc(t.title)}</h1><p class="lede">${esc(t.blurb)} ${bands.size} bands, ${people.size} people.</p>
+    <div class="fviews"><span class="on">Map</span><a href="#story:steps:${fam.n}">Step by step</a></div>
+    <nav class="storybar" id="storybar">${path.map((id, k) => `${k ? '<span class="sbsep">›</span>' : ''}<a data-route="${esc(id)}" class="${kinds.get(id) === 'person' ? 'person' : 'band'}"><i></i>${esc(names.get(id))}</a>`).join('')}</nav>
+    <div class="fpeople"><span class="muted">In more than one band here:</span> ${people_.slice(0, 24).map(p => `<a data-person="${esc(p.id)}">${esc(p.name)} <small>${p.bands.size}</small></a>`).join('')}</div>
+    <div class="fmap" id="fmap" style="--lanes:${L}"><svg class="flines" id="flines"></svg>
+      <div class="frow fhead"><span></span>${seeds.map((id, k) => `<div class="flane l${k}">From ${esc(names.get(id))}</div>`).join('')}</div>
+      ${years.map(y => `<div class="frow"><span class="fy">${y === '?' ? 'Year unknown' : y}</span>${seeds.map((s, k) =>
+        `<div class="fcell">${rows.get(y).filter(b => b.lane === k).sort((a, b) => (b.seed >= 0) - (a.seed >= 0) || (b.fame || 0) - (a.fame || 0)).map(tile).join('')}</div>`).join('')}</div>`).join('')}
+    </div>
+    <p class="ecap" id="fcap"></p>
+    <aside class="fpanel" id="fpanel"></aside>
+  </div>`;
+  const map = document.getElementById('fmap'), svg = document.getElementById('flines'), cap = document.getElementById('fcap');
+  const el = id => map.querySelector(`[data-fid="${CSS.escape(id)}"]`);
+  const pt = (x, side) => { const r0 = map.getBoundingClientRect(), r = x.getBoundingClientRect();
+    return side === 'top' ? [r.left + r.width / 2 - r0.left, r.top - r0.top] : side === 'bottom' ? [r.left + r.width / 2 - r0.left, r.bottom - r0.top] : [r.left + r.width / 2 - r0.left, r.top + r.height / 2 - r0.top]; };
+  const curve = (a, b) => { const [x1, y1] = a, [x2, y2] = b, my = (y1 + y2) / 2; return `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`; };
+  const between = (a, b) => { const A = el(a), B = el(b); if (!A || !B) return null; const up = A.getBoundingClientRect().top <= B.getBoundingClientRect().top; return up ? curve(pt(A, 'bottom'), pt(B, 'top')) : curve(pt(A, 'top'), pt(B, 'bottom')); };
+  let base = '';
+  const drawBase = () => {
+    svg.setAttribute('width', map.scrollWidth); svg.setAttribute('height', map.scrollHeight);
+    let s = '';
+    for (const b of bands.values()) if (b.parent) { const d = between(b.parent, b.id); if (d) s += `<path class="br l${b.lane}" d="${d}"/>`; }
+    for (let k = 0; k + 1 < seeds.length; k++) {
+      const d = between(seeds[k], seeds[k + 1]); if (!d) continue;
+      const via = path.slice(path.indexOf(seeds[k]) + 1, path.indexOf(seeds[k + 1])).map(id => names.get(id)).join(', ');
+      s += `<path class="route" id="rt${k}" d="${d}"/><text class="rtl"><textPath href="#rt${k}" startOffset="50%" text-anchor="middle">${esc(via)}</textPath></text>`;
+    }
+    base = s; svg.innerHTML = s;
+  };
+  const clear = () => { map.classList.remove('dim'); map.querySelectorAll('.lit').forEach(x => x.classList.remove('lit')); svg.innerHTML = base; cap.classList.remove('show'); };
+  // Light up a set of bands, with lines from a centre tile if there is one.
+  const light = (ids, from, text) => {
+    clear(); map.classList.add('dim');
+    let s = base;
+    for (const id of ids) { const x = el(id); if (!x) continue; x.classList.add('lit'); if (from && id !== from) { const d = between(from, id); if (d) s += `<path class="hl" d="${d}"/>`; } }
+    svg.innerHTML = s; cap.innerHTML = text; cap.classList.add('show');
+  };
+  const shareWith = id => { const b = bands.get(id), out = new Map(); for (const pid of b.members) for (const o of people.get(pid)?.bands || []) if (o !== id) { if (!out.has(o)) out.set(o, []); out.get(o).push(people.get(pid).name); } return out; };
+  map.addEventListener('mouseover', e => {
+    const x = e.target.closest('[data-fid]'); if (!x) return;
+    const id = x.dataset.fid, sh = shareWith(id);
+    const who = [...new Set([...sh.values()].flat())];
+    light([id, ...sh.keys()], id, `<b>${esc(bands.get(id).name)}</b>${who.length ? ` · shares ${esc(who.slice(0, 6).join(', '))}${who.length > 6 ? '…' : ''} with ${sh.size} band${sh.size === 1 ? '' : 's'} here` : ''}`);
+  });
+  map.addEventListener('mouseleave', clear);
+  const personLight = pid => { const p = people.get(pid); if (!p) return; const ids = [...p.bands].sort((a, b) => (bands.get(a).begin || '9').localeCompare(bands.get(b).begin || '9'));
+    clear(); map.classList.add('dim'); let s = base;
+    ids.forEach((id, k) => { el(id)?.classList.add('lit'); if (k) { const d = between(ids[k - 1], id); if (d) s += `<path class="hl" d="${d}"/>`; } });
+    svg.innerHTML = s; cap.innerHTML = `<b>${esc(p.name)}</b> · ${ids.map(id => esc(bands.get(id).name)).join(' › ')}`; cap.classList.add('show'); };
+  const root = main.querySelector('.fam');
+  root.addEventListener('mouseover', e => { const p = e.target.closest('[data-person]'); if (p) personLight(p.dataset.person); const r = e.target.closest('[data-route]'); if (r && kinds.get(r.dataset.route) === 'person') personLight(r.dataset.route); });
+  root.addEventListener('mouseout', e => { if (e.target.closest('[data-person], [data-route]')) clear(); });
+  root.addEventListener('click', e => {
+    const f = e.target.closest('[data-fid]'), r = e.target.closest('[data-route]'), g = e.target.closest('[data-go]'), gr = e.target.closest('[data-grow]'), x = e.target.closest('[data-fclose]'), pl = e.target.closest('[data-play]');
+    if (x) return document.getElementById('fpanel').classList.remove('open');
+    if (g) { freshTrail = true; return go(g.dataset.go); }
+    if (pl) { renderPlayer('Finding previews…'); return artistSongs(pl.dataset.play).then(s => playQueue(s, 0, pl.dataset.play)).catch(() => renderPlayer('Couldn’t load previews just now.')); }
+    if (gr) return growHere(gr.dataset.grow, gr);
+    const id = f?.dataset.fid || (r && bands.has(r.dataset.route) ? r.dataset.route : null);
+    if (r && !id) return personLight(r.dataset.route);
+    if (id) { el(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); famPanel(fam, id); }
+  });
+  async function growHere(id, btn) {
+    btn.disabled = true; btn.textContent = 'Growing…';
+    await growBand(fam, id, (i, of, who) => { btn.textContent = `Growing… ${who}`; });
+    await famYears(fam);
+    if (fam.stop()) return;
+    const y = scrollY; drawFamily(fam); scrollTo(0, y); famPanel(fam, id);
+  }
+  requestAnimationFrame(drawBase);
+  const onResize = () => { if (!document.body.contains(map)) return removeEventListener('resize', onResize); drawBase(); };
+  addEventListener('resize', onResize);
+}
+async function famPanel(fam, id) {
+  const b = fam.bands.get(id), panel = document.getElementById('fpanel');
+  if (!b || !panel) return;
+  const seeds = fam.path.filter(x => fam.kinds.get(x) !== 'person');
+  const mem = [...b.members].map(pid => fam.people.get(pid)).filter(Boolean);
+  const next = b.seed >= 0 && b.seed + 1 < seeds.length ? seeds[b.seed + 1] : null;
+  panel.innerHTML = `<button class="fx" data-fclose aria-label="Close">✕</button>
+    <div class="fph" id="fph"><span>${esc(b.name[0] || '?')}</span></div>
+    <div class="kicker">${b.seed >= 0 ? `Stop ${b.seed + 1} of ${seeds.length}` : `Branch of ${esc(fam.bands.get(b.parent)?.name || '')} via ${esc(b.via)}`}${b.begin ? ` · ${esc(b.begin)}${b.end ? '–' + esc(b.end) : ''}` : ''}</div>
+    <h2>${esc(b.name)}</h2><p class="sblurb" id="fbl"></p>
+    ${mem.length ? `<div class="fmem"><small>People here</small>${mem.map(p => `<a data-person="${esc(p.id)}">${esc(p.name)}${p.bands.size > 1 ? ` <em>${p.bands.size} bands</em>` : ''}</a>`).join('')}</div>` : ''}
+    <div class="sacts"><button class="lbtn" data-play="${esc(b.name)}">▶ Listen</button><button class="lbtn" data-go="${esc(id)}">Open ${esc(b.name)} ›</button>
+      ${b.grown ? '' : `<button class="lbtn" data-grow="${esc(id)}">Grow this branch</button>`}
+      ${next ? `<button class="lbtn" data-fid="${esc(next)}">Next stop: ${esc(fam.names.get(next))} ›</button>` : ''}</div>`;
+  panel.classList.add('open');
+  const a = await getArtist(id).catch(() => null);
+  if (!a || panel.querySelector('h2')?.textContent !== b.name) return;
+  storyBlurb(id, a).then(t => { const el = document.getElementById('fbl'); if (el) el.textContent = t; }).catch(() => {});
+  artistImage(id).then(img => { const el = document.getElementById('fph'); if (img && el) el.innerHTML = `<img src="${esc(img.src)}" alt="">`; }).catch(() => {});
+}
+
 // Side branches: this band's other members and the bands they went on to (excluding the story's own stops).
 async function showBranches(k, path, names, btn) {
   const box = document.getElementById('br' + k);
@@ -1649,7 +1899,8 @@ function route(h) {
     return Promise.all([getArtist(c[1]), getArtist(c[2])]).then(([a, b]) => openConnect({ id: c[1], name: a.name }, { id: c[2], name: b.name }, true)).catch(() => openConnect());
   }
   if (/^browse/.test(h)) return renderBrowse(h);
-  if (/^story:/.test(h)) return renderStory(h);
+  if (/^story:trail:/.test(h)) return renderFamily(h);
+  if (/^story:/.test(h)) return renderStory(h.replace('story:steps:', 'story:trail:'));
   if (/^tree:/.test(h)) return routeTree(h.slice(5));
   return h ? load(h) : renderHome();
 }
