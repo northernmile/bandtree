@@ -16,7 +16,11 @@
   body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 Inter, system-ui, sans-serif; }
   a { color: inherit; }
   header { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
-    padding: 12px 20px; background: rgba(14,15,19,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    padding: 12px max(20px, calc((100% - var(--cw, 1360px)) / 2)); background: rgba(14,15,19,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  body:has(main > .browse) header { --cw: 1100px; }
+  body:has(main > .lin) header { --cw: 1080px; }
+  body:has(main > .fam) header { --cw: 1240px; }
+  body.home header { padding-left: calc(max(0px, (100% - 1400px) / 2) + 6vw); padding-right: calc(max(0px, (100% - 1400px) / 2) + 6vw); }
   .logo { font-weight: 800; letter-spacing: -.02em; font-size: 18px; white-space: nowrap; cursor: pointer; }
   .logo span { color: var(--band); }
   .search { position: relative; flex: 1; max-width: 560px; }
@@ -298,8 +302,10 @@
   .rel > button.on .cover { outline: 2px solid var(--accent); outline-offset: 2px; }
   #crumbs a i.album { background: var(--accent); border-radius: 1px; transform: rotate(45deg); width: 6px; height: 6px; }
   /* Header button + tool sheets (connection finder, browse) */
-  .hbtn { margin-left: auto; font-size: 12.5px; padding: 8px 12px; border-radius: 99px; background: #ffffff10; border-color: #ffffff22; white-space: nowrap; }
+  .hnav { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .hbtn { font-size: 12.5px; padding: 8px 12px; border-radius: 99px; background: #ffffff10; border-color: #ffffff22; white-space: nowrap; }
   .hbtn:hover { border-color: var(--accent); color: var(--accent); }
+  a.hbtn { color: var(--text); text-decoration: none; border: 1px solid #ffffff22; line-height: normal; }
   .toolsheet { max-width: 720px; }
   .cpick { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: start; margin: 8px 0 14px; }
   .cto { color: var(--muted); padding-top: 11px; font-size: 13px; }
@@ -322,7 +328,7 @@
   .clink { color: var(--muted); }
   .cacts { display: flex; gap: 8px; margin-top: 18px; }
   .hbtn .short { display: none; }
-  @media (max-width: 640px) { .cpick { grid-template-columns: 1fr; } .cto { padding: 0; } .hbtn { margin-left: auto; }
+  @media (max-width: 640px) { .cpick { grid-template-columns: 1fr; } .cto { padding: 0; } .hnav { margin-left: auto; }
     .hbtn .long { display: none; } .hbtn .short { display: inline; }
     header .search { order: 5; flex-basis: 100%; max-width: none; } }
   /* Listen as you browse */
@@ -604,9 +610,8 @@
     <input id="q" placeholder="Search any band or musician…" autocomplete="off">
     <div id="results"></div>
   </div>
-  <a class="hlink" href="#browse">Browse</a>
   <div class="status" id="status"></div>
-  <button class="hbtn" id="connectBtn" onclick="openConnect()"><span class="long">How are these connected?</span><span class="short">Connect two artists</span></button>
+  <nav class="hnav"><a class="hbtn" href="#browse">Browse</a><button class="hbtn" id="connectBtn" onclick="openConnect()"><span class="long">Six degrees</span><span class="short">Six degrees</span></button></nav>
 </header>
 <main id="main"></main>
 <div class="tip navtip" id="navtip"></div>
@@ -1030,7 +1035,7 @@ function artistPicker(box, initial, onPick) {
 function openConnect(from, to, autorun) {
   const here = stages.get(trail[cur]?.id);
   from = from || (here?.artist && here.kind !== 'album' ? { id: here.id, name: here.artist.name } : null);
-  openTool(`<h3>How are these connected?</h3><p class="muted">Pick two bands or musicians. We'll find the shortest chain of shared members between them.</p>
+  openTool(`<h3>Six degrees</h3><p class="muted">Pick two bands or musicians. We'll find the shortest chain of shared members between them.</p>
     <div class="cpick"><div class="ap" id="apA"></div><span class="cto">to</span><div class="ap" id="apB"></div></div>
     <button class="cgo" id="cgo">Find the connection</button><div id="cout"></div>`);
   const A = document.getElementById('apA'), B = document.getElementById('apB');
