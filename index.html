@@ -309,6 +309,26 @@
   .clink { color: var(--muted); }
   .cacts { display: flex; gap: 8px; margin-top: 18px; }
   @media (max-width: 640px) { .cpick { grid-template-columns: 1fr; } .cto { padding: 0; } .hbtn { margin-left: 0; } }
+  /* Listen as you browse */
+  .lbtn { margin-top: 14px; font-size: 12.5px; padding: 7px 14px; border-radius: 99px; background: #ffffff10; border-color: #ffffff22; }
+  .lbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .lbtn.inline { margin-top: 0; padding: 8px 14px; font-size: 13px; font-weight: 600; }
+  .tracks .trk { cursor: pointer; }
+  .tracks .trk:hover { background: #ffffff08; }
+  .tracks .trk .tplay { flex: none; width: 18px; color: var(--muted); opacity: 0; font-size: 11px; }
+  .tracks .trk:hover .tplay { opacity: 1; color: var(--accent); }
+  .player { position: fixed; right: 18px; bottom: 18px; z-index: 40; display: none; align-items: center; gap: 10px; max-width: min(460px, calc(100vw - 36px));
+    padding: 10px 12px; border-radius: 14px; background: #171920f2; border: 1px solid var(--line); box-shadow: 0 16px 50px #000b; backdrop-filter: blur(8px); }
+  .player.on { display: flex; }
+  .player img { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; flex: none; }
+  .player .pt { min-width: 0; flex: 1; }
+  .player .pt b, .player .pt small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player .pt b { font-size: 13px; } .player .pt small { font-size: 11.5px; color: var(--muted); }
+  .player .pbar { height: 3px; border-radius: 2px; background: #ffffff14; margin-top: 6px; overflow: hidden; }
+  .player .pbar i { display: block; height: 100%; width: 0; background: var(--accent); }
+  .player button { flex: none; width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 12px; }
+  .player .psrc { position: absolute; right: 12px; top: -20px; font-size: 10.5px; color: var(--muted); text-decoration: none; }
+  .player .pmsg { font-size: 13px; color: var(--muted); padding: 4px 6px; }
 </style>
 </head>
 <body>
@@ -806,6 +826,95 @@ function openPath(path, names, kinds) {
   try { sessionStorage.setItem('trail', JSON.stringify({ trail, cur })); } catch {}
   const last = path.at(-1);
   if (location.hash.slice(1) === last) load(last); else location.hash = last;
+}
+
+/* ---------- Listen as you browse ----------
+   30-second previews from Apple's public iTunes API. A band or musician page plays their best-known tracks; an album
+   page plays its tracks (or starts from the one you click). The little player keeps going while you click around. */
+const player = { queue: [], i: -1, audio: new Audio(), note: '' };
+const songOf = x => ({ url: x.previewUrl, title: x.trackName, artist: x.artistName, album: x.collectionName,
+  art: (x.artworkUrl100 || '').replace('100x100bb', '200x200bb'), link: x.trackViewUrl, n: x.trackNumber });
+async function itunesJSON(url) {
+  const r = await throttled('itunes', () => fetch(url), 1500);
+  if (!r.ok) throw new Error('itunes ' + r.status);
+  return r.json();
+}
+async function artistSongs(name) {
+  const d = await itunesJSON(`https://itunes.apple.com/search?entity=song&limit=60&term=${encodeURIComponent(name)}`);
+  const seen = new Set();
+  return d.results.filter(x => x.previewUrl && bare(x.artistName) === bare(name) && !seen.has(norm(x.trackName)) && seen.add(norm(x.trackName)))
+    .slice(0, 12).map(songOf);
+}
+async function albumSongs(artist, title) {
+  const hit = await itunesAlbum(artist, title).catch(() => null);
+  const order = list => list.sort((a, b) => (a.discNumber - b.discNumber) || (a.trackNumber - b.trackNumber)).map(songOf);
+  if (hit) {
+    const d = await itunesJSON(`https://itunes.apple.com/lookup?id=${hit.collectionId}&entity=song`);
+    const tracks = d.results.filter(x => x.wrapperType === 'track' && x.previewUrl);
+    if (tracks.length) return order(tracks);
+  }
+  // No album match (reissues are often titled "Goat (Remaster / Reissue)"): search songs and keep the first edition found.
+  const d = await itunesJSON(`https://itunes.apple.com/search?entity=song&limit=100&term=${encodeURIComponent(artist + ' ' + title)}`);
+  const mine = d.results.filter(x => x.previewUrl && bare(x.artistName) === bare(artist) && norm(x.collectionName).startsWith(norm(title)));
+  const ed = mine[0]?.collectionId;
+  return order(mine.filter(x => x.collectionId === ed));
+}
+function playQueue(list, start = 0, note = '') {
+  player.queue = list; player.i = start - 1; player.note = note;
+  if (!list.length) { player.audio.pause(); renderPlayer(`No previews found${note ? ` for ${note}` : ''}.`); return; }
+  playNext();
+}
+function playNext() {
+  player.i++;
+  const t = player.queue[player.i];
+  if (!t) { player.i = player.queue.length - 1; player.audio.pause(); renderPlayer(); return; }
+  player.audio.src = t.url;
+  player.audio.play().catch(() => {});
+  renderPlayer();
+}
+function renderPlayer(msg) {
+  let el = document.getElementById('player');
+  if (!el) { el = document.createElement('div'); el.id = 'player'; el.className = 'player'; document.body.appendChild(el); }
+  const t = player.queue[player.i];
+  el.classList.add('on');
+  if (msg || !t) { el.innerHTML = `<span class="pmsg">${esc(msg || 'Nothing playing.')}</span><button class="px" data-p="close" aria-label="Close">✕</button>`; bindPlayer(el); return; }
+  const playing = !player.audio.paused;
+  el.innerHTML = `${t.art ? `<img src="${esc(t.art)}" alt="">` : ''}<div class="pt"><b>${esc(t.title)}</b><small>${esc(t.artist)}${t.album ? ` · ${esc(t.album)}` : ''}</small>
+      <div class="pbar"><i id="pbar"></i></div></div>
+    <button data-p="toggle" aria-label="${playing ? 'Pause' : 'Play'}">${playing ? '❚❚' : '▶'}</button>
+    <button data-p="next" aria-label="Next"${player.i >= player.queue.length - 1 ? ' disabled' : ''}>⏭</button>
+    <a class="psrc" href="${esc(t.link || '#')}" target="_blank" rel="noopener">Preview · Apple Music</a>
+    <button class="px" data-p="close" aria-label="Close">✕</button>`;
+  bindPlayer(el);
+}
+function bindPlayer(el) {
+  el.onclick = e => {
+    const b = e.target.closest('[data-p]'); if (!b) return;
+    if (b.dataset.p === 'toggle') { player.audio.paused ? player.audio.play() : player.audio.pause(); }
+    if (b.dataset.p === 'next') playNext();
+    if (b.dataset.p === 'close') { player.audio.pause(); el.classList.remove('on'); }
+  };
+}
+player.audio.addEventListener('ended', playNext);
+player.audio.addEventListener('play', () => renderPlayer());
+player.audio.addEventListener('pause', () => { if (player.queue[player.i]) renderPlayer(); });
+player.audio.addEventListener('timeupdate', () => {
+  const bar = document.getElementById('pbar');
+  if (bar && player.audio.duration) bar.style.width = (player.audio.currentTime / player.audio.duration * 100) + '%';
+});
+async function listenTo(st, fromTrack) {
+  renderPlayer('Finding previews…');
+  try {
+    if (st.kind === 'album') {
+      const songs = await albumSongs(st.album.band?.name || '', st.rg.title);
+      let start = 0;
+      if (fromTrack) {
+        const k = songs.findIndex(s => norm(s.title) === norm(fromTrack.title) || norm(s.title).startsWith(norm(fromTrack.title)));
+        start = k >= 0 ? k : 0;
+      }
+      playQueue(songs, start, st.rg.title);
+    } else playQueue(await artistSongs(st.artist.name), 0, st.artist.name);
+  } catch { renderPlayer('Couldn’t reach Apple Music for previews just now.'); }
 }
 
 /* ---------- Routing ---------- */
@@ -1555,7 +1664,8 @@ function albumInfoCol(st, i) {
     <div class="blurb">${esc(st.about ? firstSentence(st.about.paras[0]) : `${year(rg['first-release-date']) ? year(rg['first-release-date']) + ' ' : ''}${relType(rg).toLowerCase()}${band ? ` by ${band.name}` : ''}.`.replace(/^./, c => c.toUpperCase()))}</div>
     <dl class="stats">${html}</dl>
     <div class="listen"><a class="am" target="_blank" rel="noopener" href="${esc(st.listen.am)}">Apple Music</a>
-      <a class="sp" target="_blank" rel="noopener" href="${esc(st.listen.sp)}">Spotify</a></div>
+      <a class="sp" target="_blank" rel="noopener" href="${esc(st.listen.sp)}">Spotify</a>
+      <button class="lbtn inline" data-listen>▶ Play previews</button></div>
     ${about}
     <button class="fwdcol" data-col="1">Credits · ${st.rels.length} ›</button>
     <div class="jumps"><a data-jump="lowerTimeline">Tracklist ↓</a><a data-jump="lowerDisco">Discography ↓</a></div>
@@ -1592,8 +1702,9 @@ function showAlbumLower(st) {
   const media = st.tracks || [], multi = media.length > 1;
   document.getElementById('timeline').innerHTML = st.tracks === null ? '<span class="muted">Loading tracklist…</span>'
     : `<ol class="tracks">${media.map((m, i) => (multi ? `<li class="disc">${esc(m.format || 'Disc')} ${i + 1}${m.title ? ' · ' + esc(m.title) : ''}</li>` : '') +
-      (m.tracks || []).map(t => `<li><span>${esc(t.number)}</span><span>${esc(t.title)}</span><span>${fmtLen(t.length)}</span></li>`).join('')).join('')
+      (m.tracks || []).map(t => `<li class="trk" data-track="${esc(t.title)}"><span>${esc(t.number)}</span><span>${esc(t.title)}</span><span class="tplay">▶</span><span>${fmtLen(t.length)}</span></li>`).join('')).join('')
       || '<li class="skel">No tracklist on file.</li>'}</ol>`;
+  document.querySelectorAll('#timeline .trk').forEach(li => li.onclick = () => listenTo(st, { title: li.dataset.track }));
   const band = st.album.band;
   if (!band) return;
   document.getElementById('discoTitle').textContent = `Discography · ${band.name}`;
@@ -1869,6 +1980,7 @@ function shell() {
     const fwd = e.target.closest('[data-col]');
     if (fwd) { mobileCol = +fwd.dataset.col; return focusNav(); }
     if (jump) return document.getElementById(jump.dataset.jump).scrollIntoView({ behavior: 'smooth' });
+    if (e.target.closest('[data-listen]')) return listenTo(stages.get(trail[i].id));
     if (e.target.closest('[data-others]')) { const s = stages.get(trail[i].id); s.showOthers = !s.showOthers; return refreshStage(s.id); }
     if (e.target.closest('[data-more]')) { const s = stages.get(trail[i].id); s.aboutOpen = true; return refreshStage(s.id); }
     const alb = e.target.closest('[data-album]');
@@ -2020,6 +2132,7 @@ function infoCol(st, i) {
     <dl class="stats">${stats.map(([k, v, w]) => `<div${w ? ' class="wide"' : ''}><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
     ${genres.length ? `<div>${genres.map(g => `<span class="tag">${esc(g.name)}</span>`).join('')}</div>` : ''}
     <button class="fwdcol" data-col="1">${band ? 'Members' : 'Bands'} · ${total} ›</button>
+    <button class="lbtn" data-listen>▶ Listen</button>
     <div class="jumps"><a data-jump="lowerTimeline">Timeline ↓</a><a data-jump="lowerDisco">Discography ↓</a></div>
   </div>`;
 }
