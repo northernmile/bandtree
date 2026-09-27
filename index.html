@@ -46,6 +46,13 @@
     background: #1b1e26; box-shadow: 0 0 0 100vmax #1b1e26; clip-path: inset(0 -100vmax); }
   .lower .tip { background: #111318f0; }
   /* Column navigator */
+  .loadbar { position: absolute; top: 0; left: 0; right: 0; height: 8px; z-index: 5; pointer-events: none;
+    background: #ffffff0d; opacity: 0; transition: opacity .35s; }
+  .loadbar.on { opacity: 1; }
+  .loadbar i { display: block; height: 100%; width: 0; transition: width .4s ease;
+    background: linear-gradient(90deg, var(--band), var(--accent), var(--band)); background-size: 200% 100%; animation: loadshine 1.2s linear infinite; }
+  @keyframes loadshine { from { background-position: 200% 0; } to { background-position: 0 0; } }
+  @media (prefers-reduced-motion: reduce) { .loadbar i { animation: none; } }
   .nav { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: var(--panel);
     transition: height .45s cubic-bezier(.2,.8,.2,1); min-height: 420px; }
   .track { display: flex; align-items: flex-start; transition: transform .55s cubic-bezier(.2,.8,.2,1); will-change: transform; }
@@ -368,7 +375,7 @@ function makeClient({ name, url, gap }) {
     }
     const key = name + ':' + path;
     const p = diskCache.get(key).then(hit => hit !== undefined ? hit : (() => {
-      pending++; setStatus();
+      pending++; batch++; setStatus();
       return new Promise((resolve, reject) => {
         const t = { path, opts, resolve, reject };
         opts.priority ? tasks.unshift(t) : tasks.push(t);
@@ -386,8 +393,18 @@ const dg = makeClient({ name: 'Discogs', gap: () => discogsToken() ? 1100 : 2500
   const t = discogsToken();
   return 'https://api.discogs.com/' + p + (t ? (p.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(t) : '');
 } });
+// Loading bar along the top of the band window: fills as this batch of lookups finishes, then fades out.
+let batch = 0, barTimer;
 function setStatus() {
   document.getElementById('status').textContent = pending ? `Fetching… ${pending} queued` : '';
+  const bar = document.getElementById('loadbar');
+  if (bar) {
+    clearTimeout(barTimer);
+    bar.firstElementChild.style.width = (batch ? Math.max(8, (batch - pending) / batch * 100) : 100) + '%';
+    if (pending) bar.classList.add('on');
+    else barTimer = setTimeout(() => { bar.classList.remove('on'); batch = 0; }, 400);
+  }
+  if (!pending && !document.getElementById('loadbar')) batch = 0;
 }
 
 const lookup = (id, o) => mb(`artist/${id}?inc=artist-rels+genres+url-rels`, o);
@@ -1092,7 +1109,7 @@ function normRole(x) {
   const r = String(x || '').toLowerCase().replace(/\(.*?\)|\[.*?\]/g, '').trim();
   if (!r) return '';
   if (/^(band|member|performer|musician|group member)$/.test(r)) return 'performer';
-  if (/background|backing|harmony/.test(r) && /voc|voice/.test(r)) return 'backing vocals';
+  if (/background|backing|harmony/.test(r) && (/voc|voice/.test(r) || /^(backing|background)$/.test(r))) return 'backing vocals';   // "backing and lead vocals" splits into "backing"
   if (/voc|voice|singer|lead vocal/.test(r)) return 'vocals';
   if (/double bass|upright bass|contrabass/.test(r)) return 'double bass';
   if (/bass/.test(r)) return 'bass';
@@ -1530,7 +1547,7 @@ async function mergeMembers(st) {
 
 function shell() {
   main.innerHTML = `
-    <section style="margin-top:0"><nav id="crumbs"></nav><div class="nav" id="nav"><div class="track" id="track"></div></div></section>
+    <section style="margin-top:0"><nav id="crumbs"></nav><div class="nav" id="nav"><div class="loadbar" id="loadbar"><i></i></div><div class="track" id="track"></div></div></section>
     <div class="lower"><section id="lowerTimeline" style="margin-top:0"><h2><span id="tlTitle"></span> <b id="tlCount"></b></h2>
       <div class="timewrap"><div id="timeline"></div><div class="tip" id="tip"></div><div class="tlegend" id="tlegend"></div></div></section>
     <section id="lowerDisco"><h2 style="display:flex;justify-content:space-between">
@@ -2073,8 +2090,11 @@ const fmtDate = d => {
 const getJSON = async u => {
   const hit = await diskCache.get(u);
   if (hit !== undefined) return hit;
-  const r = await fetch(u); if (!r.ok) throw new Error(r.status);
-  const d = await r.json(); diskCache.set(u, d); return d;
+  pending++; batch++; setStatus();
+  try {
+    const r = await fetch(u); if (!r.ok) throw new Error(r.status);
+    const d = await r.json(); diskCache.set(u, d); return d;
+  } finally { pending--; setStatus(); }
 };
 const WIKI = 'https://en.wikipedia.org/w/api.php?format=json&origin=*&';
 const WD = 'https://www.wikidata.org/w/api.php?format=json&origin=*&';
