@@ -49,6 +49,10 @@ and JS, with D3 from cdnjs used for the timeline only.
 - **Browse.** `#browse` index of curated labels / cities / styles plus free search; `#browse:<type>:<name>` lists
   artists: label = its releases on MusicBrainz; city = Wikidata "location of formation" + MusicBrainz area search
   (untagged results dropped); scene = MusicBrainz tag in the artist's top 3. Ranked by Wikipedia language count.
+  City and scene pages (`renderEras`) group bands by the decade they formed with a sticky decade strip; per decade
+  the top 3 (if well known) get big photo cards, the next 6 medium, the rest small. `sharedMembers()` (one Wikidata
+  SPARQL, sent as POST because the ID list is too long for a URL) badges bands that shared members; hover draws lines
+  to them with the names. Label pages still use the plain grid.
 - **Story pages.** `#story:trail:<n>` and `#story:connect:<id>:<id>` (`renderStory`). Trails use `TRAILS` waypoints,
   each hop verified with `findPath` (`trailPath`). Each band is a big stop (photo, years, 2-sentence Wikipedia intro,
   Listen / Open / "Other members' bands" side branches via `showBranches`); people between bands are link cards with

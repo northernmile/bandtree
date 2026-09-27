@@ -352,6 +352,39 @@
   .bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 18px; }
   .bcard { display: block; padding: 12px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); cursor: pointer; text-decoration: none; }
   .bcard:hover { border-color: var(--accent); }
+  /* City and scene eras */
+  .era { margin-top: 18px; position: relative; }
+  .era .storybar { margin: 0 0 8px; }
+  .era .storybar small { color: var(--muted); font-weight: 400; font-size: 12px; }
+  .erabody { position: relative; }
+  .elines { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 3; overflow: visible; }
+  .elines path { fill: none; stroke: var(--accent); stroke-width: 2; opacity: .8; stroke-dasharray: 5 4; }
+  .decade { margin-top: 34px; }
+  .dhead { display: flex; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 14px; }
+  .dhead h2 { font-size: 44px; letter-spacing: -.04em; margin: 0; line-height: 1; text-transform: none; color: var(--text, #f2f3f6); }
+  .dhead span { color: var(--muted); font-size: 13px; }
+  .egrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; grid-auto-flow: dense; }
+  .ecard { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--panel);
+    border: 1px solid var(--line); cursor: pointer; text-decoration: none; transition: opacity .2s, border-color .2s, transform .2s; overflow: hidden; }
+  .ecard:hover { border-color: var(--accent); }
+  .ecard.t1 { grid-column: span 2; grid-row: span 2; padding: 0; min-height: 250px; }
+  .ecard.t1 .eimg { position: absolute; inset: 0; background: #1b1d24; }
+  .ecard.t1.noimg .eimg { background: radial-gradient(circle at 30% 20%, #ff5d7333, transparent 60%), linear-gradient(135deg, #22202b, #15161c); }
+  .ecard.t1 .eimg img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(.9); }
+  .ecard.t1 .etxt { position: relative; padding: 40px 16px 14px; background: linear-gradient(transparent, #000c); }
+  .ecard.t1 b { font-size: 24px; letter-spacing: -.02em; } .ecard.t1 small { color: #d6d9e0; }
+  .ecard.t2 { grid-column: span 2; min-height: 92px; } .ecard.t2 b { font-size: 18px; }
+  .ecard.t3 b { font-size: 14px; }
+  .ecard b { display: block; } .ecard small { color: var(--muted); font-size: 12px; }
+  .elink { position: absolute; top: 8px; right: 10px; font-style: normal; font-size: 11px; color: var(--person); background: #0e0f13cc; padding: 2px 7px; border-radius: 99px; }
+  .elink:empty { display: none; }
+  .erabody.dim .ecard { opacity: .25; } .erabody.dim .ecard.lit { opacity: 1; border-color: var(--accent); }
+  .ecap { position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 20px); max-width: min(760px, 92vw); padding: 10px 16px; border-radius: 12px;
+    background: #16181ff2; border: 1px solid var(--line); font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 20; }
+  .ecap.show { opacity: 1; transform: translate(-50%, 0); } .ecap small { color: var(--muted); }
+  @media (max-width: 900px) { .egrid { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 600px) { .egrid { grid-template-columns: repeat(2, 1fr); } .ecard.t1 { min-height: 190px; } .dhead h2 { font-size: 34px; } }
+
   .bcard b { display: block; font-size: 14.5px; } .bcard small { color: var(--muted); font-size: 12px; }
   @media (max-width: 640px) { .hlink { order: 3; } .bsearch { flex-wrap: wrap; } }
   /* Guided trails */
@@ -1057,7 +1090,8 @@ function renderBrowse(h) {
     <h1>${esc(title)}</h1><p class="muted" id="bsub">Looking it up…</p><div class="bgrid" id="bgrid"></div></div>`;
   browseArtists(type, title).then(({ sub, list }) => {
     if (myGen !== gen) return;
-    document.getElementById('bsub').textContent = sub;
+    document.getElementById('bsub').textContent = sub.replace(', best known first.', ', by the decade they formed.');
+    if (type !== 'label' && list.length) return renderEras(list, myGen);
     document.getElementById('bgrid').innerHTML = list.length ? list.map(a => `<a class="bcard" data-go="${esc(a.id)}">
         <b>${esc(a.name)}</b><small>${esc(a.note)}</small></a>`).join('') : '<p class="muted">Nothing found.</p>';
     document.querySelectorAll('#bgrid [data-go]').forEach(el => el.onclick = () => { freshTrail = true; go(el.dataset.go); });
@@ -1085,7 +1119,7 @@ async function cityBands(name) {
   for (const b of d.results.bindings) {
     if (seen.has(b.mbid.value)) continue; seen.add(b.mbid.value);
     const y = b.s?.value.slice(0, 4), e = b.e?.value.slice(0, 4);
-    list.push({ id: b.mbid.value, name: b.l.value, note: y ? `${y}–${e || ''}` : '' });
+    list.push({ id: b.mbid.value, name: b.l.value, begin: y || '', note: y ? `${y}–${e || ''}` : '' });
   }
   list.city = s.search[0].label + (s.search[0].description ? ` (${s.search[0].description})` : '');
   return list;
@@ -1119,6 +1153,7 @@ async function browseArtists(type, name) {
       .filter(a => type !== 'scene' || (a.tags || []).sort((x, z) => z.count - x.count).slice(0, 3).some(t => norm(t.name) === norm(name)));
     list.forEach(a => {
       const y = year(a['life-span']?.begin), e = a['life-span']?.ended ? year(a['life-span']?.end) : '';
+      a.begin = y || '';
       a.note = [y && (e ? `${y}–${e}` : `${y}–`), type === 'city' ? (a.tags || []).sort((x, z) => z.count - x.count)[0]?.name : (a['begin-area'] || a.area)?.name].filter(Boolean).join(' · ') || a.disambiguation || '';
     });
     if (type === 'city') list = [...wd, ...list.filter(a => (a.tags || []).length && !wd.some(w => w.id === a.id))];   // untagged = not a band (Congress!)
@@ -1127,8 +1162,82 @@ async function browseArtists(type, name) {
   const fame = await fameOf(list.map(a => a.id));
   // On a label, how much they released there counts too (one split single shouldn't put Nirvana first on Touch and Go).
   const score = a => (fame.get(a.id) || 0) * (a.n ? Math.sqrt(a.n) : 1);
+  list.forEach(a => a.fame = fame.get(a.id) || 0);
   list.sort((a, b) => score(b) - score(a) || (b.n || 0) - (a.n || 0) || a.name.localeCompare(b.name));
-  return { sub, list: list.slice(0, 80) };
+  return { sub, list: list.slice(0, type === 'label' ? 80 : 120) };
+}
+
+/* ---------- City and scene pages as eras ----------
+   Bands grouped by the decade they formed, a sticky decade strip on top (same style as story pages). In each decade
+   the best known get big photo cards, the next few medium, the rest small. Bands that shared members are linked:
+   hover one and lines run to the others, with who they shared. One Wikidata query finds all the shared members. */
+async function sharedMembers(ids) {
+  const vals = ids.map(x => `"${x}"`).join(' ');
+  const q = `SELECT DISTINCT ?a ?b ?pl WHERE { VALUES ?a { ${vals} } VALUES ?b { ${vals} } ?x wdt:P434 ?a. ?y wdt:P434 ?b.
+    ?x (wdt:P527|^wdt:P463) ?p. ?y (wdt:P527|^wdt:P463) ?p. ?p wdt:P31 wd:Q5; rdfs:label ?pl. FILTER(LANG(?pl) = "en") FILTER(STR(?a) < STR(?b)) }`;
+  // POST: a hundred-odd IDs twice over is too long for a URL.
+  const d = await fetch('https://query.wikidata.org/sparql', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/sparql-results+json' },
+    body: 'query=' + encodeURIComponent(q) }).then(r => r.ok ? r.json() : null).catch(() => null);
+  const links = new Map();   // id -> Map(otherId -> [people])
+  const add = (a, b, p) => { if (!links.has(a)) links.set(a, new Map()); const m = links.get(a); m.set(b, [...new Set([...(m.get(b) || []), p])]); };
+  for (const r of d?.results?.bindings || []) { add(r.a.value, r.b.value, r.pl.value); add(r.b.value, r.a.value, r.pl.value); }
+  return links;
+}
+function renderEras(list, myGen) {
+  const box = document.getElementById('bgrid');
+  box.className = 'era';
+  const decades = new Map();
+  for (const a of list) { const d = a.begin ? `${a.begin.slice(0, 3)}0s` : 'Year unknown'; if (!decades.has(d)) decades.set(d, []); decades.get(d).push(a); }
+  const order = [...decades.keys()].sort((x, y) => (x === 'Year unknown') - (y === 'Year unknown') || x.localeCompare(y));
+  const card = (a, t) => `<a class="ecard t${t}" data-go="${esc(a.id)}" data-eid="${esc(a.id)}">${t === 1 ? `<span class="eimg" id="ei-${esc(a.id)}"></span>` : ''}
+      <span class="etxt"><b>${esc(a.name)}</b><small>${esc(a.note)}</small></span><em class="elink"></em></a>`;
+  box.innerHTML = `<nav class="storybar" id="erabar">${order.map(d => `<a data-dec="${esc(d)}" class="band"><i></i>${esc(d)} <small>${decades.get(d).length}</small></a>`).join('')}</nav>
+    <div class="erabody" id="erabody"><svg class="elines" id="elines"></svg>
+    ${order.map(d => { const bs = decades.get(d); return `<section class="decade" data-dec="${esc(d)}"><div class="dhead"><h2>${esc(d)}</h2>
+      <span>${bs.length} band${bs.length === 1 ? '' : 's'}</span></div>
+      <div class="egrid">${bs.map((a, i) => card(a, d === 'Year unknown' ? 3 : i < 3 && a.fame >= 8 ? 1 : i < 9 && a.fame >= 3 ? 2 : 3)).join('')}</div></section>`; }).join('')}
+    </div><p class="ecap" id="ecap"></p>`;
+  box.querySelectorAll('[data-go]').forEach(el => el.onclick = () => { freshTrail = true; go(el.dataset.go); });
+  const bar = document.getElementById('erabar');
+  bar.onclick = e => { const a = e.target.closest('[data-dec]'); if (a) box.querySelector(`section[data-dec="${a.dataset.dec}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  const secs = [...box.querySelectorAll('section.decade')];
+  const mark = () => {
+    if (!document.body.contains(box)) return removeEventListener('scroll', mark);
+    let on = secs[0]; for (const s of secs) if (s.getBoundingClientRect().top <= innerHeight * .35) on = s;
+    bar.querySelectorAll('a').forEach(a => a.classList.toggle('on', a.dataset.dec === on?.dataset.dec));
+  };
+  addEventListener('scroll', mark, { passive: true }); mark();
+  // Photos for the headliners, one at a time.
+  (async () => { for (const el of box.querySelectorAll('.eimg')) {
+    if (myGen !== gen) return;
+    const img = await artistImage(el.id.slice(3)).catch(() => null);
+    if (img) el.innerHTML = `<img src="${esc(img.src)}" alt="" loading="lazy">`; else el.closest('.ecard').classList.add('noimg');
+  } })();
+  // Shared members: badge on each card, lines on hover.
+  sharedMembers(list.map(a => a.id)).then(links => {
+    if (myGen !== gen) return;
+    const names = new Map(list.map(a => [a.id, a.name]));
+    box.querySelectorAll('[data-eid]').forEach(el => { const n = links.get(el.dataset.eid)?.size; if (n) { el.querySelector('.elink').textContent = `⟷ ${n}`; el.classList.add('linked'); } });
+    const body = document.getElementById('erabody'), svg = document.getElementById('elines'), cap = document.getElementById('ecap');
+    const clear = () => { body.classList.remove('dim'); box.querySelectorAll('.lit').forEach(x => x.classList.remove('lit')); svg.innerHTML = ''; cap.classList.remove('show'); };
+    body.addEventListener('mouseover', e => {
+      const el = e.target.closest('[data-eid]'); if (!el) return;
+      const m = links.get(el.dataset.eid); clear(); if (!m) return;
+      body.classList.add('dim'); el.classList.add('lit');
+      const r0 = body.getBoundingClientRect(), c = x => { const r = x.getBoundingClientRect(); return [r.left + r.width / 2 - r0.left, r.top + r.height / 2 - r0.top]; };
+      svg.setAttribute('width', body.scrollWidth); svg.setAttribute('height', body.scrollHeight);
+      const [x1, y1] = c(el); let paths = '';
+      for (const id of m.keys()) {
+        const o = box.querySelector(`[data-eid="${id}"]`); if (!o) continue;
+        o.classList.add('lit'); const [x2, y2] = c(o), my = (y1 + y2) / 2;
+        paths += `<path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}"/>`;
+      }
+      svg.innerHTML = paths;
+      cap.innerHTML = `<b>${esc(names.get(el.dataset.eid))}</b> shares members with ${[...m].map(([id, ps]) => `${esc(names.get(id))} <small>(${esc(ps.slice(0, 2).join(', '))})</small>`).join(', ')}`;
+      cap.classList.add('show');
+    });
+    body.addEventListener('mouseleave', clear);
+  });
 }
 
 /* ---------- Guided trails ----------
