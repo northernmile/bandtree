@@ -2954,8 +2954,9 @@ function sameName(a, b) {
   const x = norm(a).split(' '), y = norm(b).split(' ');
   if (!x[0] || !y[0]) return false;
   if (x.join(' ') === y.join(' ')) return true;
-  if (x.length < 2 || y.length < 2 || x.at(-1) !== y.at(-1)) return false;
-  const f = x[0], g = y[0];
+  if (x.length < 2 || y.length < 2) return false;
+  const f = x[0], g = y[0], lx = x.at(-1), ly = y.at(-1);
+  if (lx !== ly) return f === g && lx.length >= 5 && ly.length >= 5 && (lx.startsWith(ly) || ly.startsWith(lx)) && Math.abs(lx.length - ly.length) <= 2;
   return f === g || (NICK[f] && NICK[f] === NICK[g]) || (f.length === 1 && g[0] === f) || (g.length === 1 && f[0] === g);
 }
 async function wikidataMemberDates(bandQid, mbids) {
@@ -4226,7 +4227,7 @@ function stintsOf(r) {
   const { rootStart, rootEnd } = rootSpan();
   return r.periods.filter(p => p.begin || p.end).map(p => {
     const start = toYear(p.begin) ?? rootStart ?? toYear(p.end) - 1;
-    const end = toYear(p.end, true) ?? rootEnd;
+    const end = toYear(p.end, true) ?? (p.begin && !p.ended ? NOW : rootEnd);
     // No role on the stint or the member: use what they play on the records, so the bar isn't grey "Other".
     const own = p.attrs.filter(x => !['original', 'founder', 'additional', 'minor', 'guest', 'touring'].includes(String(x).toLowerCase()) && normRole(x) !== 'performer');   // "original" or "founder" alone isn't a role
     return { start, end: Math.max(end, start + 1 / 12), p, roles: rolesOf(own.length ? own : r.attrs.size ? [...r.attrs] : r.instruments || []) };
@@ -4262,7 +4263,7 @@ function renderTimeline() {
   // Run the axis to today only if someone's still in the band (or the band itself is); otherwise stop at the last stint.
   // (MusicBrainz often just leaves a band's end date blank, so "not ended" alone doesn't mean still active.)
   const open = state.rels.some(r => r.periods.some(p => (p.begin || p.end) && !p.end && !p.ended));
-  const y1_ = Math.ceil(Math.max(...all.map(b => b.end), open || (state.artist['life-span'] || {}).ended ? rootEnd : -Infinity));
+  const y1_ = Math.ceil(Math.max(...all.map(b => b.end), open ? NOW : (state.artist['life-span'] || {}).ended ? rootEnd : -Infinity));
   // Stretch to take in a record released up to 3 years after the last stint (the EP that came out after the split).
   const y1 = Math.max(y1_, ...albums.filter(a => a.at > y1_ && a.at <= y1_ + 3).map(a => Math.ceil(a.at)));
   const hasAxis = isFinite(y0) && isFinite(y1) && y1 > y0;
@@ -4294,12 +4295,12 @@ function renderTimeline() {
   // Gaps between one person's stints: keep the line going (same colours, faded) so it reads as one run with a break.
   const gaps = d => { const bs = [...d.bars].sort((a, b) => a.start - b.start); return bs.slice(1).map((b, k) => ({ from: bs[k].end, to: b.start, prev: bs[k], next: b, r: d.r })).filter(g => g.to > g.from); };
   const gap = row.selectAll('g.gap').data(gaps).join('g').attr('class', 'gap')
-    .on('mousemove', (ev, g) => showTip(ev, `<b>${esc(g.r.name)}</b><br><span class="muted">Break, ${Math.floor(g.from)}–${Math.floor(g.to)}</span>`)).on('mouseleave', hideTip)
+    .on('mousemove', (ev, g) => showTip(ev, `<b>${esc(g.r.name)}</b><br>${esc(g.r.periods.filter(p => p.begin || p.end).map(fmtPeriod).join(', '))}<br><span class="muted">Between reunions or breaks, ${Math.floor(g.from)}–${Math.floor(g.to)}</span>`)).on('mouseleave', hideTip)
     .on('click', (ev, g) => selectMember(g.r.id));
   gap.append('rect').attr('x', g => x(g.from)).attr('width', g => Math.max(0, x(g.to) - x(g.from))).attr('y', 5).attr('height', rowH - 10)
-    .attr('fill', g => g.prev.roles[0].color).attr('fill-opacity', .28);
+    .attr('fill', g => g.prev.roles[0].color).attr('fill-opacity', g => g.prev.p.fromRecords || g.prev.p.fromBand ? .45 : 1);
   gap.filter(g => g.prev.roles[1]).append('rect').attr('x', g => x(g.from)).attr('width', g => Math.max(0, x(g.to) - x(g.from)))
-    .attr('y', rowH / 2 - 2).attr('height', 4).attr('fill', g => g.prev.roles[1].color).attr('fill-opacity', .35);
+    .attr('y', rowH / 2 - 2).attr('height', 4).attr('fill', g => g.prev.roles[1].color).attr('fill-opacity', 1);
   const bar = row.selectAll('g.bar').data(d => d.bars.map(b => ({ ...b, r: d.r }))).join('g').attr('class', 'bar')
     .on('mousemove', (ev, b) => showTip(ev, `<b>${esc(b.r.name)}</b><br>${esc(fmtPeriod(b.p))}${b.p.fromRecords ? ' <span class="muted">(from album credits)</span>' : b.p.fromBand ? ' <span class="muted">(the band’s years)</span>' : ''}<br>
         <span class="muted">${esc(b.p.attrs.filter(a => !['original'].includes(a)).join(', ') || [...b.r.attrs].join(', ') || 'role unknown')}</span>`))
