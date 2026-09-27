@@ -3668,9 +3668,6 @@ function infoCol(st, i) {
   const current = st.rels.filter(r => r.periods.some(p => p.begin && !p.end && !p.ended)).length;
   let stats = band ? [
     ['Formed', [ls.ended && year(ls.end) && year(ls.begin) ? `${year(ls.begin)}–${year(ls.end)}` : year(ls.begin), place].filter(Boolean).join(' · ') || 'Unknown', 'wide'],
-    ['Members', total ? (tiers ? `${tiers.core.length} core · ${tiers.others.length} other${tiers.others.length === 1 ? '' : 's'}` : `${total}${current ? ` · ${current} current` : ''}`) : 'None listed'],
-    ['Albums', albums],
-    ['Connected bands', conn],
   ] : [
     ['Born', [fmtDate(ls.begin), place].filter(Boolean).join(' · ') || 'Unknown', 'wide'],
     ls.ended && ['Died', fmtDate(ls.end) || 'Yes'],
