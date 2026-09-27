@@ -329,6 +329,27 @@
   .player button { flex: none; width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 12px; }
   .player .psrc { position: absolute; right: 12px; top: -20px; font-size: 10.5px; color: var(--muted); text-decoration: none; }
   .player .pmsg { font-size: 13px; color: var(--muted); padding: 4px 6px; }
+  /* Browse */
+  .hlink { color: var(--muted); text-decoration: none; font-size: 13px; white-space: nowrap; }
+  .hlink:hover { color: var(--accent); }
+  .herobrowse { display: inline-block; margin-top: 12px; color: #c4c8d3; font-size: 14px; text-decoration: none; }
+  .herobrowse:hover { color: var(--accent); }
+  .browse { max-width: 1100px; margin: 0 auto; }
+  .browse h1 { font-size: 40px; letter-spacing: -.03em; margin: 6px 0 4px; }
+  .browse section { margin-top: 28px; }
+  .bback { color: var(--muted); text-decoration: none; font-size: 13px; }
+  .bback:hover { color: var(--accent); }
+  .bsearch { display: flex; gap: 8px; margin-top: 18px; max-width: 620px; }
+  .bsearch select, .bsearch input { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; }
+  .bsearch input { flex: 1; outline: none; } .bsearch input:focus { border-color: var(--band); }
+  .bchips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .bchips a { padding: 7px 14px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); text-decoration: none; font-size: 13.5px; }
+  .bchips a:hover { border-color: var(--accent); color: var(--accent); }
+  .bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 18px; }
+  .bcard { display: block; padding: 12px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); cursor: pointer; text-decoration: none; }
+  .bcard:hover { border-color: var(--accent); }
+  .bcard b { display: block; font-size: 14.5px; } .bcard small { color: var(--muted); font-size: 12px; }
+  @media (max-width: 640px) { .hlink { order: 3; } .bsearch { flex-wrap: wrap; } }
 </style>
 </head>
 <body>
@@ -338,6 +359,7 @@
     <input id="q" placeholder="Search any band or musician…" autocomplete="off">
     <div id="results"></div>
   </div>
+  <a class="hlink" href="#browse">Browse</a>
   <div class="status" id="status"></div>
   <button class="hbtn" id="connectBtn" onclick="openConnect()">How are these connected?</button>
 </header>
@@ -917,8 +939,118 @@ async function listenTo(st, fromTrack) {
   } catch { renderPlayer('Couldn’t reach Apple Music for previews just now.'); }
 }
 
+/* ---------- Browse by label, city or scene ----------
+   #browse is the index; #browse:label:<name>, #browse:city:<name>, #browse:scene:<tag> list artists from MusicBrainz
+   (a label's releases, bands formed in a place, bands tagged with a style), best known first — fame is how many
+   Wikipedia language editions cover them, one Wikidata query for the whole list. */
+const BROWSE = {
+  label: ['Touch and Go', 'Dischord', 'SST', 'Sub Pop', 'Drag City', 'Thrill Jockey', 'Kranky', 'Matador', 'Merge',
+    'Amphetamine Reptile', 'Quarterstick', 'Constellation', '4AD', 'Factory', 'Rough Trade', 'Warp', 'Creation',
+    'Blue Note', 'Impulse!', 'ECM', 'Stax', 'Motown', 'Def Jam', 'Rawkus', 'Stones Throw'],
+  city: ['Washington, D.C.', 'Chapel Hill', 'Louisville', 'Chicago', 'Olympia', 'Seattle', 'Minneapolis', 'San Diego',
+    'Austin', 'Boston', 'Athens, Georgia', 'Manchester', 'Bristol', 'Glasgow', 'Sheffield', 'Düsseldorf', 'Berlin', 'Montreal', 'Tokyo', 'Kingston'],
+  scene: ['post-rock', 'math rock', 'slowcore', 'emo', 'post-hardcore', 'hardcore punk', 'noise rock', 'shoegaze', 'dream pop',
+    'krautrock', 'no wave', 'riot grrrl', 'trip hop', 'idm', 'dub', 'afrobeat', 'tropicália', 'free jazz', 'jazz fusion', 'boom bap'],
+};
+const BROWSE_LABEL = { label: 'Labels', city: 'Cities', scene: 'Scenes & styles' };
+function renderBrowse(h) {
+  gen++; leaveHome(); trail = []; cur = -1; renderCrumbs();
+  const [, type, ...rest] = h.split(':'), name = rest.join(':');
+  if (!type) {
+    main.innerHTML = `<div class="browse"><h1>Browse</h1><p class="muted">Start from a label, a city or a scene instead of a band.</p>
+      <form class="bsearch" id="bsearch"><select id="btype">${Object.entries(BROWSE_LABEL).map(([k, v]) => `<option value="${k}">${v.replace(/s$/, '').replace('Scenes & style', 'Scene or style').replace('Citie', 'City')}</option>`).join('')}</select>
+        <input id="bq" placeholder="Any label, city or style…" autocomplete="off"><button class="cgo">Go</button></form>
+      ${Object.entries(BROWSE).map(([k, list]) => `<section><h2>${BROWSE_LABEL[k]}</h2><div class="bchips">${list.map(n =>
+        `<a href="#browse:${k}:${encodeURIComponent(n)}">${esc(n)}</a>`).join('')}</div></section>`).join('')}
+      ${typeof trailsHTML === 'function' ? trailsHTML() : ''}</div>`;
+    document.getElementById('bsearch').onsubmit = e => {
+      e.preventDefault();
+      const q = document.getElementById('bq').value.trim();
+      if (q) go(`browse:${document.getElementById('btype').value}:${encodeURIComponent(q)}`);
+    };
+    return;
+  }
+  const title = decodeURIComponent(name), myGen = gen;
+  main.innerHTML = `<div class="browse"><a class="bback" href="#browse">‹ Browse</a><div class="kicker">${esc(BROWSE_LABEL[type]?.replace(/s$/, '').replace('Citie', 'City').replace('Scenes & style', 'Scene'))}</div>
+    <h1>${esc(title)}</h1><p class="muted" id="bsub">Looking it up…</p><div class="bgrid" id="bgrid"></div></div>`;
+  browseArtists(type, title).then(({ sub, list }) => {
+    if (myGen !== gen) return;
+    document.getElementById('bsub').textContent = sub;
+    document.getElementById('bgrid').innerHTML = list.length ? list.map(a => `<a class="bcard" data-go="${esc(a.id)}">
+        <b>${esc(a.name)}</b><small>${esc(a.note)}</small></a>`).join('') : '<p class="muted">Nothing found.</p>';
+    document.querySelectorAll('#bgrid [data-go]').forEach(el => el.onclick = () => { freshTrail = true; go(el.dataset.go); });
+  }).catch(() => { if (myGen === gen) document.getElementById('bsub').textContent = 'Couldn’t reach MusicBrainz just now. Try again in a moment.'; });
+}
+async function fameOf(ids) {
+  const fame = new Map();
+  for (let i = 0; i < ids.length; i += 80) {
+    const q = `SELECT ?mbid ?n WHERE { VALUES ?mbid { ${ids.slice(i, i + 80).map(x => `"${x}"`).join(' ')} } ?item wdt:P434 ?mbid; wikibase:sitelinks ?n. }`;
+    const d = await getJSON('https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(q)).catch(() => null);
+    for (const b of d?.results?.bindings || []) fame.set(b.mbid.value, Math.max(fame.get(b.mbid.value) || 0, +b.n.value));
+  }
+  return fame;
+}
+// Bands formed in a place, straight from Wikidata ("location of formation"), which ranks by fame and only
+// counts musical groups — MusicBrainz's area search mixes in anything registered there.
+async function cityBands(name) {
+  const s = await getJSON(`${WD}action=wbsearchentities&type=item&language=en&limit=1&search=${encodeURIComponent(name)}`);
+  const qid = s.search?.[0]?.id;
+  if (!qid) return [];
+  const q = `SELECT ?mbid ?l ?n ?s ?e WHERE { ?b wdt:P740 wd:${qid}; wdt:P434 ?mbid; wikibase:sitelinks ?n; rdfs:label ?l.
+    ?b wdt:P31/wdt:P279* wd:Q215380. FILTER(LANG(?l) = "en") OPTIONAL { ?b wdt:P571 ?s } OPTIONAL { ?b wdt:P576 ?e } } ORDER BY DESC(?n) LIMIT 150`;
+  const d = await getJSON('https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(q));
+  const seen = new Set(), list = [];
+  for (const b of d.results.bindings) {
+    if (seen.has(b.mbid.value)) continue; seen.add(b.mbid.value);
+    const y = b.s?.value.slice(0, 4), e = b.e?.value.slice(0, 4);
+    list.push({ id: b.mbid.value, name: b.l.value, note: y ? `${y}–${e || ''}` : '' });
+  }
+  list.city = s.search[0].label + (s.search[0].description ? ` (${s.search[0].description})` : '');
+  return list;
+}
+async function browseArtists(type, name) {
+  let list = [], sub = '';
+  if (type === 'label') {
+    const labels = (await mb(`label?query=${encodeURIComponent(`label:"${name}"`)}&limit=5`, { priority: true })).labels || [];
+    const lab = labels.find(l => bare(l.name) === bare(name)) || labels.find(l => bare(l.name).startsWith(bare(name))) || labels[0];
+    if (!lab) return { sub: `No label called “${name}” on MusicBrainz.`, list: [] };
+    const byArtist = new Map();
+    for (let offset = 0; offset < 300; offset += 100) {
+      const d = await mb(`release?label=${lab.id}&inc=artist-credits&limit=100&offset=${offset}`, { priority: true });
+      for (const r of d.releases || []) for (const c of r['artist-credit'] || []) {
+        const a = c.artist; if (!a || /various artists/i.test(a.name)) continue;
+        const e = byArtist.get(a.id) || { id: a.id, name: a.name, n: 0, years: [] };
+        e.n++; if (r.date) e.years.push(r.date.slice(0, 4)); byArtist.set(a.id, e);
+      }
+      if (offset + 100 >= (d['release-count'] || 0)) break;
+    }
+    list = [...byArtist.values()];
+    list.forEach(a => { const ys = a.years.sort(); a.note = `${a.n} release${a.n === 1 ? '' : 's'}${ys.length ? ` · ${ys[0] === ys.at(-1) ? ys[0] : ys[0] + '–' + ys.at(-1)}` : ''}`; });
+    sub = `${lab.name}${lab.area?.name ? ` · ${lab.area.name}` : ''}${lab['life-span']?.begin ? ` · since ${year(lab['life-span'].begin)}` : ''}. Artists with releases on the label, best known first.`;
+  } else {
+    // Cities: Wikidata's "formed in" list (clean but sparse) plus MusicBrainz's area search (broad but noisy).
+    const wd = type === 'city' ? await cityBands(name).catch(() => []) : [];
+    const q = type === 'city' ? `(beginarea:"${name}" OR area:"${name}") AND type:group` : `tag:"${name}" AND type:group`;
+    const d = await mb(`artist?query=${encodeURIComponent(q)}&limit=100`, { priority: true });
+    list = (d.artists || []).filter(a => type !== 'city' || [a['begin-area']?.name, a.area?.name].some(n => bare(n || '').startsWith(bare(name).split(',')[0])))
+      // A style has to be one of the band's own top three tags (one stray "post-rock" vote doesn't make Blur post-rock).
+      .filter(a => type !== 'scene' || (a.tags || []).sort((x, z) => z.count - x.count).slice(0, 3).some(t => norm(t.name) === norm(name)));
+    list.forEach(a => {
+      const y = year(a['life-span']?.begin), e = a['life-span']?.ended ? year(a['life-span']?.end) : '';
+      a.note = [y && (e ? `${y}–${e}` : `${y}–`), type === 'city' ? (a.tags || []).sort((x, z) => z.count - x.count)[0]?.name : (a['begin-area'] || a.area)?.name].filter(Boolean).join(' · ') || a.disambiguation || '';
+    });
+    if (type === 'city') list = [...wd, ...list.filter(a => (a.tags || []).length && !wd.some(w => w.id === a.id))];   // untagged = not a band (Congress!)
+    sub = type === 'city' ? `Bands formed in ${wd.city || name}, best known first.` : `Bands tagged “${name}” on MusicBrainz, best known first.`;
+  }
+  const fame = await fameOf(list.map(a => a.id));
+  // On a label, how much they released there counts too (one split single shouldn't put Nirvana first on Touch and Go).
+  const score = a => (fame.get(a.id) || 0) * (a.n ? Math.sqrt(a.n) : 1);
+  list.sort((a, b) => score(b) - score(a) || (b.n || 0) - (a.n || 0) || a.name.localeCompare(b.name));
+  return { sub, list: list.slice(0, 80) };
+}
+
 /* ---------- Routing ---------- */
-function go(id) { if (location.hash.slice(1) !== id) location.hash = id; else load(id); }
+function go(id) { if (location.hash.slice(1) !== id) location.hash = id; else route(id); }
 function goHome() { history.pushState('', '', location.pathname); renderHome(); }
 
 /* ---------- Breadcrumb trail: behaves like browser history you can see ---------- */
@@ -954,6 +1086,7 @@ function route(h) {
     if (!document.getElementById('track') && !document.body.classList.contains('home')) renderHome();
     return Promise.all([getArtist(c[1]), getArtist(c[2])]).then(([a, b]) => openConnect({ id: c[1], name: a.name }, { id: c[2], name: b.name }, true)).catch(() => openConnect());
   }
+  if (/^browse/.test(h)) return renderBrowse(h);
   return h ? load(h) : renderHome();
 }
 window.addEventListener('hashchange', () => { if (!/^#connect:/.test(location.hash) || !toolEl.classList.contains('open')) route(location.hash.slice(1)); });
@@ -980,6 +1113,7 @@ function renderHome() {
       <h1>Every band.<br>Every member.<br><em>Every band they've been in.</em></h1>
       <p>Search any band to see every member who has passed through, where they all went next, and the full discography. Click through as deep as you like.</p>
       <div id="heroSearch"></div>
+      <a class="herobrowse" href="#browse">or browse by label, city or scene ›</a>
       <div class="lineup"><h2>Try one</h2><div class="names">${picks.map(p =>
         `<a data-n="${esc(p)}">${esc(p)}</a>`).join('&nbsp;<span class="sl">/</span> ')}</div></div>
     </div>`;
