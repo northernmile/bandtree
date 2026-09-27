@@ -3161,7 +3161,7 @@ function renderTimeline() {
   const here = stages.get(trail[cur]?.id);
   document.getElementById('tlTitle').textContent = `${kindOf(state.artist.type) === 'band' ? 'Lineup timeline' : 'Band timeline'} · ${state.artist.name}`;
   if (!state.rels.length) {
-    el.innerHTML = `<span class="muted">MusicBrainz has no ${kindOf(state.artist.type) === 'band' ? 'member' : 'band membership'} data for this artist yet.</span>`;
+    el.innerHTML = `<span class="muted">No ${kindOf(state.artist.type) === 'band' ? 'member' : 'band membership'} data for this artist yet.</span>`;
     document.getElementById('tlegend').innerHTML = '';
     return;
   }
@@ -3212,6 +3212,15 @@ function renderTimeline() {
   row.append('text').attr('class', 'name').attr('x', labelW - 12).attr('y', rowH / 2).attr('dy', '.35em')
     .attr('text-anchor', 'end').text(d => d.r.name.length > 24 ? d.r.name.slice(0, 23) + '…' : d.r.name)
     .on('click', (ev, d) => selectMember(d.r.id));
+  // Gaps between one person's stints: keep the line going (same colours, faded) so it reads as one run with a break.
+  const gaps = d => { const bs = [...d.bars].sort((a, b) => a.start - b.start); return bs.slice(1).map((b, k) => ({ from: bs[k].end, to: b.start, prev: bs[k], next: b, r: d.r })).filter(g => g.to > g.from); };
+  const gap = row.selectAll('g.gap').data(gaps).join('g').attr('class', 'gap')
+    .on('mousemove', (ev, g) => showTip(ev, `<b>${esc(g.r.name)}</b><br><span class="muted">Break, ${Math.floor(g.from)}–${Math.floor(g.to)}</span>`)).on('mouseleave', hideTip)
+    .on('click', (ev, g) => selectMember(g.r.id));
+  gap.append('rect').attr('x', g => x(g.from)).attr('width', g => Math.max(0, x(g.to) - x(g.from))).attr('y', 5).attr('height', rowH - 10)
+    .attr('fill', g => g.prev.roles[0].color).attr('fill-opacity', .28);
+  gap.filter(g => g.prev.roles[1]).append('rect').attr('x', g => x(g.from)).attr('width', g => Math.max(0, x(g.to) - x(g.from)))
+    .attr('y', rowH / 2 - 2).attr('height', 4).attr('fill', g => g.prev.roles[1].color).attr('fill-opacity', .35);
   const bar = row.selectAll('g.bar').data(d => d.bars.map(b => ({ ...b, r: d.r }))).join('g').attr('class', 'bar')
     .on('mousemove', (ev, b) => showTip(ev, `<b>${esc(b.r.name)}</b><br>${esc(fmtPeriod(b.p))}${b.p.fromRecords ? ' <span class="muted">(from album credits)</span>' : ''}<br>
         <span class="muted">${esc(b.p.attrs.filter(a => !['original'].includes(a)).join(', ') || [...b.r.attrs].join(', ') || 'role unknown')}</span>`))
