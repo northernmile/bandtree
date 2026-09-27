@@ -427,7 +427,8 @@ async function discogsArtist(did, opts) {
   const img = (a.images || []).find(i => i.type === 'primary') || a.images?.[0];
   return a._norm = { id: 'discogs:' + did, src: 'discogs', discogsId: String(did), name: cleanDgName(a.name),
     type: person ? 'Person' : 'Group', 'life-span': {}, disambiguation: '', genres: [], members, bands,
-    profile: cleanDgText(a.profile), image: img?.uri || '', url: a.uri };
+    profile: cleanDgText(a.profile), image: img?.uri || '', url: a.uri,
+    aliases: (a.aliases || []).map(x => ({ id: x.id, name: x.name })), realname: a.realname || '' };
 }
 const preload = src => new Promise((ok, fail) => { const im = new Image(); im.onload = () => ok(src); im.onerror = fail; im.src = src; });
 
@@ -639,6 +640,7 @@ function stageFor(id) {
       // Nobody listed on MusicBrainz: look for the lineup elsewhere.
       if (a.src === 'mb' && !st.rels.length) enrichStage(st);
       else fillDates(st).catch(() => {}).finally(() => { st.datesChecked = true; maybeLineups(st); });   // listed, but maybe without dates
+      loadNames(st).catch(() => {});
       return st;
     });
     // Only needs the ID, so fetch the photo alongside the MusicBrainz lookup.
@@ -1264,6 +1266,38 @@ function renderLineups(el, st) {
   el.querySelectorAll('[data-lu-a]').forEach(n => n.onclick = () => { openAlbumStage(state.releases.find(r => r.id === n.dataset.luA)); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 }
 
+/* ---------- Other names ----------
+   One person, many names: Richard D. James records as Aphex Twin, AFX, Polygon Window… MusicBrainz links them with
+   "is person" (a stage name points at the real person, who points at all of their names); Discogs has "aliases" and
+   "realname". Both are merged: MusicBrainz first, then any extra names Discogs knows. */
+async function loadNames(st) {
+  const a = st.artist;
+  let names = [], real = null;
+  if (a.src === 'mb') {
+    const isPerson = list => (list || []).filter(r => r.type === 'is person' && r.artist);
+    real = isPerson(a.relations).find(r => r.direction === 'backward')?.artist || null;
+    let pool = isPerson(a.relations).filter(r => r.direction === 'forward').map(r => r.artist);
+    if (real) {
+      const p = await getArtist(real.id).catch(() => null);
+      pool = isPerson(p?.relations).filter(r => r.direction === 'forward').map(r => r.artist);
+    }
+    names = pool.filter(x => x.id !== a.id).map(x => ({ id: x.id, name: x.name }));
+    if (real) real = { id: real.id, name: real.name };
+  }
+  if (st.discogsId && (st.kind === 'person' || names.length || real)) {
+    const d = await discogsArtist(st.discogsId).catch(() => null);
+    for (const x of d?.aliases || []) {
+      const n = cleanDgName(x.name);
+      if (!sameName(n, a.name) && !(real && sameName(n, real.name)) && !names.some(y => sameName(y.name, n))) names.push({ id: 'discogs:' + x.id, name: n });
+    }
+    if (!real && d?.realname && !sameName(d.realname, a.name)) real = { id: null, name: d.realname };
+  }
+  names = names.filter(n => !/^user\d+$/i.test(n.name)).sort((x, y) => x.name.localeCompare(y.name));   // skip SoundCloud-style handles
+  if (!names.length && !real) return;
+  st.names = names; st.realPerson = real;
+  refreshStage(st.id);
+}
+
 function shell() {
   main.innerHTML = `
     <section style="margin-top:0"><nav id="crumbs"></nav><div class="nav" id="nav"><div class="track" id="track"></div></div></section>
@@ -1390,6 +1424,7 @@ function infoCol(st, i) {
       <a class="credit" href="${esc(st.image.credit)}" target="_blank" rel="noopener">Photo · ${esc(st.image.by || 'Wikimedia Commons')}</a></div>` : ''}
     <div class="kicker">${band ? a.type || 'Band' : 'Musician'}${a.src === 'discogs' ? ' · from Discogs' : ''}</div>
     <h1><span class="title">${esc(a.name)}</span></h1>
+    ${st.realPerson ? `<div class="dis">Real name: ${st.realPerson.id ? `<a class="alink" data-go="${esc(st.realPerson.id)}">${esc(st.realPerson.name)}</a>` : esc(st.realPerson.name)}</div>` : ''}
     ${a.disambiguation ? `<div class="dis">${esc(a.disambiguation)}</div>` : ''}
     ${st.profile ? `<div class="dis profile" title="${esc(st.profile)}">${esc(st.profile)}</div>` : ''}
     <dl class="stats">${stats.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
@@ -1417,7 +1452,12 @@ function listCol(st, selId, nextId) {
     : st.enrich === 'deferred' ? `No ${what} on MusicBrainz yet.`
     : st.artist.src === 'discogs' ? `No ${what} listed on Discogs.` : `No ${what} listed on MusicBrainz, Wikidata or Discogs.`;
   return `<div class="col list"><div class="colhead"><span><button class="back">‹</button>${band ? 'Members' : 'Bands'} · ${st.rels.length}${st.relSource ? ` · via ${st.relSource}` : ''}${st.dateSource ? ` · dates via ${st.dateSource}` : ''}</span>${st.matchedByName ? '<a class="open" data-rematch title="Matched on Discogs by name">Wrong band?</a>' : ''}</div>
-    <div class="rows">${rows || `<div class="skel" style="padding:0 10px">${empty}</div>`}</div></div>`;
+    <div class="rows">${rows || (st.names?.length ? '' : `<div class="skel" style="padding:0 10px">${empty}</div>`)}${namesRows(st, nextId)}</div></div>`;
+}
+function namesRows(st, nextId) {
+  if (!st.names?.length) return '';
+  return `<div class="subhead">${st.realPerson ? `${esc(st.realPerson.name)} also records as` : 'Also records as'}</div>` + st.names.map(n =>
+    `<div class="row${n.id === nextId ? ' sel' : ''}" data-go="${esc(n.id)}"><div class="txt"><div class="nm">${esc(n.name)}</div><div class="meta">${n.id.startsWith('discogs:') ? 'via Discogs' : 'stage name'}</div></div></div>`).join('');
 }
 function subCol(st, sel) {
   const band = st.kind !== 'person';

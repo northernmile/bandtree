@@ -52,6 +52,9 @@ and JS, with D3 from cdnjs used for the timeline only.
 - **Line-ups.** If most members still have no dates, `buildLineups()` fetches credits for each album and EP (up to
   15) and groups them: each distinct set of band members is a line-up (A, B, C…), shown as cards in place of the
   timeline, with members no record credits listed separately.
+- **Other names.** `loadNames()` reads MusicBrainz "is person" links (a stage name points at the real person, who points
+  at all their names) and merges Discogs `aliases` / `realname`. Shown as "Real name" under the title and an
+  "Also records as" group under Bands.
 - **Album pages.** Clicking a record opens it as a stop on the trail (`album:<release-group MBID>` or
   `album:dg-master-<id>`): cover, facts, Wikipedia notes · credits (who played on it, then production) · the selected
   person's other bands. Credits: MusicBrainz release + per-track credits, then Discogs credits, then the band's lineup
