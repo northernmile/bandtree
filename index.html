@@ -359,6 +359,37 @@
   .tcard:hover { border-color: var(--accent); }
   .tcard b { display: block; font-size: 15px; } .tcard small { display: block; color: #aab0bf; font-size: 12.5px; margin: 2px 0 8px; }
   .tcard span { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+  /* Rock family tree (paper, typewriter, ink) */
+  .treemodal { background: #0008; }
+  .treepage { position: relative; max-width: 1200px; margin: 3vh auto; padding: 36px 40px 28px; background: #f4eee2; color: #26221c;
+    font-family: 'Special Elite', 'Courier New', monospace; border-radius: 6px; box-shadow: 0 30px 80px #000c; }
+  .treepage h2 { font-size: 40px; margin: 0; letter-spacing: -.01em; text-transform: none; color: #26221c; font-weight: 400; }
+  .treepage .tsub { margin: 4px 0 24px; color: #6b6255; font-size: 14px; }
+  .treebar { position: absolute; top: 16px; right: 16px; display: flex; gap: 6px; }
+  .treebar button { background: transparent; color: #26221c; border: 1.5px solid #26221c; border-radius: 4px; font-family: inherit; }
+  .treegrid { position: relative; display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 56px; align-items: start; }
+  .tlines { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+  .tlines path { fill: none; stroke: #26221c; stroke-width: 1.2; opacity: .55; }
+  .tcol { display: flex; flex-direction: column; gap: 14px; position: relative; z-index: 1; }
+  .tcol h4 { margin: 0 0 2px; font-size: 13px; text-transform: uppercase; letter-spacing: .12em; color: #8a7f6e; font-weight: 400; }
+  .tb { background: #fbf7ee; border: 1.5px solid #26221c; border-radius: 3px; padding: 10px 12px; }
+  .tb small { display: block; color: #8a4b2a; font-size: 12px; margin-bottom: 4px; }
+  .tb.lineup span { display: block; font-size: 14.5px; line-height: 1.5; }
+  .tb.lineup em { font-style: normal; color: #8a7f6e; font-size: 12px; margin-left: 6px; }
+  .tb.lineup.undated { border-style: dashed; }
+  .tb.side { cursor: pointer; }
+  .tb.side:hover { background: #fff; }
+  .tb.side b { display: block; font-size: 15px; font-weight: 400; }
+  .tb.side i { display: block; font-style: normal; font-size: 12px; color: #6b6255; margin-top: 4px; }
+  .tb.side .now { color: #3b7a3b; }
+  .tnone { color: #8a7f6e; }
+  .tfoot { margin: 28px 0 0; font-size: 11px; color: #8a7f6e; text-align: right; }
+  @media (max-width: 800px) { .treegrid { grid-template-columns: 1fr; gap: 20px; } .tlines { display: none; } .treepage { padding: 24px 18px; } }
+  @media print {
+    body > *:not(#tree) { display: none !important; }
+    #tree { position: static; background: none; display: block; overflow: visible; }
+    .treepage { box-shadow: none; margin: 0; max-width: none; } .treebar { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -376,6 +407,7 @@
 <div class="tip navtip" id="navtip"></div>
 <div class="modal" id="pick"></div>
 <div class="modal" id="tool"></div>
+<div class="modal treemodal" id="tree"></div>
 <div class="modal" id="album"><div class="sheet" id="sheet"></div></div>
 
 <script>
@@ -1118,6 +1150,110 @@ async function startTrail(t) {
 
 // Home page header: see-through over the video, solid once you scroll past it.
 window.addEventListener('scroll', () => headerEl.classList.toggle('scrolled', scrollY > 40), { passive: true });
+/* ---------- Rock family tree ----------
+   A Pete Frame-style chart for a band: its line-ups down the middle in time order, the bands its members were in
+   before on the left and after (or alongside) on the right, each tied by a line to the member who links them.
+   Offered on bands with at least 4 connected bands; printable; shareable as #tree:<band id>. */
+const TREE_MIN = 4;
+function treeWorthy(st) {
+  if (st?.kind !== 'band' || st.rels.length < 2) return false;
+  return new Set([...st.links.values()].flat().map(l => l.id)).size >= TREE_MIN;
+}
+function bandLineups(st) {
+  const NOWY = new Date().getFullYear() + 1;
+  const spans = st.rels.flatMap(r => r.periods.filter(p => p.begin || p.end).map(p => {
+    const s = +year(p.begin || p.end), e = p.end ? Math.max(+year(p.end), s + (year(p.end) === year(p.begin) ? 1 : 0)) : p.ended ? s + 1 : NOWY;
+    return { r, s, e };
+  }));
+  const cuts = [...new Set(spans.flatMap(x => [x.s, x.e]))].sort((a, b) => a - b);
+  const boxes = [];
+  for (let i = 0; i < cuts.length - 1; i++) {
+    const from = cuts[i], to = cuts[i + 1];
+    const members = [...new Set(spans.filter(x => x.s < to && x.e > from).map(x => x.r))];
+    if (!members.length) continue;
+    const last = boxes.at(-1), key = members.map(m => m.id).sort().join('|');
+    if (last && last.key === key && last.to === from) last.to = to;
+    else boxes.push({ key, from, to, members });
+  }
+  boxes.forEach(b => { b.label = b.to >= NOWY ? `${b.from}–now` : b.to - b.from <= 1 ? `${b.from}` : `${b.from}–${b.to}`; });
+  const undated = st.rels.filter(r => !r.periods.some(p => p.begin || p.end));
+  return { boxes, undated };
+}
+function openTree(st) {
+  if (!document.getElementById('treefont')) {
+    const l = document.createElement('link'); l.id = 'treefont'; l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Special+Elite&display=swap'; document.head.appendChild(l);
+  }
+  const { boxes, undated } = bandLineups(st);
+  // Every other band, with the members who link it and whether it came before or after their time here.
+  const joinYear = r => Math.min(...r.periods.map(p => +year(p.begin || p.end)).filter(Boolean), 9999);
+  const side = new Map();
+  for (const r of st.rels) for (const l of st.links.get(r.id) || []) {
+    const e = side.get(l.id) || { l, members: [] };
+    e.members.push(r); side.set(l.id, e);
+  }
+  const list = [...side.values()].map(e => {
+    const f = +String(yearsOf(e.l).first).slice(0, 4) || 9999;   // .first can be a full date
+    const before = f < 9999 && e.members.every(r => f < joinYear(r));
+    return { ...e, first: f, before };
+  }).sort((a, b) => a.first - b.first || a.l.name.localeCompare(b.l.name)).slice(0, 40);
+  const card = e => `<div class="tb side" data-band="${esc(e.l.id)}" data-m="${esc(e.members.map(m => m.id).join(' '))}" data-before="${e.before ? 1 : ''}">
+    <b>${esc(e.l.name)}</b><small>${yearsOf(e.l).html || 'dates unknown'}</small><i>${esc(e.members.map(m => m.name).join(', '))}</i></div>`;
+  const el = document.getElementById('tree');
+  el.innerHTML = `<div class="treepage"><div class="treebar"><button data-t="print">Print</button><button data-t="close" aria-label="Close">✕</button></div>
+    <h2>${esc(st.artist.name)}</h2><p class="tsub">A family tree: line-ups down the middle, members' other bands either side.</p>
+    <div class="treegrid" id="treegrid"><svg class="tlines" id="tlines"></svg>
+      <div class="tcol"><h4>Before</h4>${list.filter(e => e.before).map(card).join('') || '<p class="tnone">—</p>'}</div>
+      <div class="tcol mid"><h4>${esc(st.artist.name)}</h4>${boxes.map((b, i) => `<div class="tb lineup" data-i="${i}">
+          <small>${esc(b.label)}</small>${b.members.map(m => `<span data-mid="${esc(m.id)}">${esc(m.name)}<em>${esc(m.instruments.slice(0, 2).join(', '))}</em></span>`).join('')}</div>`).join('')}
+        ${undated.length ? `<div class="tb lineup undated"><small>dates unknown</small>${undated.map(m => `<span data-mid="${esc(m.id)}">${esc(m.name)}<em>${esc(m.instruments.slice(0, 2).join(', '))}</em></span>`).join('')}</div>` : ''}</div>
+      <div class="tcol"><h4>After &amp; alongside</h4>${list.filter(e => !e.before).map(card).join('') || '<p class="tnone">—</p>'}</div>
+    </div><p class="tfoot">band/tree · from MusicBrainz, Discogs, Wikipedia and Wikidata</p></div>`;
+  el.classList.add('open'); document.body.style.overflow = 'hidden'; el.scrollTop = 0;
+  el.onclick = e => {
+    const t = e.target.closest('[data-t]'), b = e.target.closest('[data-band]');
+    if (t?.dataset.t === 'close') return closeTree();
+    if (t?.dataset.t === 'print') return window.print();
+    if (b) { closeTree(); go(b.dataset.band); }
+  };
+  requestAnimationFrame(() => drawTreeLines());
+  document.fonts?.ready.then(() => drawTreeLines());
+}
+function drawTreeLines() {
+  const grid = document.getElementById('treegrid'), svg = document.getElementById('tlines');
+  if (!grid || !svg) return;
+  const G = grid.getBoundingClientRect();
+  svg.setAttribute('width', G.width); svg.setAttribute('height', G.height);
+  let d = '';
+  for (const box of grid.querySelectorAll('.tb.side')) {
+    const B = box.getBoundingClientRect(), before = !!box.dataset.before;
+    for (const mid of box.dataset.m.split(' ')) {
+      const spans = [...grid.querySelectorAll(`.tb.lineup [data-mid="${CSS.escape(mid)}"]`)];
+      const s = before ? spans[0] : spans.at(-1);
+      if (!s) continue;
+      const S = s.getBoundingClientRect();
+      const x1 = (before ? S.left : S.right) - G.left, y1 = S.top + S.height / 2 - G.top;
+      const x2 = (before ? B.right : B.left) - G.left, y2 = B.top + B.height / 2 - G.top, mx = (x1 + x2) / 2;
+      d += `M${x1},${y1}C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+    }
+  }
+  svg.innerHTML = `<path d="${d}"/>`;
+}
+function closeTree() {
+  const el = document.getElementById('tree'); el.classList.remove('open'); document.body.style.overflow = '';
+  if (/^#tree:/.test(location.hash)) history.replaceState('', '', location.pathname + '#' + location.hash.slice(6));
+}
+window.addEventListener('resize', () => document.getElementById('tree')?.classList.contains('open') && drawTreeLines());
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('tree')?.classList.contains('open')) closeTree(); });
+// #tree:<id>: open the band, then its tree once everyone's other bands are in.
+async function routeTree(id) {
+  history.replaceState('', '', location.pathname + '#' + id);
+  await load(id);
+  const st = stages.get(id);
+  for (let k = 0; k < 60 && st && st.rels.some(r => !r.id.startsWith('wd:') && !st.links.has(r.id)); k++) await sleep(500);
+  if (st) { openTree(st); history.replaceState('', '', location.pathname + '#tree:' + id); }
+}
+
 /* ---------- Routing ---------- */
 function go(id) { if (location.hash.slice(1) !== id) location.hash = id; else route(id); }
 function goHome() { history.pushState('', '', location.pathname); renderHome(); }
@@ -1156,6 +1292,7 @@ function route(h) {
     return Promise.all([getArtist(c[1]), getArtist(c[2])]).then(([a, b]) => openConnect({ id: c[1], name: a.name }, { id: c[2], name: b.name }, true)).catch(() => openConnect());
   }
   if (/^browse/.test(h)) return renderBrowse(h);
+  if (/^tree:/.test(h)) return routeTree(h.slice(5));
   return h ? load(h) : renderHome();
 }
 window.addEventListener('hashchange', () => { if (!/^#connect:/.test(location.hash) || !toolEl.classList.contains('open')) route(location.hash.slice(1)); });
@@ -2185,6 +2322,7 @@ function shell() {
     if (fwd) { mobileCol = +fwd.dataset.col; return focusNav(); }
     if (jump) return document.getElementById(jump.dataset.jump).scrollIntoView({ behavior: 'smooth' });
     if (e.target.closest('[data-listen]')) return listenTo(stages.get(trail[i].id));
+    if (e.target.closest('[data-tree]')) { history.replaceState('', '', location.pathname + '#tree:' + trail[i].id); return openTree(stages.get(trail[i].id)); }
     if (e.target.closest('[data-others]')) { const s = stages.get(trail[i].id); s.showOthers = !s.showOthers; return refreshStage(s.id); }
     if (e.target.closest('[data-more]')) { const s = stages.get(trail[i].id); s.aboutOpen = true; return refreshStage(s.id); }
     const alb = e.target.closest('[data-album]');
@@ -2336,7 +2474,7 @@ function infoCol(st, i) {
     <dl class="stats">${stats.map(([k, v, w]) => `<div${w ? ' class="wide"' : ''}><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
     ${genres.length ? `<div>${genres.map(g => `<span class="tag">${esc(g.name)}</span>`).join('')}</div>` : ''}
     <button class="fwdcol" data-col="1">${band ? 'Members' : 'Bands'} · ${total} ›</button>
-    <button class="lbtn" data-listen>▶ Listen</button>
+    <button class="lbtn" data-listen>▶ Listen</button>${treeWorthy(st) ? ' <button class="lbtn" data-tree>Family tree</button>' : ''}
     <div class="jumps"><a data-jump="lowerTimeline">Timeline ↓</a><a data-jump="lowerDisco">Discography ↓</a></div>
   </div>`;
 }
