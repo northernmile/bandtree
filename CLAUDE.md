@@ -36,6 +36,8 @@ and JS, with D3 from cdnjs used for the timeline only.
   second; Discogs gets about 1 per 2.5s, or 1 per 1.1s with the user's optional token in localStorage
   `discogsToken`. `priority: true` jumps the queue. Background requests carry `gen` and are dropped once the page
   changes.
+- **Same-name artists.** Search only asks "Which X?" when more than one exact match has an English Wikipedia article
+  (checked in one Wikidata query); otherwise it goes straight to the one that does.
 - **Column navigator.** Each breadcrumb stop is a "stage" with three columns: info, list, and sub (the selected
   member's other bands). Stages sit side by side on one track that slides. The breadcrumb `trail`
   (sessionStorage) drives it, including the selected member (`sel`) per stage. On musician pages a band row opens
@@ -66,8 +68,9 @@ and JS, with D3 from cdnjs used for the timeline only.
 
 ## Known limits / ideas
 
-- Big bands take 10–20s to fill in (MusicBrainz rate limit). A small caching server would fix this for public
-  hosting.
+- Big bands take 10–40s to fill in the first time (MusicBrainz rate limit). Every API answer is then kept in this
+  browser's IndexedDB (`diskCache`, 3 weeks), so repeat visits take a couple of seconds. A shared caching server is
+  the next step for public hosting.
 - Discogs members have no dates or instruments, so they show as "dates unknown". Discogs release types are
   guessed from the format.
 - Bandcamp-only releases get no cover (Bandcamp has no API).
