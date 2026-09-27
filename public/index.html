@@ -2952,13 +2952,24 @@ const NICK = Object.fromEntries(['james jim jimmy jamie', 'robert rob bob bobby 
   'benjamin ben benny', 'alexander alex sandy', 'patrick pat', 'jonathan jon', 'john jack johnny', 'frederick fred freddie',
   'raymond ray', 'douglas doug', 'gary garry', 'philip phil', 'leonard len lenny', 'stanley stan', 'albert al', 'alan al allen']
   .flatMap(g => { const w = g.split(' '); return w.map(n => [n, w[0]]); }));
+// Spellings one letter apart ("Philips" / "Phillips").
+function oneEdit(a, b) {
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0, j = 0, d = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++d > 1) return false;
+    if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; }
+  }
+  return d + (a.length - i) + (b.length - j) <= 1;
+}
 function sameName(a, b) {
   const x = norm(a).split(' '), y = norm(b).split(' ');
   if (!x[0] || !y[0]) return false;
   if (x.join(' ') === y.join(' ')) return true;
   if (x.length < 2 || y.length < 2) return false;
   const f = x[0], g = y[0], lx = x.at(-1), ly = y.at(-1);
-  if (lx !== ly) return f === g && lx.length >= 5 && ly.length >= 5 && (lx.startsWith(ly) || ly.startsWith(lx)) && Math.abs(lx.length - ly.length) <= 2;
+  if (lx !== ly) return f === g && lx.length >= 5 && ly.length >= 5 && ((lx.startsWith(ly) || ly.startsWith(lx)) && Math.abs(lx.length - ly.length) <= 2 || oneEdit(lx, ly));
   return f === g || (NICK[f] && NICK[f] === NICK[g]) || (f.length === 1 && g[0] === f) || (g.length === 1 && f[0] === g);
 }
 async function wikidataMemberDates(bandQid, mbids) {
@@ -4299,7 +4310,7 @@ function renderTimeline() {
   const gap = row.selectAll('g.gap').data(gaps).join('g').attr('class', 'gap')
     .on('mousemove', (ev, g) => showTip(ev, `<b>${esc(g.r.name)}</b><br>${esc(g.r.periods.filter(p => p.begin || p.end).map(fmtPeriod).join(', '))}<br><span class="muted">Between reunions or breaks, ${Math.floor(g.from)}–${Math.floor(g.to)}</span>`)).on('mouseleave', hideTip)
     .on('click', (ev, g) => selectMember(g.r.id));
-  gap.append('rect').attr('x', g => x(g.from)).attr('width', g => Math.max(0, x(g.to) - x(g.from))).attr('y', 5).attr('height', rowH - 10)
+  gap.append('rect').attr('x', g => x(g.prev.start) + 3).attr('width', g => Math.max(0, x(g.next.end) - x(g.prev.start) - 6)).attr('y', 5).attr('height', rowH - 10)
     .attr('fill', g => g.prev.roles[0].color).attr('fill-opacity', g => g.prev.p.fromRecords || g.prev.p.fromBand ? .45 : 1);
   gap.filter(g => g.prev.roles[1]).append('rect').attr('x', g => x(g.from)).attr('width', g => Math.max(0, x(g.to) - x(g.from)))
     .attr('y', rowH / 2 - 2).attr('height', 4).attr('fill', g => g.prev.roles[1].color).attr('fill-opacity', 1);
