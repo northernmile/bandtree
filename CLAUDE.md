@@ -60,8 +60,9 @@ and JS, with D3 from cdnjs used for the timeline only.
 - **Band-wide credits.** Once a band's releases are in, `loadBandCredits()` reads the credits of every album and EP
   (up to 15, background queue, cached) via `recordCredits()`: MusicBrainz, then the Discogs master its release group
   links to. From that: each member's usual role, "on N of M records" on album pages, "Regular collaborators" (2+
-  records) on the band page, a stand-in line-up for records with no credits (nearest credited record), and — when
-  most members have no dates — line-up cards (each distinct set of members = A, B, C…) in place of the timeline.
+  records) on the band page, a stand-in line-up for records with no credits (nearest credited record), and years
+  for members with no dates: one stint per run of records (a gap over 3 years starts a new one), drawn faded on
+  the timeline. (Line-up cards were tried and dropped in favour of the timeline.)
 - **Core members.** `memberTiers()` splits bands of 5+ members: core = founder (marked, or joined the year the band
   formed), 5+ years in the band, or on 20%+ of the credited records (min 2). Core are ranked first; everyone else
   folds under "Also in the band". Heuristic — someone who mostly played live can land in the fold.
