@@ -45,9 +45,16 @@ and JS, with D3 from cdnjs used for the timeline only.
   (`pilicense=any`), then other editions on Cover Art Archive, then Discogs. Discogs-only releases ask Discogs
   first. Results are cached in localStorage `cover3:<id>`, and misses are only cached when every source actually
   answered.
-- **Album overlay.** Built from the MusicBrainz release plus Wikidata facts, a Wikipedia intro and the Cover Art
-  Archive gallery, or from the Discogs master/release for Discogs items. The only links are Apple Music and
-  Spotify, on purpose.
+- **Lineup dates.** When members come back without dates, `fillDates()` rolls over per member: Wikidata (band P527,
+  then each member's own P463 via SPARQL), then the Members section of the band's Wikipedia article
+  ("Name – vocals (1987–1999, 2017–present)"). Wikipedia can also add missing members. Existing dates always win;
+  the list header says "dates via …".
+- **Album pages.** Clicking a record opens it as a stop on the trail (`album:<release-group MBID>` or
+  `album:dg-master-<id>`): cover, facts, Wikipedia notes · credits (who played on it, then production) · the selected
+  person's other bands. Credits: MusicBrainz release + per-track credits, then Discogs credits, then the band's lineup
+  the year it came out. Below: tracklist, then the band's discography. The old overlay code (`openAlbum`) is unused.
+- **Home page.** Full-screen `hero.mp4` loop (phones and reduced-motion get `hero.jpg`). `hero.mov` is the original
+  and is git-ignored (over GitHub's 100 MB limit).
 - **Artist photos.** Wikidata P18, then the Wikipedia page image (JPG only), pulled at a standard 960px Commons
   thumbnail width (custom widths are slow). Discogs images are used for Discogs artists.
 
