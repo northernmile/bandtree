@@ -545,6 +545,81 @@
   .pcard small { display: block; color: #aab0bf; font-size: 12.5px; margin: 3px 0 10px; line-height: 1.45; }
   .pcard .pwho { display: flex; gap: 4px; }
   .pcard .pwho i { width: 22px; height: 22px; border-radius: 50%; font: 700 9.5px/22px inherit; text-align: center; font-style: normal; color: #0e0f13; }
+  /* Milestones */
+  .ms { max-width: 1080px; margin: 0 auto; padding-bottom: 90px; }
+  .btabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 16px; }
+  .btabs a { font-size: 12.5px; padding: 6px 12px; border-radius: 99px; border: 1px solid #ffffff22; background: #ffffff0d; color: var(--text); text-decoration: none; cursor: pointer; }
+  .btabs a:hover { border-color: var(--accent); color: var(--accent); } .btabs a.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .ms > .btabs:last-child { margin-top: 40px; }
+  .mhero { position: relative; height: 360px; margin: 0 0 28px; border-radius: 18px; overflow: hidden; background: #000; }
+  .mhero img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: grayscale(.2) contrast(1.05); opacity: .75; }
+  .mhero .mov { position: absolute; inset: 0; background: linear-gradient(transparent 30%, #0e0f13ee 92%); display: flex; flex-direction: column; justify-content: flex-end; padding: 28px 30px; }
+  .mhero h1 { font-size: 64px; letter-spacing: -.045em; line-height: 1; margin: 6px 0 10px; } .mhero .lede { color: #d4d7df; font-size: 18px; max-width: 700px; margin: 0; }
+  .mcr { position: absolute; right: 14px; top: 12px; font-size: 10.5px; color: #ffffff99; }
+  .mera { display: grid; grid-template-columns: 290px 1fr; gap: 0 34px; position: relative; }
+  .mebox { position: sticky; z-index: 2; top: 76px; align-self: start; margin: 14px 0 24px; padding: 16px 18px; border-radius: 14px; background: #141720; border: 1px solid var(--line); }
+  .mebox .myr { font-size: 12px; font-weight: 800; letter-spacing: .1em; color: var(--accent); }
+  .mebox h2 { font-size: 22px; letter-spacing: -.02em; margin: 4px 0 8px; line-height: 1.12; text-transform: none; color: var(--text); font-weight: 700; } .mebox p { color: #b9bdc8; margin: 0; font-size: 13.5px; }
+  .mcount { margin-top: 10px; font-size: 11.5px; color: var(--muted); }
+  .myears { position: relative; } .mspine { position: absolute; left: 36px; top: 0; bottom: 0; width: 2px; background: var(--band); opacity: .6; }
+  .mera.later .mspine { background: #3a3f4c; opacity: 1; }
+  .myear { position: relative; padding: 14px 0 4px 62px; }
+  .myear::before { content: ''; position: absolute; top: 0; left: -324px; right: 0; height: 1px; background: #1c1f28; }
+  .myear > .my { position: absolute; left: 0; top: 12px; font-size: 13px; font-weight: 700; color: #5d6372; letter-spacing: .04em; }
+  .mev { position: relative; margin: 0 0 10px; opacity: 0; transform: translateY(10px); transition: opacity .45s ease, transform .45s ease; }
+  .mev.in { opacity: 1; transform: none; }
+  .mev::before { content: ''; position: absolute; left: -30px; top: 15px; width: 10px; height: 10px; border-radius: 50%; background: var(--band); box-shadow: 0 0 0 4px var(--bg); z-index: 1; }
+  .mera.later .mev::before { background: var(--muted); }
+  .md { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .mrow { display: flex; gap: 10px; align-items: baseline; padding: 8px 12px; border-radius: 10px; border: 1px solid transparent; }
+  .mrow.can { cursor: pointer; } .mrow:hover { background: #ffffff08; border-color: var(--line); }
+  .mrow > .md { flex: none; width: 86px; } .mrb { flex: 1; min-width: 0; }
+  .mrow h3 { font-size: 15px; margin: 0; font-weight: 600; } .mrow p { margin: 2px 0 0; color: #a9adb8; font-size: 13.5px; }
+  .mplus { flex: none; color: var(--muted); font-size: 18px; line-height: 1; } .mrow.open .mplus { transform: rotate(45deg); }
+  .mcard { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; gap: 16px; }
+  .mcv { flex: none; width: 118px; height: 118px; border-radius: 8px; object-fit: cover; box-shadow: 0 8px 24px #0008; }
+  .mbd { flex: 1; min-width: 0; } .mcard h3 { font-size: 18px; margin: 3px 0 5px; letter-spacing: -.015em; line-height: 1.2; }
+  .mcard p { margin: 0; color: #c9ccd5; font-size: 14px; }
+  .mlink { color: var(--text); text-decoration: underline; text-decoration-color: #ffffff40; text-underline-offset: 3px; cursor: pointer; }
+  .mlink:hover { color: var(--accent); text-decoration-color: var(--accent); }
+  .macts { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .mbtn, .mplay { font-size: 12px; padding: 5px 11px; border-radius: 99px; border: 1px solid #ffffff22; background: #ffffff0d; color: var(--text); cursor: pointer; text-decoration: none; }
+  .mplay { background: var(--band); border-color: var(--band); color: #fff; font-weight: 600; }
+  .mfeat { padding: 0; overflow: hidden; flex-direction: column; gap: 0; }
+  .mimg { position: relative; height: 250px; background: #000; } .mimg img { width: 100%; height: 100%; object-fit: cover; opacity: .92; }
+  .mimg.fit { height: 380px; background: #1a1b1f; } .mimg.fit img { object-fit: contain; }
+  .mimg span { position: absolute; left: 12px; bottom: 10px; font-size: 10.5px; color: #ffffffcc; background: #0009; padding: 2px 8px; border-radius: 6px; }
+  .mfeat .mbd { padding: 14px 16px 16px; }
+  .mfeat.side { flex-direction: row; } .mfeat.side .mimg { width: 210px; height: auto; min-height: 160px; flex: none; }
+  .mquote { background: linear-gradient(135deg, #231a22, #171920); border-color: #ff5d7344; }
+  .mbig { font-size: 26px; line-height: 1.2; letter-spacing: -.02em; font-weight: 700; margin: 6px 0 8px; } .mbig span { color: var(--band); }
+  .mtag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 99px; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; vertical-align: 1px; }
+  .mtag.rec { background: #ffcf5c1f; color: var(--accent); } .mtag.fight { background: #ff5d7322; color: #ff8a9a; } .mtag.line { background: #5cc8ff1f; color: var(--person); }
+  .mwho { display: inline-flex; gap: 4px; vertical-align: middle; margin-left: 6px; }
+  .mwho i { width: 22px; height: 22px; border-radius: 50%; font: 700 9.5px/22px inherit; text-align: center; font-style: normal; color: #0e0f13; cursor: pointer; letter-spacing: 0; }
+  .mwho i.out { opacity: .35; text-decoration: line-through; }
+  .mxp { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); grid-template-columns: 1fr 210px; gap: 18px; cursor: default; }
+  .open > .mbd > .mxp, .mrow.open .mxp { display: grid; }
+  .mxp p { font-size: 14px; color: #c9ccd5; margin: 0 0 10px; }
+  .mxp blockquote { margin: 0 0 10px; padding: 8px 0 8px 14px; border-left: 3px solid var(--band); color: var(--text); font-size: 15px; font-style: italic; }
+  .mxp blockquote cite { display: block; font-style: normal; color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .msrc { font-size: 11.5px; color: var(--muted); }
+  .mside { font-size: 12.5px; color: #b9bdc8; } .mside b { display: block; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+  .mside a { display: block; padding: 7px 10px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: 9px; color: var(--text); text-decoration: none; background: #ffffff06; cursor: pointer; }
+  .mside a em { color: var(--accent); font-style: normal; }
+  .mgap { position: relative; margin: 4px 0 4px 324px; padding: 10px 0 10px 62px; color: #5d6372; font-size: 12px; letter-spacing: .08em; }
+  .mgap::before { content: ''; position: absolute; left: -324px; right: 0; top: 50%; border-top: 1px dashed #2c303b; }
+  .mgap span { position: relative; background: var(--bg); padding: 0 10px; }
+  .mscard { display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; padding: 8px 12px 8px 8px; border-radius: 12px; border: 1px solid #ffffff1f; background: #ffffff0a; text-decoration: none; color: var(--text); }
+  .mscard:hover { border-color: var(--accent); } .mscard img { width: 54px; height: 54px; border-radius: 8px; object-fit: cover; filter: grayscale(.3); }
+  .mscard span { flex: 1; } .mscard b { display: block; font-size: 14px; } .mscard small { color: var(--muted); font-size: 12px; } .mscard i { font-style: normal; color: var(--muted); font-size: 18px; }
+  .lin .btabs { margin-top: 0; }
+  @media (max-width: 800px) {
+    .mera { grid-template-columns: 1fr; } .mebox { position: static; margin-bottom: 8px; }
+    .myear::before { left: 0; } .mgap { margin-left: 0; } .mgap::before { left: 0; } .myear { padding-left: 44px; } .mspine { left: 20px; } .mev::before { left: -30px; }
+    .mhero { height: 300px; } .mhero h1 { font-size: 44px; } .mxp { grid-template-columns: 1fr; }
+    .mfeat.side { flex-direction: column; } .mfeat.side .mimg { width: auto; height: 180px; } .mcv { width: 84px; height: 84px; } .mrow > .md { width: 64px; }
+  }
   /* Rock family tree (paper, typewriter, ink) */
   .treemodal { background: #0008; }
   .treepage { position: relative; max-width: 1200px; margin: 3vh auto; padding: 36px 40px 28px; background: #f4eee2; color: #26221c;
@@ -2022,7 +2097,7 @@ function drawLineage(L, path) {
     c.need = 34 + rows.length * LIN_ROW + 20;
   });
   // The text column goes in first so each chapter's height can fit both its words and its part of the map.
-  main.innerHTML = `<div class="lin">
+  main.innerHTML = `<div class="lin">${path ? bandTabs(L.rootId, L.root.name, path.id) : ''}
     <div class="kicker">${path ? 'Path' : 'What came out of it'}</div><h1>${esc(path ? path.title : L.root.name)}</h1>
     <p class="lede">${path ? esc(path.blurb) : `${[...bands.values()].filter(b => !b.root && !b.before).length} bands through ${L.people.length} members${L.joins.length ? `, with ${L.joins.length} people joining from outside` : ''}.`}</p>
     <div class="lchips"><span class="muted">Follow:</span> ${L.people.map(p => `<a data-follow="${esc(p.id)}" style="--c:${p.color}"><i></i>${esc(p.name)}</a>`).join('')}</div>
@@ -2128,7 +2203,7 @@ function drawLineage(L, path) {
    the bands that chapter shows on the map). The lineage engine supplies the data and layout; everything a reader
    reads comes from here. #path:<id>[:<chapter>]. Bands and people in a path link back to it ("In a path"). */
 const PATHS = [
-  { id: 'minor-threat', root: '09037f07-42bc-46ac-a1ee-37f834451fee', title: 'What came out of Minor Threat',
+  { id: 'minor-threat', root: '09037f07-42bc-46ac-a1ee-37f834451fee', title: 'Minor Threat: four kids, forty years of fallout',
     blurb: 'Three years, a handful of records and a label run out of a group house. Then the band split over which way to go next, and its four members spent the next forty years answering that question in very different ways.',
     follow: ['Ian MacKaye', 'Jeff Nelson', 'Brian Baker', 'Lyle Preslar'],
     image: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/Minor-threat-malcolm-riviera.jpg',
@@ -2154,6 +2229,149 @@ const PATHS = [
         text: 'MacKaye scales all the way down: <b>The Evens</b>, a duo with drummer Amy Farina, then <b>Coriky</b>, which reunites him with Lally. Preslar moves behind the desk, running Caroline Records, where he signs Ben Folds, before earning a law degree. Nelson still runs Dischord with MacKaye, more than four decades after that $600.' },
     ] },
 ];
+/* ---------- Milestones ----------
+   A band's own story, era by era: eras on the left (they stay put while you read), moments on the right, one per
+   line on a year grid. Written and approved by hand, like paths. #milestones:<MBID>. Inline links: [[Name|MBID]].
+   Kinds: row (one line), card (cover beside), feat (big image on top), side (image left), quote (big pull line).
+   Anything with xp opens on click for the longer story. play: [album, song] plays that song's preview. */
+const WM = 'https://upload.wikimedia.org/wikipedia/';
+const MT = { IM: 'c12f644b-1066-4ead-b0dd-d0c380f5cca2', JN: '51f7994c-949d-4dbe-89eb-2c33f42a5620', BB: '1fd36abf-e43c-4b01-820b-d7280cc27ea5',
+  LP: 'c1b9b78e-691f-424d-8ce1-53c87c24d299', SH: 'cd469927-13a8-4d0b-8898-01c6856f5878' };
+const MILESTONES = {
+  '09037f07-42bc-46ac-a1ee-37f834451fee': {
+    name: 'Minor Threat',
+    lede: 'Three years on stage, about forty-seven minutes of music, and four decades of everybody from Slayer to Nike trying to get a piece of it.',
+    hero: { src: WM + 'commons/c/c3/Minor-threat-malcolm-riviera.jpg', by: 'Photo: Malcolm Riviera' },
+    people: { IM: ['Ian MacKaye', MT.IM], JN: ['Jeff Nelson', MT.JN], BB: ['Brian Baker', MT.BB], LP: ['Lyle Preslar', MT.LP], SH: ['Steve Hansgen', MT.SH] },
+    eras: [
+      { yr: '1980', title: 'Out of the Teen Idles', text: 'Two teenagers lose their first band and start a faster, angrier one within a month. The small D.C. scene is about to get a rulebook.', years: [
+        ['1980', [
+          { k: 'row', d: 'Fall', tag: 'line', who: ['IM', 'JN', 'LP', 'BB'], h: '[[The Teen Idles|84e8d8bf-da21-4488-89e5-50a4c12ff4fa]] fold. Minor Threat starts the next month',
+            p: '[[Ian MacKaye|' + MT.IM + ']] moves from bass to the mic, [[Jeff Nelson|' + MT.JN + ']] stays on drums, and they pull in [[Lyle Preslar|' + MT.LP + ']] on guitar and [[Brian Baker|' + MT.BB + ']] on bass.' },
+          { k: 'side', img: WM + 'en/f/f9/Teen_Idles_Minor_Disturbance_Album_Cover.jpg', cap: 'The Teen Idles, Minor Disturbance', h: 'The X on the back of the hand',
+            p: 'A Teen Idles idea borrowed from California clubs: mark the under-age kids with a black X so they can get in without drinking. Minor Threat carries it onstage, and the X becomes the symbol of everything that follows.' },
+          { k: 'feat', img: WM + 'commons/6/60/Bad_brains_1983.jpg', cap: 'Bad Brains, 1983', d: 'December', h: 'First show: a basement, fifty people, opening for [[Bad Brains|e919b253-da5b-4aae-a444-6a368376a2d6]]',
+            p: 'Bad Brains’ H.R. takes them under his wing and calls them his “undergraduates.” They’re fast, short and furious from night one.' },
+        ]] ] },
+      { yr: '1981', title: 'Eight songs and a rulebook', text: 'In a year they make two seven-inches in a basement studio, give a movement its name without meaning to, and then fall apart when their guitarist leaves for college.', years: [
+        ['1981', [
+          { k: 'row', d: 'April', tag: 'rec', h: 'Into Don Zientara’s basement', p: 'Four tracks at Inner Ear in Arlington, the room where most of D.C. punk gets made.',
+            xp: '<p>Inner Ear is a home studio: Don Zientara’s basement in Arlington, Virginia. The first Minor Threat EP is cut there on four tracks, and for the next decade and more it’s where Dischord bands go to record.</p>' },
+          { k: 'card', img: WM + 'en/c/c5/Minor_Threat_-_Minor_Threat_%28E.P.%29.jpg', album: 'b589806a-ceda-3f6e-b294-64c2fd78ead4', play: ['Minor Threat', 'Straight Edge'], d: 'June', tag: 'rec',
+            h: '<i>Minor Threat</i> EP · Dischord No. 3', p: 'Ian’s younger brother Alec, slumped on a set of steps, makes the cover. On it, a short song called “Straight Edge.” MacKaye would spend decades explaining “Straight Edge is not a movement.”' },
+          { k: 'row', d: 'Summer', tag: 'line', who: ['-LP'], h: 'The first break-up', p: 'Preslar leaves for college and the band stops.',
+            xp: '<p>With Preslar away at school, the others scatter for a few months. Baker, already playing bass in [[Government Issue|9b952ee8-d45d-4a26-8066-57849d871e06]], moves to guitar there. MacKaye and Nelson start Skewbald/Grand Union with guitarist Eddie Janney, later of Rites of Spring. It records three songs at Inner Ear and never plays a show.</p>' },
+          { k: 'card', img: WM + 'en/4/4c/Minor_Threat_-_In_My_Eyes_%28E.P.%29.jpg', album: '3c908a48-f662-3910-ba29-6a0d3315398b', play: ['In My Eyes', 'In My Eyes'], d: 'December', tag: 'rec',
+            h: '<i>In My Eyes</i> · Dischord No. 5', p: 'Four more songs, including “Guilty of Being White,” which MacKaye wrote about growing up in D.C. It will follow him for forty years.' },
+        ]] ] },
+      { yr: '1982–83', title: 'Five of them, then four, then none', text: 'Preslar comes home with unfinished business. The band gets bigger and louder, makes its defining record, then argues itself apart over what it should sound like next.', years: [
+        ['1982', [
+          { k: 'row', d: 'April', tag: 'line', who: ['LP'], h: 'Back together', p: 'Preslar quits college and Minor Threat reforms.' },
+          { k: 'row', d: 'August', tag: 'line', who: ['SH'], h: 'A fifth member', p: 'Baker’s childhood friend [[Steve Hansgen|' + MT.SH + ']] joins on bass; Baker moves to second guitar.' },
+        ]],
+        ['1983', [
+          { k: 'card', img: WM + 'en/2/2c/Minor_Threat_-_Out_of_Step.jpg', album: 'db4d417f-8295-3843-829d-2b8c0b649517', play: ['Out of Step', 'Out of Step'], d: 'January · April', tag: 'rec',
+            h: '<i>Out of Step</i>, for about $200', p: 'Three days, their first eight-track session, MacKaye singing live under the basement stairs beside the washing machine. 3,500 copies sell out almost before they leave the plant. Hidden at the end: “Cashing In,” a joke about being called sell-outs.' },
+          { k: 'quote', d: 'Early 1983', tag: 'fight', h: 'The fight over one letter', big: 'One letter: <span>(I)</span>', p: 'Nelson wants an “(I)” in the lyric so it reads as a personal choice, not an order.',
+            xp: '<p>By 1983 “Out of Step” has been taken up as a set of commandments, and not everyone in the band is comfortable being a movement’s rulebook. Nelson pushes for an “(I)” on the lyric sheet, so the words read as MacKaye speaking for himself.</p><p>MacKaye resists. The story told since is that he put his fist through his bedroom door over it. The “(I)” goes on the lyric sheet anyway, a one-letter compromise.</p>',
+            q: ['Straight Edge is not a movement. Straight Edge is just an idea.', 'Ian MacKaye'], src: 'Life of the Record · WETA Boundary Stones', go: ['JN', 'IM'], playX: ['Out of Step', 'Out of Step'] },
+          { k: 'row', d: 'June', tag: 'line', who: ['-SH'], h: 'Back to four', p: 'The founders return the band to its original shape. Hansgen is out.' },
+          { k: 'feat', img: WM + 'en/8/8d/LansburghCulturalCenter_showposter_092383.jpg', fit: 'contain', cap: 'The poster for the last show', d: 'September 23', tag: 'fight', h: 'The last show',
+            p: 'Lansburgh Cultural Center, 7th Street NW, with [[Trouble Funk|138aaf2c-77b6-451e-ade2-ce18894eeaa7]] and Austin’s [[Big Boys|fde1cff2-5a7b-4e8c-9666-110fa90500fb]] on the bill. Seventeen songs, and that’s it.',
+            xp: '<p>Baker and Preslar want to go bigger and more melodic, U2 was the reference; MacKaye doesn’t. Rather than turn into a different band, they stop. The last show is a funk-punk double bill in downtown D.C., and an audience tape of the night is how most people have heard it since.</p>' },
+          { k: 'row', d: 'Late 1983', tag: 'rec', h: 'One more session', p: 'They record “Salad Days,” first called “Last Song.” MacKaye agrees on one condition: it never comes out.' },
+        ]] ] },
+      { yr: '1984–89', title: 'The records keep working', text: 'The band is gone, but the records sell year after year, and Dischord keeps every one of them in print.', years: [
+        ['1984', [{ k: 'row', d: '1984', tag: 'rec', album: '2d91b2eb-ea73-32bf-ac1b-5a803c7b4684', h: 'Two EPs become one LP', p: 'The first two seven-inches on one record, Alec back on the cover.' }]],
+        ['1985', [{ k: 'card', img: WM + 'en/7/72/Minor_Threat_-_Salad_Days.jpg', album: '29444500-c97f-32d1-9652-41e565779d5f', play: ['Salad Days', 'Salad Days'], d: 'April', tag: 'rec',
+          h: '<i>Salad Days</i> comes out anyway', p: 'Dischord No. 15. The song he wanted buried becomes one of the band’s best-loved.' }]],
+        ['1989', [{ k: 'card', img: WM + 'en/2/2e/Complete_Discography_Minor_Threat.jpg', album: '800ca06b-3cbe-3807-ad00-6034788773a1', d: '1989', tag: 'rec',
+          h: '<i>Complete Discography</i>', p: 'Twenty-six songs, forty-seven minutes. For a generation of kids it’s the front door to hardcore.' }]],
+      ] },
+      { gap: '1990 – 1995' },
+      { yr: '1996–2013', later: 1, title: 'Everybody wants a piece', text: 'The bigger the legend gets, the more people try to borrow it, and a band that no longer exists spends years saying no.', years: [
+        ['1996', [{ k: 'card', img: WM + 'en/a/aa/Slayer-UndisputedAttitude.jpg', d: '1996', tag: 'fight', h: '[[Slayer|bdacc37b-8633-4bf8-9dd5-4662ee651aec]] changes the words',
+          p: 'Their cover of “Guilty of Being White” rewrites the lyric. MacKaye is furious: he hears his anti-racist song turned into the thing it was written against.',
+          xp: '<p>The song was MacKaye’s account of growing up white in a mostly Black city, and it had already been misread for years. Slayer’s version, on <i>Undisputed Attitude</i>, changes the words in a way he saw as pushing it toward exactly the reading he’d spent years arguing against.</p>' }]],
+        ['2003', [{ k: 'row', d: '2003', tag: 'rec', album: 'd78f9e30-1a9f-3cc7-a8fe-62b4baaedf6f', h: '<i>First Demo Tape</i>', p: 'The band opens its own vault.' }]],
+        ['2005', [
+          { k: 'feat', img: 'img/nike-major-threat.webp', cap: 'The original, and Nike’s “Major Threat”', d: 'June', tag: 'fight', h: 'Nike’s “Major Threat”',
+            p: 'Nike Skateboarding lifts the first EP’s cover, Alec on the steps and the lettering, for a tour poster. Dischord calls it out; by June 27 Nike apologizes, calls it “a poor judgment call,” and destroys the art.',
+            xp: '<p>Dischord’s complaint was less about money than about a giant brand borrowing the look of a scene built on doing things yourself, and what that might teach kids who met Minor Threat through a sneaker ad. Nike pulled the artwork within days.</p>', src: 'Rolling Stone · Punknews' },
+          { k: 'row', d: 'October 29', tag: 'fight', h: 'Fox, without asking', p: '“Salad Days” turns up in an NFL broadcast. Nobody had cleared it.' },
+        ]],
+        ['2007', [{ k: 'row', d: '2007', h: 'The one they said yes to', p: 'Minor Threat hot sauce, with MacKaye’s blessing once the label was changed.' }]],
+        ['2009', [{ k: 'row', d: '2009', tag: 'fight', h: 'Forever 21', p: 'Dischord goes after the chain over unlicensed shirts.' }]],
+        ['2013', [{ k: 'row', d: '2013', h: 'The shirt at the mall', p: 'Licensed tees at Urban Outfitters. MacKaye’s time, he says, is better spent than chasing bootlegs.' }]],
+      ] },
+      { gap: '2014 – 2020' },
+      { yr: '2021–now', later: 1, title: 'Still finding tape', text: 'Four decades on, the archive is still giving things up.', years: [
+        ['2021', [{ k: 'row', d: '2021', tag: 'rec', h: 'Found in the multitrack', p: 'Digitizing the <i>Out of Step</i> reels turns up forgotten takes: new versions of “In My Eyes” and “Filler,” and an instrumental nicknamed “Addams Family.”' }]],
+        ['2023', [{ k: 'card', img: WM + 'en/2/2c/Minor_Threat_-_Out_of_Step.jpg', album: 'fe8d38d9-7b13-4619-bbde-498bed78fa60', d: 'December', tag: 'rec',
+          h: '<i>Out of Step Outtakes</i>', p: 'Out for the record’s fortieth anniversary, on clear vinyl, for eight dollars.' }]],
+      ] },
+    ],
+  },
+};
+const MS_TAG = { rec: 'Record', fight: 'Friction', line: 'Line-up' };
+const msLinks = s => String(s).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, (_, n, id) => `<a class="mlink" data-go="${esc(id)}">${esc(n)}</a>`);
+const msCount = m => m.eras.reduce((n, e) => n + (e.years || []).reduce((k, [, v]) => k + v.length, 0), 0);
+const msSpan = m => { const ys = m.eras.flatMap(e => (e.years || []).map(([y]) => +y)); return `${Math.min(...ys)}–${Math.max(...ys)}`; };
+// Band page: a card that opens the band's milestones.
+const milestonesLine = st => { const m = MILESTONES[st.id]; return m ? `<a class="mscard" href="#milestones:${st.id}"><img src="${esc(m.hero.src)}" alt="">
+  <span><b>Milestones</b><small>${msCount(m)} moments · ${msSpan(m)}</small></span><i>›</i></a>` : ''; };
+// The views one band can have, as tabs: its page, its milestones, the paths that start from it.
+function bandTabs(id, name, on) {
+  const ps = PATHS.filter(p => p.root === id);
+  return `<nav class="btabs"><a data-go="${esc(id)}" class="${on === 'band' ? 'on' : ''}">‹ ${esc(name)}</a>${MILESTONES[id] ? `<a href="#milestones:${id}" class="${on === 'ms' ? 'on' : ''}">Milestones</a>` : ''}${ps.map(p =>
+    `<a href="#path:${p.id}" class="${on === p.id ? 'on' : ''}">Path: ${esc(p.title)}</a>`).join('')}</nav>`;
+}
+function renderMilestones(id) {
+  const m = MILESTONES[id];
+  closeTool(); gen++; leaveHome(); trail = []; cur = -1; renderCrumbs();
+  if (!m) { main.innerHTML = '<div class="ms"><p class="muted">No milestones for this band yet.</p></div>'; return; }
+  const who = list => list?.length ? `<span class="mwho">${list.map(k => { const out = k[0] === '-', key = out ? k.slice(1) : k, [n, pid] = m.people[key] || [key];
+    return `<i class="${out ? 'out' : ''}" style="background:${LIN_COLORS[Object.keys(m.people).indexOf(key) % LIN_COLORS.length]}" title="${esc(n)}${out ? ' leaves' : ''}" data-go="${esc(pid || '')}">${esc(key)}</i>`; }).join('')}</span>` : '';
+  const tag = t => t ? `<span class="mtag ${t}">${MS_TAG[t]}</span>` : '';
+  const acts = e => {
+    const a = [];
+    if (e.play) a.push(`<button class="mplay" data-mplay="${esc(e.play.join('|'))}">▶ ${esc(e.play[1])}</button>`);
+    if (e.album) a.push(`<a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a>`);
+    if (e.xp) a.push(`<button class="mbtn mmore" data-mx>More ▾</button>`);
+    return a.length ? `<div class="macts">${a.join('')}</div>` : '';
+  };
+  const xp = e => e.xp ? `<div class="mxp"><div>${msLinks(e.xp)}${e.q ? `<blockquote>${esc(e.q[0])}<cite>${esc(e.q[1])}</cite></blockquote>` : ''}${e.src ? `<div class="msrc">Sources: ${esc(e.src)}</div>` : ''}</div>
+    <div class="mside"><b>Go deeper</b>${e.playX ? `<a data-mplay="${esc(e.playX.join('|'))}">▶ Hear “${esc(e.playX[1])}”</a>` : ''}${(e.go || []).map(k => `<a data-go="${esc(m.people[k][1])}"><span class="p">${esc(m.people[k][0])}</span> ›</a>`).join('')}${PATHS.filter(p => p.root === id).map(p => `<a href="#path:${p.id}"><em>Path</em> · ${esc(p.title)} ›</a>`).join('')}</div></div>` : '';
+  const head = e => `<div class="md">${esc(e.d || '')}${tag(e.tag)}${who(e.who)}</div><h3>${msLinks(e.h)}</h3>`;
+  const ev = e => {
+    const xa = e.xp ? ' data-xp' : '';
+    if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${esc(e.d || '')}</span><div class="mrb"><h3>${msLinks(e.h)}${tag(e.tag)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${e.album && !e.play ? `<div class="macts"><a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a></div>` : ''}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
+    if (e.k === 'card') return `<div class="mcard"${xa}><img class="mcv" src="${esc(e.img)}" alt="" loading="lazy"><div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
+    if (e.k === 'feat' || e.k === 'side') return `<div class="mcard mfeat ${e.k}"${xa}><div class="mimg${e.fit ? ' fit' : ''}"><img src="${esc(e.img)}" alt="" loading="lazy"><span>${esc(e.cap || '')}</span></div><div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
+    if (e.k === 'quote') return `<div class="mcard mquote"${xa}><div class="mbd">${head(e)}<div class="mbig">${e.big}</div><p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
+    return '';
+  };
+  main.innerHTML = `<div class="ms">${bandTabs(id, m.name, 'ms')}
+    <div class="mhero"><img src="${esc(m.hero.src)}" alt=""><span class="mcr">${esc(m.hero.by)}</span><div class="mov"><div class="kicker">Milestones</div><h1>${esc(m.name)}</h1><p class="lede">${esc(m.lede)}</p></div></div>
+    ${m.eras.map(e => e.gap ? `<div class="mgap"><span>${esc(e.gap)} · quiet years</span></div>` : `
+    <section class="mera${e.later ? ' later' : ''}"><div class="mebox"><div class="myr">${esc(e.yr)}</div><h2>${esc(e.title)}</h2><p>${esc(e.text)}</p><div class="mcount">${e.years.reduce((n, [, v]) => n + v.length, 0)} moments</div></div>
+      <div class="myears"><div class="mspine"></div>${e.years.map(([y, list]) => `<div class="myear"><span class="my">${esc(y)}</span>${list.map(x => `<div class="mev">${ev(x)}</div>`).join('')}</div>`).join('')}</div></section>`).join('')}
+    ${bandTabs(id, m.name, 'ms')}</div>`;
+  const box = main.querySelector('.ms');
+  box.onclick = async ev2 => {
+    const g = ev2.target.closest('[data-go]'), pl = ev2.target.closest('[data-mplay]'), mx = ev2.target.closest('[data-mx]'), x = ev2.target.closest('[data-xp]');
+    if (pl) { const [album, song] = pl.dataset.mplay.split('|'); renderPlayer('Finding previews…');
+      try { const songs = await albumSongs(m.name, album); const k = songs.findIndex(s => norm(s.title) === norm(song) || norm(s.title).startsWith(norm(song))); playQueue(songs, Math.max(0, k), album); }
+      catch { renderPlayer('Couldn’t reach Apple Music for previews just now.'); } return; }
+    if (g && g.dataset.go) { freshTrail = true; return go(g.dataset.go); }
+    if (ev2.target.closest('a[href]')) return;
+    if (mx || (x && x.classList.contains('mrow'))) { const card = (mx || x).closest('[data-xp]'); card.classList.toggle('open'); const b = card.querySelector('.mmore'); if (b) b.textContent = card.classList.contains('open') ? 'Less ▴' : 'More ▾'; }
+  };
+  const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { rootMargin: '0px 0px -8% 0px' });
+  box.querySelectorAll('.mev').forEach(n => io.observe(n));
+  window.scrollTo(0, 0);
+}
+
 function pathsFor(st) {
   const name = norm(st.artist?.name || '');
   const out = [];
@@ -2172,7 +2390,9 @@ async function renderPath(h) {
   if (!path) { main.innerHTML = '<div class="lin"><p class="muted">No such path.</p></div>'; return; }
   closeTool(); gen++; const my = gen, run = ++connectRun; leaveHome(); trail = []; cur = -1; renderCrumbs();
   const stop = () => my !== gen || run !== connectRun;
-  main.innerHTML = `<div class="lin"><div class="kicker">Path</div><h1>${esc(path.title)}</h1><p class="lede">${esc(path.blurb)}</p>
+  const rootName = MILESTONES[path.root]?.name || (await getArtist(path.root).catch(() => null))?.name || 'The band';
+  if (stop()) return;
+  main.innerHTML = `<div class="lin">${bandTabs(path.root, rootName, path.id)}<div class="kicker">Path</div><h1>${esc(path.title)}</h1><p class="lede">${esc(path.blurb)}</p>
     <div class="cprog"><i style="width:30%"></i></div><p class="muted" id="cmsg">Gathering the bands…</p></div>`;
   const msg = m => { const el = document.getElementById('cmsg'); if (el) el.textContent = m; };
   let L;
@@ -2465,6 +2685,7 @@ function route(h) {
   if (/^browse/.test(h)) return renderBrowse(h);
   if (/^lineage:/.test(h)) return renderLineage(h.slice(8));
   if (/^path:/.test(h)) return renderPath(h.slice(5));
+  if (/^milestones:/.test(h)) return renderMilestones(h.slice(11));
   if (/^story:(trail|line):/.test(h)) return renderFamily(h);
   if (/^story:/.test(h)) return renderStory(h.replace('story:steps:', 'story:trail:'));
   if (/^tree:/.test(h)) return routeTree(h.slice(5));
@@ -3704,7 +3925,7 @@ function infoCol(st, i) {
     ${genres.length ? `<div>${genres.map(g => `<span class="tag">${esc(g.name)}</span>`).join('')}</div>` : ''}
     <button class="fwdcol" data-col="1">${band ? 'Members' : 'Bands'} · ${total} ›</button>
     <button class="lbtn" data-listen>▶ Listen</button>${treeWorthy(st) ? ' <button class="lbtn" data-tree>Family tree</button>' : ''}
-    ${pathsLine(st)}
+    ${pathsLine(st)}${milestonesLine(st)}
     <div class="jumps"><a data-jump="lowerTimeline">Timeline ↓</a><a data-jump="lowerDisco">Discography ↓</a></div>
   </div>`;
 }
@@ -4133,7 +4354,6 @@ async function loadReleases(st, myGen) {
       all.push(...d['release-groups']);
       if (all.length >= d['release-group-count'] || !d['release-groups'].length) break;
     }
-    if (!all.length && st.discogsId) all = await discogsReleases(st.discogsId, myGen);
     // A musician who mostly records with bands: add their bands' albums and EPs from while they were in them.
     if (st.kind === 'person' && all.filter(r => ['Album', 'EP'].includes(relType(r))).length < 3) {
       await st.ready;
@@ -4153,6 +4373,8 @@ async function loadReleases(st, myGen) {
         }
       }
     }
+    // Discogs last: it rate-limits hard, so it only stands in when MusicBrainz and the bands' records gave us nothing.
+    if (!all.length && st.discogsId) all = await discogsReleases(st.discogsId, myGen).catch(e => { if (e.message === 'stale') throw e; return []; });
   } catch (e) { if (e.message === 'stale') return; }
   st.releases = all.sort((a, b) => (a['first-release-date'] || '9999').localeCompare(b['first-release-date'] || '9999'));
   refreshStage(st.id);  // album count in the info column
