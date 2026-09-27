@@ -621,6 +621,25 @@
     .mhero { height: 300px; } .mhero h1 { font-size: 44px; } .mxp { grid-template-columns: 1fr; }
     .mfeat.side { flex-direction: column; } .mfeat.side .mimg { width: auto; height: 180px; } .mcv { width: 84px; height: 84px; } .mrow > .md { width: 64px; }
   }
+  /* Feedback */
+  .fbbtn { border-style: dashed; }
+  .fbform { display: grid; gap: 10px; margin-top: 14px; }
+  .fbkinds { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fbkinds label { cursor: pointer; } .fbkinds input { display: none; }
+  .fbkinds span { display: inline-block; font-size: 12.5px; padding: 6px 12px; border-radius: 99px; border: 1px solid #ffffff26; background: #ffffff0a; }
+  .fbkinds input:checked + span { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .fbform textarea, .fbform input[type=email] { width: 100%; box-sizing: border-box; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; resize: vertical; }
+  .fbform textarea:focus, .fbform input:focus { outline: none; border-color: var(--accent); }
+  .fbhp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .fbfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .fbmsg { margin: 0; color: #ff8a9a; font-size: 13px; min-height: 1em; }
+  .fbthanks { padding: 10px 0; } .fbthanks b { font-size: 20px; } .fbthanks p { color: #c9ccd5; }
+  .rvtabs { display: flex; gap: 6px; margin: 6px 0 18px; } .rvtabs a { font-size: 12.5px; padding: 6px 12px; border-radius: 99px; border: 1px solid #ffffff22; cursor: pointer; text-transform: capitalize; }
+  .rvtabs a.on { background: var(--text); color: var(--bg); }
+  .rvitem { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin-bottom: 10px; }
+  .rvhead { display: flex; justify-content: space-between; gap: 10px; } .rvhead small { color: var(--muted); }
+  .rvitem p { margin: 6px 0; white-space: pre-wrap; } .rvacts { display: flex; gap: 6px; margin-top: 8px; }
+  .rvacts button { text-transform: capitalize; } .rvacts button.on { background: var(--text); color: var(--bg); }
   /* Rock family tree (paper, typewriter, ink) */
   .treemodal { background: #0008; }
   .treepage { position: relative; max-width: 1200px; margin: 3vh auto; padding: 36px 40px 28px; background: #f4eee2; color: #26221c;
@@ -698,7 +717,7 @@
     <div id="results"></div>
   </div>
   <div class="status" id="status"></div>
-  <nav class="hnav"><a class="hbtn" href="#browse">Browse</a><button class="hbtn" id="connectBtn" onclick="openConnect()"><span class="long">Six degrees</span><span class="short">Six degrees</span></button></nav>
+  <nav class="hnav"><button class="hbtn fbbtn" onclick="openFeedback()"><span class="long">Help make it better</span><span class="short">Feedback</span></button><a class="hbtn" href="#browse">Browse</a><button class="hbtn" id="connectBtn" onclick="openConnect()"><span class="long">Six degrees</span><span class="short">Six degrees</span></button></nav>
 </header>
 <main id="main"></main>
 <div class="tip navtip" id="navtip"></div>
@@ -2376,6 +2395,66 @@ function renderMilestones(id) {
   requestAnimationFrame(() => box.querySelectorAll('.mev').forEach(n => { if (n.getBoundingClientRect().top < innerHeight) n.classList.add('in'); }));   // what's on screen at the start shows at once
 }
 
+/* ---------- Help make it better ----------
+   A short form anyone can send from any page (the page they were on comes along). Comments land in our database;
+   #review lists them for us, behind the admin key. */
+const FB_KINDS = ['Something’s wrong', 'Missing band or person', 'An idea', 'Other'];
+function openFeedback() {
+  const where = document.querySelector('main h1')?.textContent?.trim() || document.title;
+  openTool(`<h3>Help make it better</h3><p class="muted">Spot a wrong date, a missing band, or have an idea? Tell us. We read every one.</p>
+    <form class="fbform" id="fbform">
+      <div class="fbkinds">${FB_KINDS.map((k, i) => `<label><input type="radio" name="kind" value="${esc(k)}"${i === 0 ? ' checked' : ''}><span>${esc(k)}</span></label>`).join('')}</div>
+      <textarea name="comment" rows="5" placeholder="What should we know?" required></textarea>
+      <input name="email" type="email" placeholder="Your email (optional, if you’d like to hear back)" autocomplete="email">
+      <input name="hp" class="fbhp" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="fbfoot"><small class="muted">About: ${esc(where)}</small><button class="cgo" type="submit">Send</button></div>
+      <p class="fbmsg" id="fbmsg"></p>
+    </form>`);
+  const f = document.getElementById('fbform'), msg = document.getElementById('fbmsg');
+  f.querySelector('textarea').focus();
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(f));
+    const btn = f.querySelector('button'); btn.disabled = true; msg.textContent = 'Sending…';
+    try {
+      const r = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...d, page: `${where} · ${location.href}` }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'Couldn’t send just now. Please try again.');
+      f.innerHTML = `<div class="fbthanks"><b>Thank you.</b><p>Got it. We go through every note, and this is exactly how the site gets better.</p><button class="cgo" type="button" id="fbclose">Close</button></div>`;
+      document.getElementById('fbclose').onclick = closeTool;
+    } catch (err) { msg.textContent = HOSTED ? err.message : 'Feedback only works on the live site.'; btn.disabled = false; }
+  };
+}
+async function renderReview() {
+  closeTool(); gen++; leaveHome(); trail = []; cur = -1; renderCrumbs();
+  let key = ''; try { key = localStorage.getItem('bt-admin') || ''; } catch {}
+  const ask = err => {
+    main.innerHTML = `<div class="browse"><h1>Feedback</h1><form class="bsearch" id="rvk"><input id="rvkey" type="password" placeholder="Admin key"><button class="cgo">Open</button></form>${err ? `<p class="muted">${esc(err)}</p>` : ''}</div>`;
+    document.getElementById('rvk').onsubmit = e => { e.preventDefault(); try { localStorage.setItem('bt-admin', document.getElementById('rvkey').value); } catch {} renderReview(); };
+  };
+  if (!key) return ask();
+  const r = await fetch('/api/feedback', { headers: { 'X-Admin-Key': key } }).catch(() => null);
+  if (!r || !r.ok) { try { localStorage.removeItem('bt-admin'); } catch {} return ask(r?.status === 401 ? 'That key didn’t work.' : 'Couldn’t load feedback.'); }
+  const { items } = await r.json();
+  let show = 'new';
+  const draw = () => {
+    const list = items.filter(x => show === 'all' || x.status === show);
+    main.innerHTML = `<div class="browse rv"><h1>Feedback</h1><div class="rvtabs">${['new', 'done', 'ignored', 'all'].map(s =>
+      `<a data-show="${s}" class="${s === show ? 'on' : ''}">${s} · ${s === 'all' ? items.length : items.filter(x => x.status === s).length}</a>`).join('')}</div>
+      ${list.length ? list.map(x => `<div class="rvitem"><div class="rvhead"><b>${esc(x.kind || 'Note')}</b><small>${new Date(x.ts).toLocaleString()}</small></div>
+        <p>${esc(x.comment)}</p><small class="muted">${esc(x.page || '')}${x.email ? ` · ${esc(x.email)}` : ''}</small>
+        <div class="rvacts">${['new', 'done', 'ignored'].map(s => `<button data-id="${x.id}" data-st="${s}" class="${x.status === s ? 'on' : ''}">${s}</button>`).join('')}</div></div>`).join('')
+      : '<p class="muted">Nothing here.</p>'}</div>`;
+    main.querySelectorAll('[data-show]').forEach(a => a.onclick = () => { show = a.dataset.show; draw(); });
+    main.querySelectorAll('[data-st]').forEach(b => b.onclick = async () => {
+      const it = items.find(x => x.id === +b.dataset.id); it.status = b.dataset.st; draw();
+      fetch('/api/feedback', { method: 'PATCH', headers: { 'X-Admin-Key': key, 'Content-Type': 'application/json' }, body: JSON.stringify({ id: it.id, status: it.status }) });
+    });
+  };
+  draw();
+}
+
 function pathsFor(st) {
   const name = norm(st.artist?.name || '');
   const out = [];
@@ -2399,11 +2478,31 @@ async function renderPath(h) {
   main.innerHTML = `<div class="lin">${bandTabs(path.root, rootName, path.id)}<div class="kicker">Path</div><h1>${esc(path.title)}</h1><p class="lede">${esc(path.blurb)}</p>
     <div class="cprog"><i style="width:30%"></i></div><p class="muted" id="cmsg">Gathering the bands…</p></div>`;
   const msg = m => { const el = document.getElementById('cmsg'); if (el) el.textContent = m; };
+  // A saved copy draws at once; a copy over a week old is re-checked quietly and replaced only if something changed.
+  const skey = 'path:' + path.id;
+  const toSnap = L => JSON.stringify({ root: { name: L.root.name }, rootId: L.rootId, rs: L.rs, re: L.re, people: L.people, bands: [...L.bands.entries()], joins: L.joins });
+  const fromSnap = t => { const d = JSON.parse(t); return { ...d, bands: new Map(d.bands) }; };
+  const jump = () => { if (+k) setTimeout(() => main.querySelector(`.lch[data-k="${+k}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150); };
+  const snap = HOSTED ? await fetch('/api/snap?k=' + skey).then(r => r.ok ? r.json() : null).catch(() => null) : null;
+  if (stop()) return;
+  if (snap?.data) {
+    const saved = JSON.stringify(snap.data);
+    drawLineage(fromSnap(saved), path); jump();
+    if (Date.now() - snap.ts < 7 * 864e5) return;
+    const L = await buildLineage(path.root, () => {}, stop, path.dates).catch(() => null);
+    if (!L || stop()) return;
+    const fresh = toSnap(L);
+    if (fresh === saved) return;
+    fetch('/api/snap?k=' + skey, { method: 'PUT', body: fresh }).catch(() => {});
+    const y = scrollY; drawLineage(fromSnap(fresh), path); scrollTo(0, y);
+    return;
+  }
   let L;
   try { L = await buildLineage(path.root, msg, stop, path.dates); } catch { if (!stop()) msg('Couldn’t load this path just now.'); return; }
   if (!L || stop()) return;
-  drawLineage(L, path);
-  if (+k) setTimeout(() => main.querySelector(`.lch[data-k="${+k}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+  const fresh = toSnap(L);
+  if (HOSTED) fetch('/api/snap?k=' + skey, { method: 'PUT', body: fresh }).catch(() => {});
+  drawLineage(fromSnap(fresh), path); jump();
 }
 function pathsHTML() {
   const ini = n => n.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -2690,6 +2789,7 @@ function route(h) {
   if (/^lineage:/.test(h)) return renderLineage(h.slice(8));
   if (/^path:/.test(h)) return renderPath(h.slice(5));
   if (/^milestones:/.test(h)) return renderMilestones(h.slice(11));
+  if (h === 'review') return renderReview();
   if (/^story:(trail|line):/.test(h)) return renderFamily(h);
   if (/^story:/.test(h)) return renderStory(h.replace('story:steps:', 'story:trail:'));
   if (/^tree:/.test(h)) return routeTree(h.slice(5));
