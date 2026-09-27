@@ -269,6 +269,17 @@
   .subhead:first-child { margin-top: 0; }
   .rel > button.on .cover { outline: 2px solid var(--accent); outline-offset: 2px; }
   #crumbs a i.album { background: var(--accent); border-radius: 1px; transform: rotate(45deg); width: 6px; height: 6px; }
+  /* Line-ups */
+  .lineups { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; padding-bottom: 6px; }
+  .lu { background: #1b1e26; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .lu-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .lu-h b { font-size: 15px; } .lu-h span { color: var(--muted); font-size: 12px; }
+  .lu-m { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 13.5px; }
+  .lu-m:hover span { color: var(--accent); } .lu-m small { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .lu-r { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+  .lu-r a { cursor: pointer; font-size: 12.5px; color: var(--accent); display: flex; justify-content: space-between; gap: 8px; }
+  .lu-r small { color: var(--muted); }
+  .lu-x { opacity: .75; }
 </style>
 </head>
 <body>
@@ -376,7 +387,8 @@ function finalizeRels(list) {
     const last = ends.length ? year(ends.at(-1)) : '';
     e.span = !b && !last ? '' : (b ? year(b) : '?') + '–' + (e.active ? 'now' : last || '?');
     e.first = b || '9999';
-    e.instruments = [...e.attrs].filter(a => !['original', 'founder', 'additional', 'minor', 'guest', 'touring'].includes(a));
+    e.instruments = [...new Set([...e.attrs].filter(a => !['original', 'founder', 'additional', 'minor', 'guest', 'touring'].includes(a))
+      .map(a => a === 'membranophone' ? 'drums' : a))];   // MusicBrainz's word for a drum part
     e.founder = e.attrs.has('original') || e.attrs.has('founder');
     return e;
   });
@@ -626,7 +638,7 @@ function stageFor(id) {
       }
       // Nobody listed on MusicBrainz: look for the lineup elsewhere.
       if (a.src === 'mb' && !st.rels.length) enrichStage(st);
-      else fillDates(st).catch(() => {});   // listed, but maybe without dates
+      else fillDates(st).catch(() => {}).finally(() => { st.datesChecked = true; maybeLineups(st); });   // listed, but maybe without dates
       return st;
     });
     // Only needs the ID, so fetch the photo alongside the MusicBrainz lookup.
@@ -718,7 +730,7 @@ async function enrichStage(st) {
     }
   }
   st.enrich = 'done';
-  if (rels.length) { st.rels = rels; st.relSource = source; fillDates(st).catch(() => {}); }
+  if (rels.length) { st.rels = rels; st.relSource = source; fillDates(st).catch(() => {}).finally(() => { st.datesChecked = true; maybeLineups(st); }); }
   refreshStage(st.id);
   if (rels.length && trail[cur]?.id === st.id) {
     state.rels = st.rels; renderTimeline();
@@ -1189,6 +1201,69 @@ function showAlbumLower(st) {
   }
 }
 
+/* ---------- Line-ups (when there are no dates) ----------
+   If most of a band's members have no dates anywhere, work out line-ups from who played on each record instead:
+   every distinct set of band members across the albums and EPs is a line-up (A, B, C… in order of first release). */
+const mostlyUndated = st => st.rels.filter(r => !isDated(r)).length >= Math.max(1, st.rels.length / 2);
+function maybeLineups(st) {
+  if (st.kind !== 'band' || !st.releases || !st.datesChecked || st.lineups || !st.rels.length || !mostlyUndated(st)) return;
+  buildLineups(st).catch(() => { st.lineups.state = 'done'; });
+}
+async function recordCredits(rg) {
+  const tmp = { rg, facts: {}, listen: {}, info: null, tracks: null };
+  let list = rg.src === 'discogs' ? await albumDiscogsCredits(tmp, rg.dgType, rg.dgId) : await albumMBCredits(tmp);
+  if (!list.some(p => p.play.length) && tmp.dgLink) list = await albumDiscogsCredits(tmp, ...tmp.dgLink).catch(() => list);
+  return list.filter(p => p.play.length);
+}
+async function buildLineups(st) {
+  const records = st.releases.filter(r => ['Album', 'EP'].includes(relType(r))).slice(0, 15);
+  st.lineups = { state: 'running', done: 0, total: records.length, groups: [], unplaced: [] };
+  const show = () => { if (trail[cur]?.id === st.id && state.artist?.type !== 'Album') renderTimeline(); };
+  show();
+  const perRecord = [];
+  for (const rg of records) {
+    const players = await recordCredits(rg).catch(() => []);
+    const ids = st.rels.filter(r => players.some(p => p.id === r.id || sameName(p.name, r.name))).map(r => r.id);
+    if (ids.length) perRecord.push({ rg, ids });
+    st.lineups.done++;
+    show();
+  }
+  // Same set of members = same line-up, lettered by first release.
+  const groups = new Map();
+  for (const { rg, ids } of perRecord) {
+    const key = [...ids].sort().join('|');
+    if (!groups.has(key)) groups.set(key, { members: ids, records: [] });
+    groups.get(key).records.push(rg);
+  }
+  st.lineups.groups = [...groups.values()].map((g, i) => ({ ...g, label: String.fromCharCode(65 + i) }));
+  const placed = new Set(perRecord.flatMap(x => x.ids));
+  st.lineups.unplaced = st.rels.filter(r => !placed.has(r.id)).map(r => r.id);
+  st.lineups.state = 'done';
+  show();
+}
+function renderLineups(el, st) {
+  const L = st.lineups, byId = id => st.rels.find(r => r.id === id);
+  document.getElementById('tlTitle').textContent = `Line-ups · ${st.artist.name}`;
+  document.getElementById('tlCount').textContent = L.groups.length || '';
+  document.getElementById('tlegend').innerHTML = L.state === 'running' ? '' :
+    '<span>No dates on file for most of this lineup, so these come from who played on each record.</span>';
+  if (L.state === 'running' && !L.groups.length) {
+    el.innerHTML = `<span class="muted">No dates on file, so working out line-ups from the album credits… ${L.done} of ${L.total} records</span>`;
+    return;
+  }
+  const member = id => { const r = byId(id); return r ? `<div class="lu-m" data-lu-m="${esc(r.id)}"><span>${esc(r.name)}</span><small>${esc(r.instruments.slice(0, 2).join(', '))}</small></div>` : ''; };
+  const yrs = g => { const ys = g.records.map(r => year(r['first-release-date'])).filter(Boolean); return ys.length ? (ys[0] === ys.at(-1) ? ys[0] : `${ys[0]}–${ys.at(-1)}`) : ''; };
+  el.innerHTML = !L.groups.length ? '<span class="muted">No credits on MusicBrainz or Discogs for this band\'s records, so there are no line-ups to show.</span>'
+    : `<div class="lineups">${L.groups.map(g => `<div class="lu">
+        <div class="lu-h"><b>Line-up ${g.label}</b><span>${yrs(g)}</span></div>
+        ${g.members.map(member).join('')}
+        <div class="lu-r">${g.records.map(r => `<a data-lu-a="${esc(r.id)}">${esc(r.title)}<small>${year(r['first-release-date'])}</small></a>`).join('')}</div>
+      </div>`).join('')}
+      ${L.unplaced.length ? `<div class="lu lu-x"><div class="lu-h"><b>Not credited on a record</b></div>${L.unplaced.map(member).join('')}</div>` : ''}</div>`;
+  el.querySelectorAll('[data-lu-m]').forEach(n => n.onclick = () => selectMember(n.dataset.luM));
+  el.querySelectorAll('[data-lu-a]').forEach(n => n.onclick = () => { openAlbumStage(state.releases.find(r => r.id === n.dataset.luA)); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+}
+
 function shell() {
   main.innerHTML = `
     <section style="margin-top:0"><nav id="crumbs"></nav><div class="nav" id="nav"><div class="track" id="track"></div></div></section>
@@ -1527,6 +1602,9 @@ function stintsOf(r) {
 function renderTimeline() {
   const el = document.getElementById('timeline');
   if (!el || !state.artist || state.artist.type === 'Album') return;   // album pages show the tracklist here
+  const here = stages.get(trail[cur]?.id);
+  if (here?.artist === state.artist && here.lineups && mostlyUndated(here)) return renderLineups(el, here);
+  document.getElementById('tlTitle').textContent = `${kindOf(state.artist.type) === 'band' ? 'Lineup timeline' : 'Band timeline'} · ${state.artist.name}`;
   if (!state.rels.length) {
     el.innerHTML = `<span class="muted">MusicBrainz has no ${kindOf(state.artist.type) === 'band' ? 'member' : 'band membership'} data for this artist yet.</span>`;
     document.getElementById('tlegend').innerHTML = '';
@@ -1633,6 +1711,7 @@ async function loadReleases(st, myGen) {
   } catch (e) { if (e.message === 'stale') return; }
   st.releases = all.sort((a, b) => (a['first-release-date'] || '9999').localeCompare(b['first-release-date'] || '9999'));
   refreshStage(st.id);  // album count in the info column
+  maybeLineups(st);
   if (myGen !== gen) return;
   state.releases = st.releases;
   if (!state.releases.some(r => relType(r) === 'Album')) state.filter = 'All';

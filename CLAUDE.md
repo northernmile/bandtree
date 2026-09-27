@@ -49,6 +49,9 @@ and JS, with D3 from cdnjs used for the timeline only.
   then each member's own P463 via SPARQL), then the Members section of the band's Wikipedia article
   ("Name – vocals (1987–1999, 2017–present)"). Wikipedia can also add missing members. Existing dates always win;
   the list header says "dates via …".
+- **Line-ups.** If most members still have no dates, `buildLineups()` fetches credits for each album and EP (up to
+  15) and groups them: each distinct set of band members is a line-up (A, B, C…), shown as cards in place of the
+  timeline, with members no record credits listed separately.
 - **Album pages.** Clicking a record opens it as a stop on the trail (`album:<release-group MBID>` or
   `album:dg-master-<id>`): cover, facts, Wikipedia notes · credits (who played on it, then production) · the selected
   person's other bands. Credits: MusicBrainz release + per-track credits, then Discogs credits, then the band's lineup
