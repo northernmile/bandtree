@@ -49,8 +49,12 @@ and JS, with D3 from cdnjs used for the timeline only.
 - **Browse.** `#browse` index of curated labels / cities / styles plus free search; `#browse:<type>:<name>` lists
   artists: label = its releases on MusicBrainz; city = Wikidata "location of formation" + MusicBrainz area search
   (untagged results dropped); scene = MusicBrainz tag in the artist's top 3. Ranked by Wikipedia language count.
-- **Guided trails.** `TRAILS` waypoints; each hop verified with `findPath` then opened with `openPath`. All eight
-  verified 2026-09-27.
+- **Story pages.** `#story:trail:<n>` and `#story:connect:<id>:<id>` (`renderStory`). Trails use `TRAILS` waypoints,
+  each hop verified with `findPath` (`trailPath`). Each band is a big stop (photo, years, 2-sentence Wikipedia intro,
+  Listen / Open / "Other members' bands" side branches via `showBranches`); people between bands are link cards with
+  what they did in each (from the band's member list first). A sticky strip at the top is the whole chain, highlights
+  the stop you're reading and jumps on click. Connection results offer "See the story" and "Open as a trail".
+  Note: `closeTool()` bumps `connectRun`, so call it before capturing the run counter.
 - **Family tree.** `openTree()` on bands with 4+ connected bands: line-ups (from member stints) down the middle,
   members' earlier bands left, later/parallel right, SVG connectors to the nearest line-up in time. Paper + Special
   Elite font; print CSS; shareable as `#tree:<id>`.
