@@ -686,7 +686,8 @@ function stageFor(id) {
       }
       // Nobody listed on MusicBrainz: look for the lineup elsewhere.
       if (a.src === 'mb' && !st.rels.length) enrichStage(st);
-      else fillDates(st).catch(() => {}).finally(() => { st.datesChecked = true; maybeLineups(st); });   // listed, but maybe without dates
+      // Listed: add anyone Discogs / Wikipedia knows that MusicBrainz doesn't, then fill in missing dates.
+      else mergeMembers(st).catch(() => {}).then(() => fillDates(st)).catch(() => {}).finally(() => { st.datesChecked = true; maybeLineups(st); });
       loadNames(st).catch(() => {});
       return st;
     });
@@ -1343,6 +1344,64 @@ async function loadNames(st) {
   if (!names.length && !real) return;
   st.names = names; st.realPerson = real;
   refreshStage(st.id);
+}
+
+/* ---------- Merging member lists ----------
+   MusicBrainz is often incomplete (Swell: 2 members there, 12 on Discogs). So for any MusicBrainz band or musician
+   we also add whoever Discogs lists (the exact artist MusicBrainz links to, never a name guess) and, for bands,
+   the members in the infobox of the band's own Wikipedia article. People are matched by name; MusicBrainz entries
+   win, and added people keep their Discogs "former" flag. */
+async function wikipediaInfoboxMembers(title) {
+  const html = (await getJSON(`${WIKI}action=parse&prop=text&redirects=1&section=0&page=${encodeURIComponent(title)}`)).parse.text['*'];
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('sup, style').forEach(n => n.remove());
+  const out = [];
+  for (const tr of doc.querySelectorAll('table.infobox tr')) {
+    const th = (tr.querySelector('th')?.textContent || '').trim().toLowerCase();
+    if (!/^(past |former |current )?members$/.test(th)) continue;
+    const td = tr.querySelector('td');
+    if (!td) continue;
+    const items = td.querySelectorAll('li').length ? [...td.querySelectorAll('li')]
+      : td.innerHTML.split(/<br\s*\/?>/i).map(h => { const d = doc.createElement('div'); d.innerHTML = h; return d; });
+    for (const it of items) {
+      const name = it.textContent.replace(/\s+/g, ' ').trim();
+      if (!name || name.length > 50 || /\d/.test(name)) continue;
+      const a = [...it.querySelectorAll('a')].find(a => /^\/wiki\/[^:]+$/.test(a.getAttribute('href') || ''));
+      out.push({ name, title: a ? decodeURIComponent(a.getAttribute('href').slice(6)).replace(/_/g, ' ') : null, former: /past|former/.test(th) });
+    }
+  }
+  return out;
+}
+async function mergeMembers(st) {
+  if (st.artist.src !== 'mb') return;
+  const band = st.kind === 'band', added = [], from = new Set();
+  const have = r => st.rels.some(x => x.id === r.id || sameName(x.name, r.name)) || added.some(x => x.id === r.id || sameName(x.name, r.name));
+  const [d, wp] = await Promise.all([
+    st.discogsId ? discogsArtist(st.discogsId).catch(() => null) : null,
+    band ? wikidataEntity(st.id).then(e => e?.sitelinks?.enwiki ? wikipediaInfoboxMembers(e.sitelinks.enwiki.title) : []).catch(() => []) : []]);
+  for (const r of (band ? d?.members : d?.bands) || []) {
+    if (have(r)) continue;
+    added.push({ ...r, periods: [...r.periods], attrs: new Set(r.attrs) }); from.add('Discogs');
+  }
+  const fresh = wp.filter(w => !have(w));
+  if (fresh.length) {
+    const ids = await idsForTitles(fresh.map(w => w.title).filter(Boolean)).catch(() => new Map());
+    for (const w of fresh) {
+      const id = (w.title && ids.get(norm(w.title))) || 'wd:' + norm(w.name).replace(/ /g, '-');
+      if (have({ id, name: w.name })) continue;
+      added.push({ id, name: w.name, type: 'Person', disambiguation: '', periods: [], attrs: new Set(), note: w.former ? 'former' : '' });
+      from.add('Wikipedia');
+    }
+  }
+  if (!added.length) return;
+  st.rels = finalizeRels([...st.rels, ...added]);
+  st.relSource = ['MusicBrainz', ...from].join(' + ');
+  refreshStage(st.id);
+  if (trail[cur]?.id === st.id) {
+    state.rels = st.rels; renderTimeline();
+    document.getElementById('tlCount').textContent = st.rels.length;
+    prefetchLinks(st, gen);
+  }
 }
 
 function shell() {

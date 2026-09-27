@@ -47,6 +47,9 @@ and JS, with D3 from cdnjs used for the timeline only.
   (`pilicense=any`), then other editions on Cover Art Archive, then Discogs. Discogs-only releases ask Discogs
   first. Results are cached in localStorage `cover3:<id>`, and misses are only cached when every source actually
   answered.
+- **Merged member lists.** MusicBrainz is often incomplete, so `mergeMembers()` also adds whoever Discogs lists for
+  the exact artist MusicBrainz links to (never a name guess) and, for bands, the Members rows of the band's own
+  Wikipedia infobox. Matched by name; MusicBrainz entries win. Header reads "via MusicBrainz + Discogs".
 - **Lineup dates.** When members come back without dates, `fillDates()` rolls over per member: Wikidata (band P527,
   then each member's own P463 via SPARQL), then the Members section of the band's Wikipedia article
   ("Name – vocals (1987–1999, 2017–present)"). Wikipedia can also add missing members. Existing dates always win;
