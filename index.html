@@ -107,6 +107,9 @@
   .row.sel .nm { color: var(--accent); }
   .row .txt { flex: 1; min-width: 0; }
   .row .nm { font-weight: 500; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .nm .yr { font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 6px; font-variant-numeric: tabular-nums; }
+  .row .nm .yr.fb { opacity: .6; font-style: italic; }
+  .row .nm .now { color: #7be495; }
   .row .meta { color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .row .meta .now { color: #7be495; }
   .badge { font-size: 11.5px; color: var(--text); white-space: nowrap; opacity: .8; }
@@ -744,6 +747,7 @@ function stageFor(id) {
       else mergeMembers(st).catch(() => {}).then(() => fillDates(st)).catch(() => {}).finally(() => { st.datesChecked = true; maybeBandCredits(st); });
       loadNames(st).catch(() => {});
       loadBlurb(st).catch(() => {});
+      if (st.kind === 'person') fetchBandYears(st.rels).then(got => got && refreshStage(id)).catch(() => {});
       return st;
     });
     // Only needs the ID, so fetch the photo alongside the MusicBrainz lookup.
@@ -762,6 +766,7 @@ function loadLinks(st, rel, opts = {}) {
       if (dup) { st.rels = st.rels.filter(r => r !== dup); if (trail[cur]?.id === st.id) { state.rels = st.rels; renderTimeline(); } scheduleRefresh(st.id); }
       const list = (st.kind !== 'person' ? a.bands : a.members).filter(x => !st.altIds.has(x.id));
       st.links.set(rel.id, list);
+      if (st.kind !== 'person') fetchBandYears(list).then(got => got && scheduleRefresh(st.id)).catch(() => {});
       return list;
     });
     p.catch(() => st.linkP.delete(rel.id));
@@ -1831,7 +1836,7 @@ function infoCol(st, i) {
   const current = st.rels.filter(r => r.periods.some(p => p.begin && !p.end && !p.ended)).length;
   let stats = band ? [
     ['Formed', [ls.ended && year(ls.end) && year(ls.begin) ? `${year(ls.begin)}–${year(ls.end)}` : year(ls.begin), place].filter(Boolean).join(' · ') || 'Unknown', 'wide'],
-    ['Members', total ? (tiers ? `${tiers.core.length} core · ${tiers.others.length} others` : `${total}${current ? ` · ${current} current` : ''}`) : 'None listed'],
+    ['Members', total ? (tiers ? `${tiers.core.length} core · ${tiers.others.length} other${tiers.others.length === 1 ? '' : 's'}` : `${total}${current ? ` · ${current} current` : ''}`) : 'None listed'],
     ['Albums', albums],
     ['Connected bands', conn],
   ] : [
@@ -1857,6 +1862,33 @@ function infoCol(st, i) {
     <div class="jumps"><a data-jump="lowerTimeline">Timeline ↓</a><a data-jump="lowerDisco">Discography ↓</a></div>
   </div>`;
 }
+// Band lists read like a career: oldest first, years beside the name. When a person's stint has no dates, the band's
+// own years (Wikidata inception / dissolution, one query for the lot) place it, shown greyed out.
+const bandYears = new Map();   // MusicBrainz band id -> { first, txt }
+async function fetchBandYears(list) {
+  const ids = [...new Set(list.filter(l => !l.span && !l.id.includes(':') && !bandYears.has(l.id)).map(l => l.id))].slice(0, 60);
+  if (!ids.length) return false;
+  ids.forEach(id => bandYears.set(id, null));
+  const q = `SELECT ?mbid ?s ?e WHERE { VALUES ?mbid { ${ids.map(i => `"${i}"`).join(' ')} } ?b wdt:P434 ?mbid.
+    OPTIONAL { ?b wdt:P571 ?s } OPTIONAL { ?b wdt:P576 ?e } }`;
+  const d = await getJSON('https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(q));
+  for (const b of d.results.bindings) {
+    const s = b.s?.value.slice(0, 4), e = b.e?.value.slice(0, 4);
+    if (s) bandYears.set(b.mbid.value, { first: s, txt: `${s}–${e || ''}` });
+  }
+  return true;
+}
+function yearsOf(l) {
+  if (l.span) return { first: l.first, html: l.span.endsWith('now') ? `${esc(l.span.slice(0, -3))}<span class="now">now</span>` : esc(l.span) };
+  const b = bandYears.get(l.id);
+  return b ? { first: b.first, html: esc(b.txt), band: true } : { first: '9999', html: '' };
+}
+const byCareer = (a, b) => yearsOf(a).first.localeCompare(yearsOf(b).first) || a.name.localeCompare(b.name);
+function bandName(l) {
+  const y = yearsOf(l);
+  return `${esc(l.name)}${y.html ? ` <span class="yr${y.band ? ' fb' : ''}"${y.band ? ' title="The band’s own years (no dates for this stint)"' : ''}>${y.html}</span>` : ''}`;
+}
+const roleOnly = r => esc(r.instruments.slice(0, 2).join(', ') || r.note || '');
 function rowMeta(r) {
   const span = r.span.endsWith('now') ? `${esc(r.span.slice(0, -3))}<span class="now">now</span>` : esc(r.span);
   return [esc(r.instruments.slice(0, 2).join(', ')), span || esc(r.note || '')].filter(Boolean).join(' · ');
@@ -1889,13 +1921,14 @@ function memberTiers(st) {
 }
 function listCol(st, selId, nextId) {
   const band = st.kind === 'band';
+  if (!band) st.rels.sort(byCareer);
   const row = (r, extra) => {
     const links = st.links.get(r.id), n = links?.length;
     const badge = links ? (n ? `<span class="badge">${band ? `${n} band${n === 1 ? '' : 's'}` : `${n + 1} members`}</span>` : '<span class="badge none">—</span>')
       : st.linkP.has(r.id) ? '<span class="badge"><i class="dot"></i></span>' : '';
     // Band page: a member row opens the third column. Musician page: a band row opens that band.
     return `<div class="row${(band ? r.id === selId : r.id === nextId) ? ' sel' : ''}" ${band ? 'data-sel' : 'data-go'}="${r.id}">
-      <div class="txt"><div class="nm">${esc(r.name)}</div><div class="meta">${[rowMeta(r), extra].filter(Boolean).join(' · ')}</div></div>${badge}</div>`;
+      <div class="txt"><div class="nm">${band ? esc(r.name) : bandName(r)}</div><div class="meta">${[band ? rowMeta(r) : roleOnly(r), extra].filter(Boolean).join(' · ')}</div></div>${badge}</div>`;
   };
   const tiers = memberTiers(st);
   let rows;
@@ -1930,9 +1963,9 @@ function subCol(st, sel) {
   else {
     // For each of this member's other bands, which *other* members of the current band also played there.
     const rows = links.map(l => ({ l, also: band ? st.rels.filter(r => r.id !== sel.id && st.links.get(r.id)?.some(x => x.id === l.id)) : [] }))
-      .sort((a, b) => b.also.length - a.also.length || a.l.first.localeCompare(b.l.first));
+      .sort((a, b) => byCareer(a.l, b.l));
     body = rows.map(({ l, also }) => `<div class="row" data-go="${l.id}">
-      <div class="txt"><div class="nm">${esc(l.name)}</div><div class="meta">${rowMeta(l)}</div></div>
+      <div class="txt"><div class="nm">${bandName(l)}</div><div class="meta">${roleOnly(l)}</div></div>
       ${also.length ? `<span class="shared" title="Also played here: ${esc(also.map(r => r.name).join(', '))}">+${also.length} from ${esc(st.artist.name)}</span>` : ''}
       <span class="go">›</span></div>`).join('');
   }
