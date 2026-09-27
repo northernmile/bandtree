@@ -611,6 +611,11 @@
   .mgap { position: relative; margin: 4px 0 4px 324px; padding: 10px 0 10px 62px; color: #5d6372; font-size: 12px; letter-spacing: .08em; }
   .mgap::before { content: ''; position: absolute; left: -324px; right: 0; top: 50%; border-top: 1px dashed #2c303b; }
   .mgap span { position: relative; background: var(--bg); padding: 0 10px; }
+  .mhero.none { height: 220px; background: linear-gradient(135deg, #2a1a22, #151820); }
+  .msgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; max-width: 1150px; }
+  .msmini { display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; border-radius: 10px; border: 1px solid #ffffff1a; background: #171920cc; text-decoration: none; color: var(--text); }
+  .msmini:hover { border-color: var(--accent); } .msmini img { width: 44px; height: 44px; border-radius: 7px; object-fit: cover; filter: grayscale(.3); flex: none; background: #0003; }
+  .msmini b { display: block; font-size: 13.5px; } .msmini small { color: var(--muted); font-size: 11.5px; }
   .mscard { display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; padding: 8px 12px 8px 8px; border-radius: 12px; border: 1px solid #ffffff1f; background: #ffffff0a; text-decoration: none; color: var(--text); }
   .mscard:hover { border-color: var(--accent); } .mscard img { width: 54px; height: 54px; border-radius: 8px; object-fit: cover; filter: grayscale(.3); }
   .mscard span { flex: 1; } .mscard b { display: block; font-size: 14px; } .mscard small { color: var(--muted); font-size: 12px; } .mscard i { font-style: normal; color: var(--muted); font-size: 18px; }
@@ -1342,7 +1347,7 @@ function renderBrowse(h) {
         <input id="bq" placeholder="Any label, city or style…" autocomplete="off"><button class="cgo">Go</button></form>
       ${Object.entries(BROWSE).map(([k, list]) => `<section><h2>${BROWSE_LABEL[k]}</h2><div class="bchips">${list.map(n =>
         `<a href="#browse:${k}:${encodeURIComponent(n)}">${esc(n)}</a>`).join('')}</div></section>`).join('')}
-      ${typeof pathsHTML === 'function' ? pathsHTML() : ''}</div>`;
+      ${typeof pathsHTML === 'function' ? pathsHTML() + msListHTML() : ''}</div>`;
     document.getElementById('bsearch').onsubmit = e => {
       e.preventDefault();
       const q = document.getElementById('bq').value.trim();
@@ -2336,21 +2341,36 @@ const MILESTONES = {
   },
 };
 const MS_TAG = { rec: 'Record', fight: 'Friction', line: 'Line-up' };
+let MS_INDEX = {};
+fetch('data/milestones/index.json').then(r => r.ok ? r.json() : {}).then(d => {
+  MS_INDEX = d || {};
+  const id = trail[cur]?.id; if (id && MS_INDEX[id] && stages.has(id)) refreshStage(id);
+  document.querySelectorAll('[data-mslist]').forEach(el => el.outerHTML = msListHTML());
+}).catch(() => {});
+const msInfo = id => MILESTONES[id] ? { name: MILESTONES[id].name, hero: MILESTONES[id].hero.src, n: msCount(MILESTONES[id]), span: msSpan(MILESTONES[id]) } : MS_INDEX[id] || null;
+// Browse / home: every band that has milestones, as small photo cards.
+function msListHTML() {
+  const all = [...Object.keys(MILESTONES), ...Object.keys(MS_INDEX).filter(k => !MILESTONES[k])].map(id => ({ id, ...msInfo(id) })).filter(x => x.name)
+    .sort((a, b) => a.name.replace(/^the /i, '').localeCompare(b.name.replace(/^the /i, '')));
+  return `<section class="trails" data-mslist><h2>Milestones</h2><div class="msgrid">${all.map(x => `<a class="msmini" href="#milestones:${x.id}">
+    <img src="${esc(x.hero || '')}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span><b>${esc(x.name)}</b><small>${x.n} moments · ${esc(x.span)}</small></span></a>`).join('')}</div></section>`;
+}
 const msLinks = s => String(s).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, (_, n, id) => `<a class="mlink" data-go="${esc(id)}">${esc(n)}</a>`);
 const msCount = m => m.eras.reduce((n, e) => n + (e.years || []).reduce((k, [, v]) => k + v.length, 0), 0);
 const msSpan = m => { const ys = m.eras.flatMap(e => (e.years || []).map(([y]) => +y)); return `${Math.min(...ys)}–${Math.max(...ys)}`; };
 // Band page: a card that opens the band's milestones.
-const milestonesLine = st => { const m = MILESTONES[st.id]; return m ? `<a class="mscard" href="#milestones:${st.id}"><img src="${esc(m.hero.src)}" alt="">
-  <span><b>Milestones</b><small>${msCount(m)} moments · ${msSpan(m)}</small></span><i>›</i></a>` : ''; };
+const milestonesLine = st => { const m = msInfo(st.id); return m ? `<a class="mscard" href="#milestones:${st.id}"><img src="${esc(m.hero || '')}" alt="" onerror="this.style.visibility='hidden'">
+  <span><b>Milestones</b><small>${m.n} moments · ${esc(m.span)}</small></span><i>›</i></a>` : ''; };
 // The views one band can have, as tabs: its page, its milestones, the paths that start from it.
 function bandTabs(id, name, on) {
   const ps = PATHS.filter(p => p.root === id);
-  return `<nav class="btabs"><a data-go="${esc(id)}" class="${on === 'band' ? 'on' : ''}">‹ ${esc(name)}</a>${MILESTONES[id] ? `<a href="#milestones:${id}" class="${on === 'ms' ? 'on' : ''}">Milestones</a>` : ''}${ps.map(p =>
+  return `<nav class="btabs"><a data-go="${esc(id)}" class="${on === 'band' ? 'on' : ''}">‹ ${esc(name)}</a>${msInfo(id) ? `<a href="#milestones:${id}" class="${on === 'ms' ? 'on' : ''}">Milestones</a>` : ''}${ps.map(p =>
     `<a href="#path:${p.id}" class="${on === p.id ? 'on' : ''}">Path: ${esc(p.title)}</a>`).join('')}</nav>`;
 }
-function renderMilestones(id) {
-  const m = MILESTONES[id];
-  closeTool(); gen++; leaveHome(); trail = []; cur = -1; renderCrumbs();
+async function renderMilestones(id) {
+  closeTool(); gen++; const my = gen; leaveHome(); trail = []; cur = -1; renderCrumbs();
+  let m = MILESTONES[id];
+  if (!m) { main.innerHTML = '<div class="ms"><p class="muted">Loading…</p></div>'; m = await fetch(`data/milestones/${id}.json`).then(r => r.ok ? r.json() : null).catch(() => null); if (my !== gen) return; }
   if (!m) { main.innerHTML = '<div class="ms"><p class="muted">No milestones for this band yet.</p></div>'; return; }
   const who = list => list?.length ? `<span class="mwho">${list.map(k => { const out = k[0] === '-', key = out ? k.slice(1) : k, [n, pid] = m.people[key] || [key];
     return `<i class="${out ? 'out' : ''}" style="background:${LIN_COLORS[Object.keys(m.people).indexOf(key) % LIN_COLORS.length]}" title="${esc(n)}${out ? ' leaves' : ''}" data-go="${esc(pid || '')}">${esc(key)}</i>`; }).join('')}</span>` : '';
@@ -2368,13 +2388,14 @@ function renderMilestones(id) {
   const ev = e => {
     const xa = e.xp ? ' data-xp' : '';
     if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${esc(e.d || '')}</span><div class="mrb"><h3>${msLinks(e.h)}${tag(e.tag)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${e.album && !e.play ? `<div class="macts"><a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a></div>` : ''}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
-    if (e.k === 'card') return `<div class="mcard"${xa}><img class="mcv" src="${esc(e.img)}" alt="" loading="lazy"><div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
+    if ((e.k === 'feat' || e.k === 'side') && !e.img) e = { ...e, k: 'card' };
+    if (e.k === 'card') return `<div class="mcard"${xa}>${e.img ? `<img class="mcv" src="${esc(e.img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
     if (e.k === 'feat' || e.k === 'side') return `<div class="mcard mfeat ${e.k}"${xa}><div class="mimg${e.fit ? ' fit' : ''}"><img src="${esc(e.img)}" alt="" loading="lazy"><span>${esc(e.cap || '')}</span></div><div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
     if (e.k === 'quote') return `<div class="mcard mquote"${xa}><div class="mbd">${head(e)}<div class="mbig">${e.big}</div><p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
     return '';
   };
   main.innerHTML = `<div class="ms">${bandTabs(id, m.name, 'ms')}
-    <div class="mhero"><img src="${esc(m.hero.src)}" alt=""><span class="mcr">${esc(m.hero.by)}</span><div class="mov"><div class="kicker">Milestones</div><h1>${esc(m.name)}</h1><p class="lede">${esc(m.lede)}</p></div></div>
+    <div class="mhero${m.hero?.src ? '' : ' none'}">${m.hero?.src ? `<img src="${esc(m.hero.src)}" alt="">` : ''}<span class="mcr">${esc(m.hero?.by || '')}</span><div class="mov"><div class="kicker">Milestones${m.label ? ` · ${esc(m.label)}` : ''}</div><h1>${esc(m.name)}</h1><p class="lede">${esc(m.lede)}</p></div></div>
     ${m.eras.map(e => e.gap ? `<div class="mgap"><span>${esc(e.gap)} · quiet years</span></div>` : `
     <section class="mera${e.later ? ' later' : ''}"><div class="mebox"><div class="myr">${esc(e.yr)}</div><h2>${esc(e.title)}</h2><p>${esc(e.text)}</p><div class="mcount">${e.years.reduce((n, [, v]) => n + v.length, 0)} moments</div></div>
       <div class="myears"><div class="mspine"></div>${e.years.map(([y, list]) => `<div class="myear"><span class="my">${esc(y)}</span>${list.map(x => `<div class="mev">${ev(x)}</div>`).join('')}</div>`).join('')}</div></section>`).join('')}
@@ -2822,7 +2843,7 @@ function renderHome() {
       <a class="herobrowse" href="#browse">or browse by label, city or scene ›</a>
       <div class="lineup"><h2>Try one</h2><div class="names">${picks.map(p =>
         `<a data-n="${esc(p)}">${esc(p)}</a>`).join('&nbsp;<span class="sl">/</span> ')}</div></div>
-      ${pathsHTML()}
+      ${pathsHTML()}${msListHTML()}
     </div>`;
   document.getElementById('heroSearch').appendChild(searchBox);
   main.querySelectorAll('[data-n]').forEach(el => el.onclick = () => searchAndGo(el.dataset.n));
