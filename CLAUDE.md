@@ -54,12 +54,14 @@ and JS, with D3 from cdnjs used for the timeline only.
   then each member's own P463 via SPARQL), then the Members section of the band's Wikipedia article
   ("Name – vocals (1987–1999, 2017–present)"). Wikipedia can also add missing members. Existing dates always win;
   the list header says "dates via …".
-- **Line-ups.** If most members still have no dates, `buildLineups()` fetches credits for each album and EP (up to
-  15) and groups them: each distinct set of band members is a line-up (A, B, C…), shown as cards in place of the
-  timeline, with members no record credits listed separately.
-- **Other names.** `loadNames()` reads MusicBrainz "is person" links (a stage name points at the real person, who points
-  at all their names) and merges Discogs `aliases` / `realname`. Shown as "Real name" under the title and an
-  "Also records as" group under Bands.
+- **Band-wide credits.** Once a band's releases are in, `loadBandCredits()` reads the credits of every album and EP
+  (up to 15, background queue, cached) via `recordCredits()`: MusicBrainz, then the Discogs master its release group
+  links to. From that: each member's usual role, "on N of M records" on album pages, "Regular collaborators" (2+
+  records) on the band page, a stand-in line-up for records with no credits (nearest credited record), and — when
+  most members have no dates — line-up cards (each distinct set of members = A, B, C…) in place of the timeline.
+- **One name, one role.** `normRole()` folds source wording into a short set (bass, drums, vocals, producer…);
+  `sameName()` matches "David Wm. Sims" = "David Sims" and nicknames ("Jim" = "James"). Album credits use the band
+  page's names and order.
 - **Album pages.** Clicking a record opens it as a stop on the trail (`album:<release-group MBID>` or
   `album:dg-master-<id>`): cover, facts, Wikipedia notes · credits (who played on it, then production) · the selected
   person's other bands. Credits: MusicBrainz release + per-track credits, then Discogs credits, then the band's lineup
