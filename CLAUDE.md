@@ -74,6 +74,11 @@ No build step. Locally the page asks the data sources directly.
   Faint curves = branches, bold gold = the route with the linking person's name. Hover a tile or a person to light up
   shared-member bands; tap a tile for a side panel (photo, intro, people, Listen/Open, "Grow this branch", "Next stop").
   The old step-by-step page is `#story:steps:<n>`.
+- **Scroll story (guided trails).** `#story:line:<n>` (`drawBubbles`), reusing the family-map data. A pinned stage;
+  scrolling moves the year. Bands are bubbles sized by fame; a band grows out of the earlier band a founding member
+  came from (`fam.mem` membership years decide who was there at the start), stays full size while together, then
+  shrinks. The camera slides along a strip (190px per busy year, quiet years squeezed). A caption says what formed and
+  ended that year. At the end every band gathers into one packed cluster (`d3.packSiblings`), clickable.
 - **Story pages.** `#story:trail:<n>` and `#story:connect:<id>:<id>` (`renderStory`). Trails use `TRAILS` waypoints,
   each hop verified with `findPath` (`trailPath`). Each band is a big stop (photo, years, 2-sentence Wikipedia intro,
   Listen / Open / "Other members' bands" side branches via `showBranches`); people between bands are link cards with

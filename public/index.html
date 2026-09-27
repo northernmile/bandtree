@@ -389,20 +389,22 @@
   @media (max-width: 700px) { .lstats { grid-template-columns: repeat(2, 1fr); } .lane { grid-template-columns: 110px 1fr; } .wyear { grid-template-columns: 1fr; } .wcover { width: 80px; height: 80px; } }
 
 
-  /* Storyline */
-  .slwrap { overflow-x: auto; margin: 6px 0 4px; }
-  .sline { display: block; }
-  .sline .slgrid { stroke: #ffffff0d; } .sline .slyr { fill: var(--muted); font-size: 11px; text-anchor: middle; }
-  .slband rect { fill: #ffffff08; stroke: #ffffff26; } .slband.route rect { stroke: var(--accent); stroke-width: 1.5; fill: #ffcf5c10; }
-  .slband text { fill: var(--text); font-size: 12.5px; font-weight: 700; } .slband .slsub { fill: var(--muted); font-weight: 400; font-size: 11px; }
-  .slband .slnum { fill: var(--accent); font-weight: 800; }
-  .slband { cursor: pointer; }
-  .slp path { fill: none; stroke-width: 2.4; stroke-linecap: round; opacity: .85; }
-  .slp.route path { stroke-width: 3.4; opacity: 1; }
-  .slp .slhit { stroke: transparent; stroke-width: 12; }
-  .slp text { font-size: 11.5px; font-weight: 600; text-anchor: end; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
-  .sline.dim .slp, .sline.dim .slband { opacity: .15; } .sline.dim .lit { opacity: 1; }
-  .slnote { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; }
+  /* Scroll story */
+  .bubscroll { position: relative; margin-top: 8px; }
+  .bubstage { position: sticky; top: 64px; height: calc(100vh - 80px); overflow: hidden; border-radius: 18px; background: radial-gradient(ellipse at 50% 60%, #16181f, var(--bg) 70%); }
+  .bubstage svg { position: absolute; inset: 0; }
+  .bubyear { position: absolute; left: 24px; top: 14px; font-size: clamp(44px, 7vw, 96px); font-weight: 800; letter-spacing: -.05em; color: #ffffff1c; pointer-events: none; }
+  .bubcap { position: absolute; left: 26px; right: 26px; top: clamp(70px, 9vw, 118px); z-index: 2; font-size: 15px; color: #c4c8d3; line-height: 1.5; pointer-events: none; }
+  .bubcap b { color: var(--text); } .bubcap span { color: var(--muted); font-size: 13px; }
+  .bnode { cursor: pointer; }
+  .bnode circle { fill: #243049; stroke: #ffffff30; stroke-width: 1; }
+  .bnode.route circle { fill: #3a2e14; stroke: var(--accent); stroke-width: 2.5; }
+  .bnode:hover circle { stroke: var(--accent); stroke-width: 2.5; }
+  .bname { fill: var(--muted); font-size: 11px; font-weight: 600; pointer-events: none; }
+  .bname.in { fill: var(--text); font-weight: 700; }
+  .bnum { fill: var(--accent); font-size: 12px; font-weight: 800; pointer-events: none; }
+  .blink line { stroke: var(--person); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: .8; }
+  .blink text { fill: var(--person); font-size: 11.5px; font-weight: 600; text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
   /* Family maps */
   .fam { max-width: 1240px; margin: 0 auto; padding-bottom: 90px; }
   .fam > h1 { font-size: clamp(34px, 5vw, 56px); letter-spacing: -.035em; line-height: 1.02; margin: 6px 0 8px; }
@@ -1600,7 +1602,7 @@ async function renderFamily(h) {
   msg('Dating the bands…'); prog(96);
   await famYears(fam);
   if (stop()) return;
-  (fam.view === 'line' ? drawStoryline : drawFamily)(fam);
+  (fam.view === 'line' ? drawBubbles : drawFamily)(fam);
   // Bands with no year yet: look them up in the background (MusicBrainz, one a second) and redraw once.
   const unknown = [...fam.bands.values()].filter(b => !b.begin).slice(0, 30);
   let changed = false;
@@ -1610,7 +1612,7 @@ async function renderFamily(h) {
     const y = year(a?.['life-span']?.begin) || a?.bands?.concat(a?.members || []).map(m => m.first).filter(f => f && f !== '9999').sort()[0]?.slice(0, 4);
     if (y) { b.begin = y; changed = true; }
   }
-  if (changed && !stop() && !document.getElementById('fpanel')?.classList.contains('open')) { const y = scrollY; (fam.view === 'line' ? drawStoryline : drawFamily)(fam); scrollTo(0, y); }
+  if (changed && !stop() && !document.getElementById('fpanel')?.classList.contains('open')) { const y = scrollY; (fam.view === 'line' ? drawBubbles : drawFamily)(fam); scrollTo(0, y); }
 }
 function famPerson(fam, id, name, bandIds) {
   const p = fam.people.get(id) || { id, name, bands: new Set() };
@@ -1678,139 +1680,133 @@ function famMem(fam, pid, bid, periods) {
   if (!o) return fam.mem.set(k, m);
   fam.mem.set(k, { s: o.s && m.s ? Math.min(o.s, m.s) : o.s || m.s, e: Math.max(o.e, m.e), open: o.open || m.open });
 }
-const SL_COLORS = ['#ffcf5c', '#5cc8ff', '#ff5d73', '#93e39a', '#c79bff', '#ff9f5c', '#5ce1c8', '#f78fd0', '#b8c46a', '#8fa8ff', '#e0b48a', '#a0e0ff'];
-function drawStoryline(fam) {
+/* ---------- Scroll story (guided trails) ----------
+   One moment at a time. Scrolling moves a year forward; each band is a bubble sized by how well known it is. A band
+   grows out of the bubble it came from (the earlier band it shares a member with), lives at full size while it's
+   together, then shrinks back to a small dot. The trail's bands have a gold ring; a line of text says what happened
+   that year. The stage is pinned while the page scrolls under it. #story:line:<n>. */
+function drawBubbles(fam) {
   const { t, path, names, kinds, bands, people } = fam, NOW = new Date().getFullYear();
-  const routePeople = new Set(path.filter(id => kinds.get(id) === 'person'));
-  const routeBands = path.filter(id => kinds.get(id) !== 'person');
-  // Memberships we can place in time.
-  let mems = [];
-  for (const p of people.values()) {
-    if (p.bands.size < 2 && !routePeople.has(p.id)) continue;
-    for (const bid of p.bands) {
-      const b = bands.get(bid), m = fam.mem.get(`${p.id}|${bid}`) || {};
-      const s = m.s || +b.begin; if (!s) continue;
-      let e = m.e || (m.open ? NOW : 0) || +b.end || Math.min(s + 2, NOW);
-      if (e < s) e = s;
-      mems.push({ p, b, s, e: e + 1 });
-    }
-  }
-  // Keep only the links: bands shared by two or more of these people (plus the route's own bands), and people in
-  // two or more of those bands. Repeat until it settles, since dropping one can strand the other.
-  const per = new Map();
-  for (let pass = 0; pass < 6; pass++) {
-    const byBand = new Map(); mems.forEach(m => byBand.set(m.b.id, (byBand.get(m.b.id) || 0) + 1));
-    per.clear(); mems.forEach(m => { if (!per.has(m.p.id)) per.set(m.p.id, []); per.get(m.p.id).push(m); });
-    const next = mems.filter(m => (byBand.get(m.b.id) >= 2 || routeBands.includes(m.b.id)) && (per.get(m.p.id).length >= 2 || routePeople.has(m.p.id)));
-    if (next.length === mems.length) break;
-    mems = next;
-  }
-  per.clear(); mems.forEach(m => { if (!per.has(m.p.id)) per.set(m.p.id, []); per.get(m.p.id).push(m); });
-  const who = [...new Set(mems.map(m => m.p))];
-  // Bands: span of their linking members.
-  const B = new Map();
-  for (const m of mems) { const x = B.get(m.b.id) || { b: m.b, s: m.s, e: m.e, ms: [] }; x.s = Math.min(x.s, m.s); x.e = Math.max(x.e, m.e); x.ms.push(m); B.set(m.b.id, x); }
-  const list = [...B.values()].sort((a, b) => a.s - b.s || b.ms.length - a.ms.length);
-  // Rows: a band goes in a free row nearest the rows of bands it shares people with. A band's name takes room too,
-  // so it counts as occupying its label's width.
-  const y0 = Math.min(...list.map(x => x.s)), y1 = Math.max(...list.map(x => x.e));
-  const pxYear = (Math.max(document.querySelector('main').clientWidth - 40, 900) - 150) / Math.max(1, y1 - y0);
-  list.forEach(x => { x.until = Math.max(x.e, x.s + (x.b.name.length * 7.5 + 70) / (pxYear * 2.2)) + .3; });
-  const rows = [];
-  for (const x of list) {
-    const related = list.filter(o => o.row !== undefined && o.ms.some(m => x.ms.some(n => n.p === m.p))).map(o => o.row);
-    const target = related.length ? related.reduce((a, b) => a + b, 0) / related.length : 0;
-    let best = -1;
-    rows.forEach((end, r) => { if (end <= x.s && (best < 0 || Math.abs(r - target) < Math.abs(best - target))) best = r; });
-    if (best < 0) { best = rows.length; rows.push(0); }
-    rows[best] = x.until; x.row = best;
-  }
-  // Lanes inside a band: people ordered by where they came from, to keep crossings down.
-  for (const x of list) {
-    const from = m => { const prev = per.get(m.p.id).filter(o => o.s < x.s && o.b.id !== x.b.id).sort((a, b) => b.s - a.s)[0]; return prev ? B.get(prev.b.id).row : x.row; };
-    x.ms.sort((a, b) => from(a) - from(b) || a.p.name.localeCompare(b.p.name));
-  }
-  const LANE = 9, TOP = 30, LBL = 20;
-  const rowH = rows.map((_, r) => Math.max(...list.filter(x => x.row === r).map(x => 14 + (x.ms.length - 1) * LANE)) + LBL + 16);
-  const rowY = []; rowH.reduce((acc, h, r) => (rowY[r] = acc, acc + h), TOP);
-  const H = TOP + rowH.reduce((a, b) => a + b, 0) + 10;
-  const colorOf = new Map(); who.sort((a, b) => routePeople.has(b.id) - routePeople.has(a.id)).forEach((p, i) => colorOf.set(p.id, SL_COLORS[i % SL_COLORS.length]));
-  main.innerHTML = `<div class="fam">
-    <a class="bback" href="#browse">‹ Browse</a><div class="kicker">Guided trail</div>
-    <h1>${esc(t.title)}</h1><p class="lede">${esc(t.blurb)} ${list.length} bands linked by ${who.length} people.</p>
-    <div class="fviews"><span class="on">Storyline</span><a href="#story:trail:${fam.n}">Map</a><a href="#story:steps:${fam.n}">Step by step</a></div>
-    <div class="slwrap" id="slwrap"><svg class="sline" id="sline"></svg></div>
-    <p class="slnote">Each line is a musician; where lines run together is a band. Numbered bands are the trail. Hover a line or a band; click a band to open it.</p>
-    <p class="ecap" id="fcap"></p><aside class="fpanel" id="fpanel"></aside></div>`;
-  const wrap = document.getElementById('slwrap'), svg = document.getElementById('sline'), cap = document.getElementById('fcap');
-  const draw = () => {
-    const W = Math.max(wrap.clientWidth, 900), L = 130, R = 20;
-    // Time is linear where things happen and squeezed through quiet stretches (years with no band starting or ending).
-    const busy = yr => list.some(x => Math.abs(x.s - yr) <= 1 || Math.abs(x.e - yr) <= 1);
-    const acc = [0]; for (let yr = y0; yr < y1; yr++) acc.push(acc.at(-1) + (busy(yr) ? 1 : .25));
-    const X = yr => { const i = Math.max(0, Math.min(acc.length - 1, yr - y0)), f = Math.floor(i), fr = i - f;
-      const v = acc[f] + (f + 1 < acc.length ? (acc[f + 1] - acc[f]) * fr : 0); return L + v / acc.at(-1) * (W - L - R); };
-    const laneY = (x, i) => rowY[x.row] + LBL + 7 + i * LANE;
-    svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    const step = (y1 - y0) > 30 ? 5 : 2;
-    let s = '';
-    let lastX = -99;
-    for (let yr = y0; yr <= y1; yr++) { const x = X(yr); if (x - lastX < 38 || (yr % step && !busy(yr))) continue; lastX = x;
-      s += `<line class="slgrid" x1="${x}" x2="${x}" y1="${TOP - 8}" y2="${H}"/><text class="slyr" x="${x}" y="${TOP - 14}">${yr}</text>`; }
-    // Bands.
-    for (const x of list) {
-      const k = routeBands.indexOf(x.b.id), bx = X(x.s), bw = Math.max(X(x.e) - bx, 14), by = rowY[x.row] + LBL, bh = 14 + (x.ms.length - 1) * LANE;
-      s += `<g class="slband${k >= 0 ? ' route' : ''}" data-fid="${esc(x.b.id)}"><rect x="${bx - 3}" y="${by}" width="${bw + 6}" height="${bh}" rx="7"/>
-        <text x="${bx}" y="${by - 6}">${k >= 0 ? `<tspan class="slnum">${k + 1} </tspan>` : ''}${esc(x.b.name)} <tspan class="slsub">${x.b.begin || x.s}${x.b.end ? '–' + x.b.end : ''}</tspan></text></g>`;
-    }
-    // People: a line through each band they were in, curving from one to the next.
-    for (const p of who) {
-      const ms = per.get(p.id).filter(m => B.has(m.b.id)).sort((a, b) => a.s - b.s);
-      if (!ms.length) continue;
-      const pos = m => { const x = B.get(m.b.id); return laneY(x, x.ms.indexOf(m)); };
-      let d = '';
-      ms.forEach((m, i) => {
-        const y = pos(m);
-        d += `M${X(m.s)},${y} L${X(m.e)},${y} `;
-        const n = ms[i + 1]; if (!n) return;
-        const x2 = X(n.s), x1 = Math.min(X(m.e), x2 - 14), y2 = pos(n), xm = (x1 + x2) / 2;
-        d += `M${x1},${y} C${xm},${y} ${xm},${y2} ${x2},${y2} `;
-      });
-      const f = ms[0];
-      s += `<g class="slp${routePeople.has(p.id) ? ' route' : ''}" data-pid="${esc(p.id)}"><path d="${d}" stroke="${colorOf.get(p.id)}"/>
-        <path class="slhit" d="${d}"/><text x="${X(f.s) - 6}" y="${pos(f) + 4}" fill="${colorOf.get(p.id)}">${esc(p.name)}</text></g>`;
-    }
-    svg.innerHTML = s;
-  };
-  draw();
-  const clear = () => { svg.classList.remove('dim'); svg.querySelectorAll('.lit').forEach(e => e.classList.remove('lit')); cap.classList.remove('show'); };
-  svg.addEventListener('mouseover', e => {
-    const g = e.target.closest('.slp'), b = e.target.closest('.slband');
-    if (!g && !b) return clear();
-    clear(); svg.classList.add('dim');
-    if (g) {
-      g.classList.add('lit');
-      const ms = per.get(g.dataset.pid).filter(m => B.has(m.b.id)).sort((a, b) => a.s - b.s);
-      ms.forEach(m => svg.querySelector(`.slband[data-fid="${CSS.escape(m.b.id)}"]`)?.classList.add('lit'));
-      cap.innerHTML = `<b>${esc(people.get(g.dataset.pid).name)}</b> · ${ms.map(m => esc(m.b.name)).join(' › ')}`;
-    } else {
-      b.classList.add('lit');
-      const x = B.get(b.dataset.fid);
-      x.ms.forEach(m => svg.querySelector(`.slp[data-pid="${CSS.escape(m.p.id)}"]`)?.classList.add('lit'));
-      cap.innerHTML = `<b>${esc(x.b.name)}</b> · ${x.ms.map(m => esc(m.p.name)).join(', ')}`;
-    }
-    cap.classList.add('show');
+  const route = path.filter(id => kinds.get(id) !== 'person');
+  const nodes = [...bands.values()].filter(b => +b.begin).map(b => {
+    const s = +b.begin, e = +b.end || Math.min(s + 4, NOW);
+    const r = Math.min(80, 20 + Math.sqrt(b.fame || 1) * 5) * (route.includes(b.id) ? 1.3 : 1);
+    return { b, id: b.id, s, e: Math.max(e, s + 1), r, k: route.indexOf(b.id) };
   });
-  svg.addEventListener('mouseleave', clear);
+  const byId = new Map(nodes.map(n => [n.id, n]));
+  // Where each band came from: the earlier band it shares someone with (the best known one), and who carried it over.
+  for (const n of nodes) {
+    let best = null;
+    for (const pid of n.b.members) for (const o of people.get(pid)?.bands || []) {
+      const m = byId.get(o); if (!m || m === n || m.s > n.s || (m.s === n.s && m.k < 0 && n.k >= 0)) continue;
+      // Only someone who was there at the start carries a band over (Brian Baker joined Bad Religion in 1994; it
+      // didn't grow out of Minor Threat), and only from a band they were already in.
+      const here = fam.mem.get(`${pid}|${n.id}`)?.s, there = fam.mem.get(`${pid}|${m.id}`)?.s;
+      if ((here && here > n.s + 1) || (there && there > n.s)) continue;
+      if (!best || (m.k >= 0) - (best.m.k >= 0) > 0 || m.r > best.m.r) best = { m, who: people.get(pid).name };
+    }
+    if (best && best.m.s <= n.s) { n.parent = best.m; n.via = best.who; }
+  }
+  const y0 = Math.min(...nodes.map(n => n.s)), y1 = Math.min(NOW, Math.max(...nodes.map(n => n.s)) + 2);
+  // Quiet years (nothing starts) take less scrolling than busy ones.
+  const busy = yr => nodes.some(n => n.s === yr);
+  const acc = [0]; for (let yr = y0; yr <= y1; yr++) acc.push(acc.at(-1) + (busy(yr) ? 1 : .35));
+  const yearAt = f => { const v = f * acc.at(-1); let i = 0; while (i < acc.length - 2 && acc[i + 1] < v) i++; return y0 + i + (v - acc[i]) / (acc[i + 1] - acc[i] || 1); };
+  main.innerHTML = `<div class="fam bub">
+    <a class="bback" href="#browse">‹ Browse</a><div class="kicker">Guided trail</div>
+    <h1>${esc(t.title)}</h1><p class="lede">${esc(t.blurb)} Scroll to play it.</p>
+    <div class="fviews"><span class="on">Story</span><a href="#story:trail:${fam.n}">Map</a><a href="#story:steps:${fam.n}">Step by step</a></div>
+    <div class="bubscroll" id="bubscroll" style="height:${Math.round(acc.at(-1) * 70 + 120)}vh">
+      <div class="bubstage" id="bubstage"><div class="bubyear" id="bubyear"></div><div class="bubcap" id="bubcap"></div>
+        <svg id="bubsvg"></svg></div></div>
+    <p class="ecap" id="fcap"></p><aside class="fpanel" id="fpanel"></aside></div>`;
+  const stage = document.getElementById('bubstage'), svgEl = document.getElementById('bubsvg');
+  let W = 0, H = 0;
+  // A wide strip, 190px per busy year; the camera slides along it so the current year sits just left of centre.
+  const PX = 190;
+  const X = yr => { const i = Math.max(0, Math.min(acc.length - 1, yr - y0)), f = Math.floor(i); return acc[f] * PX + (f + 1 < acc.length ? (acc[f + 1] - acc[f]) * (i - f) * PX : 0); };
+  // Settle every band's resting place once: roughly left to right by when it started, packed without overlaps.
+  const layout = () => {
+    W = stage.clientWidth; H = stage.clientHeight;
+    const mid = (H + 150) / 2;
+    nodes.forEach(n => { n.x = X(n.s + .5); n.y = mid + (Math.random() - .5) * 60; });
+    const sim = d3.forceSimulation(nodes).stop()
+      .force('x', d3.forceX(n => X(n.s + .5)).strength(.25)).force('y', d3.forceY(mid).strength(.05))
+      .force('c', d3.forceCollide(n => n.r + 6).iterations(4));
+    for (let i = 0; i < 300; i++) sim.tick();
+    nodes.forEach(n => { n.y = Math.max(150 + n.r, Math.min(H - n.r - 16, n.y)); });
+    // The ending: every band packed together in one cluster, sized by how well known it is.
+    const circles = nodes.map(n => ({ n, r: n.r })).sort((a, b) => b.r - a.r);
+    d3.packSiblings(circles);
+    const enc = d3.packEnclose(circles), k = Math.min(1.1, (Math.min(W, H - 150) / 2 - 20) / enc.r);
+    circles.forEach(c => { c.n.px = W / 2 + (c.x - enc.x) * k; c.n.py = 150 + (H - 150) / 2 + (c.y - enc.y) * k; c.n.pr = c.r * k; });
+  };
+  const svg = d3.select(svgEl);
+  const cam = svg.append('g'), links = cam.append('g'), g = cam.append('g');
+  const node = g.selectAll('g').data(nodes).join('g').attr('class', n => 'bnode' + (n.k >= 0 ? ' route' : '')).attr('data-fid', n => n.id);
+  node.append('circle');
+  node.append('text').attr('class', 'bname').attr('text-anchor', 'middle');
+  node.append('text').attr('class', 'bnum').attr('text-anchor', 'middle').text(n => n.k >= 0 ? n.k + 1 : '');
+  const ease = x => x < 0 ? 0 : x > 1 ? 1 : 1 - Math.pow(1 - x, 3);
+  const cap = document.getElementById('bubcap'), yl = document.getElementById('bubyear');
+  let lastYear = null;
+  const frame = () => {
+    const box = document.getElementById('bubscroll'); if (!box) return;
+    const r = box.getBoundingClientRect(), f = Math.max(0, Math.min(1, -r.top / (r.height - innerHeight)));
+    const yr = yearAt(Math.min(f / .92, 1)), z = ease((f - .92) / .07), end = z >= .999;
+    const camX = W * .42 - X(Math.min(yr, y1));
+    nodes.forEach(n => {
+      const born = ease((yr - n.s) / 1.1), gone = ease((yr - n.e) / 1.5);
+      // Along the timeline (scrolled by the camera), then, at the end, gathering into one cluster.
+      const tr = n.r * born * (1 - .7 * gone), top = born <= 0 ? 0 : 1 - .6 * gone;
+      const from = n.parent || n;
+      const tx = from.x + (n.x - from.x) * born + camX, ty = from.y + (n.y - from.y) * born;
+      n.cx = tx + (n.px - tx) * z; n.cy = ty + (n.py - ty) * z;
+      n.cr = tr + (n.pr - tr) * z; n.op = top + (1 - top) * z;
+      n.spawning = z === 0 && n.parent && born > 0 && born < 1;
+    });
+    node.attr('transform', n => `translate(${n.cx},${n.cy})`).style('opacity', n => n.op).style('pointer-events', n => n.op > .1 ? 'auto' : 'none');
+    node.select('circle').attr('r', n => Math.max(0, n.cr));
+    node.select('.bname').text(n => n.cr > 9 ? n.b.name : '').attr('dy', n => n.cr > 26 ? '.35em' : -n.cr - 6)
+      .attr('class', n => 'bname' + (n.cr > 26 ? ' in' : '')).style('font-size', n => n.cr > 26 ? Math.min(15, 8 + n.cr / 6) + 'px' : '11px');
+    node.select('.bnum').attr('dy', n => n.cr > 26 ? n.cr * .55 : '.35em').attr('dx', n => n.cr > 26 ? 0 : -n.cr - 8);
+    // The link a new band grew out of, with who carried it over.
+    const sp = nodes.filter(n => n.spawning);
+    links.selectAll('g').data(sp, n => n.id).join(e => { const gg = e.append('g').attr('class', 'blink'); gg.append('line'); gg.append('text'); return gg; })
+      .call(gg => { gg.select('line').attr('x1', n => n.parent.cx).attr('y1', n => n.parent.cy).attr('x2', n => n.cx).attr('y2', n => n.cy);
+        gg.select('text').attr('x', n => (n.parent.cx + n.cx) / 2).attr('y', n => (n.parent.cy + n.cy) / 2 - 6).text(n => n.via); });
+    // Year and what happened in it.
+    const y = Math.floor(yr);
+    yl.textContent = z > .5 ? `${y0}–${y1}` : y;
+    if (y !== lastYear || end) {
+      lastYear = end ? null : y;
+      const born = nodes.filter(n => n.s === y), split = nodes.filter(n => +n.b.end === y);
+      const say = n => `<b>${esc(n.b.name)}</b>${n.via && n.parent ? ` <span>(${esc(n.via)}, from ${esc(n.parent.b.name)})</span>` : ''}`;
+      cap.innerHTML = end ? `<b>${nodes.length} bands</b> in the family. Click any bubble to open it.`
+        : [born.length ? `Forming: ${born.sort((a, b) => b.r - a.r).slice(0, 3).map(say).join(', ')}${born.length > 3 ? ` and ${born.length - 3} more` : ''}` : '',
+           split.length ? `Ending: ${split.slice(0, 3).map(n => esc(n.b.name)).join(', ')}` : ''].filter(Boolean).join('<br>') || '&nbsp;';
+    }
+  };
+  const draw = () => { layout(); svgEl.setAttribute('width', W); svgEl.setAttribute('height', H); frame(); };
+  requestAnimationFrame(draw);
+  let ticking = false;
+  const onScroll = () => { if (!document.body.contains(svgEl)) return removeEventListener('scroll', onScroll); if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; frame(); }); } };
+  addEventListener('scroll', onScroll, { passive: true });
+  const onResize = () => { if (!document.body.contains(svgEl)) return removeEventListener('resize', onResize); draw(); };
+  addEventListener('resize', onResize);
+  // Hover a bubble: its people. Click: its panel.
+  const fcap = document.getElementById('fcap');
+  svgEl.addEventListener('mouseover', e => { const n = e.target.closest('.bnode'); if (!n) return fcap.classList.remove('show');
+    const b = bands.get(n.dataset.fid), ppl = [...b.members].map(p => people.get(p)?.name).filter(Boolean);
+    fcap.innerHTML = `<b>${esc(b.name)}</b>${b.begin ? ` · ${esc(b.begin)}${b.end ? '–' + esc(b.end) : ''}` : ''}${ppl.length ? ` · ${esc(ppl.slice(0, 6).join(', '))}` : ''}`; fcap.classList.add('show'); });
+  svgEl.addEventListener('mouseleave', () => fcap.classList.remove('show'));
   main.querySelector('.fam').addEventListener('click', e => {
-    const b = e.target.closest('[data-fid]'), x = e.target.closest('[data-fclose]'), g = e.target.closest('[data-go]'), pl = e.target.closest('[data-play]');
+    const b = e.target.closest('[data-fid]'), x = e.target.closest('[data-fclose]'), gg = e.target.closest('[data-go]'), pl = e.target.closest('[data-play]');
     if (x) return document.getElementById('fpanel').classList.remove('open');
-    if (g) { freshTrail = true; return go(g.dataset.go); }
+    if (gg) { freshTrail = true; return go(gg.dataset.go); }
     if (pl) { renderPlayer('Finding previews…'); return artistSongs(pl.dataset.play).then(s => playQueue(s, 0, pl.dataset.play)).catch(() => renderPlayer('Couldn’t load previews just now.')); }
     if (b) famPanel(fam, b.dataset.fid);
   });
-  const onResize = () => { if (!document.body.contains(wrap)) return removeEventListener('resize', onResize); draw(); };
-  addEventListener('resize', onResize);
 }
 
 function drawFamily(fam) {
@@ -1827,7 +1823,7 @@ function drawFamily(fam) {
   main.innerHTML = `<div class="fam">
     <a class="bback" href="#browse">‹ Browse</a><div class="kicker">Guided trail · family map</div>
     <h1>${esc(t.title)}</h1><p class="lede">${esc(t.blurb)} ${bands.size} bands, ${people.size} people.</p>
-    <div class="fviews"><a href="#story:line:${fam.n}">Storyline</a><span class="on">Map</span><a href="#story:steps:${fam.n}">Step by step</a></div>
+    <div class="fviews"><a href="#story:line:${fam.n}">Story</a><span class="on">Map</span><a href="#story:steps:${fam.n}">Step by step</a></div>
     <nav class="storybar" id="storybar">${path.map((id, k) => `${k ? '<span class="sbsep">›</span>' : ''}<a data-route="${esc(id)}" class="${kinds.get(id) === 'person' ? 'person' : 'band'}"><i></i>${esc(names.get(id))}</a>`).join('')}</nav>
     <div class="fpeople"><span class="muted">In more than one band here:</span> ${people_.slice(0, 24).map(p => `<a data-person="${esc(p.id)}">${esc(p.name)} <small>${p.bands.size}</small></a>`).join('')}</div>
     <div class="fmap" id="fmap" style="--lanes:${L}"><svg class="flines" id="flines"></svg>
