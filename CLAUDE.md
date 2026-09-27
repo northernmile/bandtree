@@ -52,7 +52,9 @@ and JS, with D3 from cdnjs used for the timeline only.
   City and scene pages (`renderEras`) group bands by the decade they formed with a sticky decade strip; per decade
   the top 3 (if well known) get big photo cards, the next 6 medium, the rest small. `sharedMembers()` (one Wikidata
   SPARQL, sent as POST because the ID list is too long for a URL) badges bands that shared members; hover draws lines
-  to them with the names. Label pages still use the plain grid.
+  to them with the names. Label pages (`renderLabel`): headline numbers, artist swimlanes (artists with 2+ records,
+  best known first, laid out by arrival; a dot per record at its original year), then a cover wall of every record by
+  year (release-group covers; click opens the album). Up to 500 releases read per label.
 - **Story pages.** `#story:trail:<n>` and `#story:connect:<id>:<id>` (`renderStory`). Trails use `TRAILS` waypoints,
   each hop verified with `findPath` (`trailPath`). Each band is a big stop (photo, years, 2-sentence Wikipedia intro,
   Listen / Open / "Other members' bands" side branches via `showBranches`); people between bands are link cards with

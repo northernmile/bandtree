@@ -362,6 +362,29 @@
   .bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 18px; }
   .bcard { display: block; padding: 12px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); cursor: pointer; text-decoration: none; }
   .bcard:hover { border-color: var(--accent); }
+
+  /* Label pages */
+  .lstats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 6px 0 10px; }
+  .lstats div { padding: 16px 18px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); }
+  .lstats b { display: block; font-size: 30px; letter-spacing: -.03em; line-height: 1.1; } .lstats span { color: var(--muted); font-size: 12.5px; }
+  .lh { font-size: 22px; letter-spacing: -.02em; margin: 34px 0 12px; text-transform: none; color: var(--text); }
+  .lanes { border-radius: 14px; background: var(--panel); border: 1px solid var(--line); padding: 10px 18px 14px; }
+  .lane { display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 12px; height: 30px; cursor: pointer; border-radius: 8px; }
+  .lane:not(.axis):hover { background: #ffffff08; } .lane:not(.axis):hover span { color: var(--accent); }
+  .lane span { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 6px; }
+  .ltrack { position: relative; height: 100%; }
+  .ltrack em { position: absolute; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px; background: color-mix(in srgb, var(--band) 45%, transparent); }
+  .ltrack b { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--band); }
+  .lane.axis { cursor: default; height: 22px; } .lane.axis i { position: absolute; top: 0; transform: translateX(-50%); font-style: normal; font-size: 11px; color: var(--muted); }
+  .wyear { display: grid; grid-template-columns: 70px 1fr; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .wy { font-size: 22px; font-weight: 700; letter-spacing: -.03em; } .wy small { display: block; font-size: 11.5px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+  .wcovers { display: flex; flex-wrap: wrap; gap: 8px; }
+  .wcover { position: relative; width: 96px; height: 96px; border-radius: 8px; overflow: hidden; background: #1b1d24; cursor: pointer; border: 1px solid var(--line); }
+  .wcover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .2s; }
+  .wcover span { position: absolute; inset: 0; padding: 7px; font-size: 11px; font-weight: 600; line-height: 1.25; overflow: hidden; }
+  .wcover span small { display: block; font-weight: 400; color: var(--muted); margin-top: 3px; }
+  .wcover:hover img { transform: scale(1.06); opacity: .35; } .wcover:hover { border-color: var(--accent); } .wcover:hover span { z-index: 1; text-shadow: 0 1px 3px #000; }
+  @media (max-width: 700px) { .lstats { grid-template-columns: repeat(2, 1fr); } .lane { grid-template-columns: 110px 1fr; } .wyear { grid-template-columns: 1fr; } .wcover { width: 80px; height: 80px; } }
   /* City and scene eras */
   .era { margin-top: 18px; position: relative; }
   .era .storybar { margin: 0 0 8px; }
@@ -1098,10 +1121,11 @@ function renderBrowse(h) {
   const title = decodeURIComponent(name), myGen = gen;
   main.innerHTML = `<div class="browse"><a class="bback" href="#browse">‹ Browse</a><div class="kicker">${esc(BROWSE_LABEL[type]?.replace(/s$/, '').replace('Citie', 'City').replace('Scenes & style', 'Scene'))}</div>
     <h1>${esc(title)}</h1><p class="muted" id="bsub">Looking it up…</p><div class="bgrid" id="bgrid"></div></div>`;
-  browseArtists(type, title).then(({ sub, list }) => {
+  browseArtists(type, title).then(({ sub, list, labelInfo }) => {
     if (myGen !== gen) return;
-    document.getElementById('bsub').textContent = sub.replace(', best known first.', ', by the decade they formed.');
+    document.getElementById('bsub').textContent = (type === 'label' ? sub : sub.replace(', best known first.', ', by the decade they formed.'));
     if (type !== 'label' && list.length) return renderEras(list, myGen);
+    if (labelInfo?.records.length) return renderLabel(labelInfo, list, myGen);
     document.getElementById('bgrid').innerHTML = list.length ? list.map(a => `<a class="bcard" data-go="${esc(a.id)}">
         <b>${esc(a.name)}</b><small>${esc(a.note)}</small></a>`).join('') : '<p class="muted">Nothing found.</p>';
     document.querySelectorAll('#bgrid [data-go]').forEach(el => el.onclick = () => { freshTrail = true; go(el.dataset.go); });
@@ -1135,14 +1159,24 @@ async function cityBands(name) {
   return list;
 }
 async function browseArtists(type, name) {
-  let list = [], sub = '';
+  let list = [], sub = '', labelInfo = null;
   if (type === 'label') {
     const labels = (await mb(`label?query=${encodeURIComponent(`label:"${name}"`)}&limit=5`, { priority: true })).labels || [];
     const lab = labels.find(l => bare(l.name) === bare(name)) || labels.find(l => bare(l.name).startsWith(bare(name))) || labels[0];
     if (!lab) return { sub: `No label called “${name}” found.`, list: [] };
-    const byArtist = new Map();
-    for (let offset = 0; offset < 300; offset += 100) {
-      const d = await mb(`release?label=${lab.id}&inc=artist-credits&limit=100&offset=${offset}`, { priority: true });
+    const byArtist = new Map(), records = new Map();
+    for (let offset = 0; offset < 500; offset += 100) {
+      const d = await mb(`release?label=${lab.id}&inc=artist-credits+release-groups&limit=100&offset=${offset}`, { priority: true });
+      for (const r of d.releases || []) {
+        const rg = r['release-group'], who = (r['artist-credit'] || []).map(c => c.name || c.artist?.name).join(' & ');
+        if (rg && !/various artists/i.test(who)) {
+          // The record's original year, so a 2020 reissue of a 1986 album sits in 1986.
+          const e = records.get(rg.id), y = (rg['first-release-date'] || r.date || '').slice(0, 4);
+          if (!e) records.set(rg.id, { rg: rg.id, title: rg.title || r.title, artist: who, year: y, type: rg['primary-type'] || '',
+            ids: (r['artist-credit'] || []).map(c => c.artist?.id).filter(Boolean) });
+          else if (y && (!e.year || y < e.year)) e.year = y;
+        }
+      }
       for (const r of d.releases || []) for (const c of r['artist-credit'] || []) {
         const a = c.artist; if (!a || /various artists/i.test(a.name)) continue;
         const e = byArtist.get(a.id) || { id: a.id, name: a.name, n: 0, years: [] };
@@ -1151,8 +1185,9 @@ async function browseArtists(type, name) {
       if (offset + 100 >= (d['release-count'] || 0)) break;
     }
     list = [...byArtist.values()];
+    labelInfo = { lab, records: [...records.values()] };
     list.forEach(a => { const ys = a.years.sort(); a.note = `${a.n} release${a.n === 1 ? '' : 's'}${ys.length ? ` · ${ys[0] === ys.at(-1) ? ys[0] : ys[0] + '–' + ys.at(-1)}` : ''}`; });
-    sub = `${lab.name}${lab.area?.name ? ` · ${lab.area.name}` : ''}${lab['life-span']?.begin ? ` · since ${year(lab['life-span'].begin)}` : ''}. Artists with releases on the label, best known first.`;
+    sub = `${lab.name}${lab.area?.name ? ` · ${lab.area.name}` : ''}${lab['life-span']?.begin ? ` · since ${year(lab['life-span'].begin)}` : ''}. Its artists and records, year by year.`;
   } else {
     // Cities: Wikidata's "formed in" list (clean but sparse) plus MusicBrainz's area search (broad but noisy).
     const wd = type === 'city' ? await cityBands(name).catch(() => []) : [];
@@ -1174,7 +1209,45 @@ async function browseArtists(type, name) {
   const score = a => (fame.get(a.id) || 0) * (a.n ? Math.sqrt(a.n) : 1);
   list.forEach(a => a.fame = fame.get(a.id) || 0);
   list.sort((a, b) => score(b) - score(a) || (b.n || 0) - (a.n || 0) || a.name.localeCompare(b.name));
-  return { sub, list: list.slice(0, type === 'label' ? 80 : 120) };
+  return { sub, list: list.slice(0, type === 'label' ? 80 : 120), labelInfo };
+}
+
+/* ---------- Label pages ----------
+   Headline numbers, then who was on the label when (one row per artist: a bar from first to last release, a dot per
+   record), then every record as a wall of covers, year by year. Click an artist or a cover to open it. */
+function renderLabel(info, list, myGen) {
+  const box = document.getElementById('bgrid');
+  box.className = 'lab';
+  const recs = info.records.filter(r => r.year).sort((a, b) => a.year.localeCompare(b.year) || a.title.localeCompare(b.title));
+  if (!recs.length) { box.innerHTML = '<p class="muted">No dated records found.</p>'; return; }
+  const y0 = +recs[0].year, y1 = Math.max(+recs.at(-1).year, y0 + 1), span = y1 - y0;
+  const byYear = new Map(); recs.forEach(r => { if (!byYear.has(r.year)) byYear.set(r.year, []); byYear.get(r.year).push(r); });
+  const busiest = [...byYear].sort((a, b) => b[1].length - a[1].length)[0];
+  // Lanes: the label's mainstays (two or more records), best known first, then laid out by when they arrived.
+  const yearsOf_ = a => [...new Set(recs.filter(r => r.ids.includes(a.id)).map(r => r.year))].sort();
+  const top = list.map(a => ({ ...a, ys: yearsOf_(a) })).filter(a => a.ys.length >= 2).slice(0, 16).sort((a, b) => a.ys[0].localeCompare(b.ys[0]));
+  const pct = y => ((+y - y0) / span * 100).toFixed(2);
+  const ticks = []; for (let y = Math.ceil(y0 / 5) * 5; y <= y1; y += 5) ticks.push(y);
+  box.innerHTML = `
+    <div class="lstats">
+      <div><b>${recs.length}</b><span>records</span></div>
+      <div><b>${list.length}</b><span>artists</span></div>
+      <div><b>${y0}–${recs.at(-1).year}</b><span>years active</span></div>
+      <div><b>${busiest[0]}</b><span>busiest year · ${busiest[1].length} records</span></div>
+    </div>
+    <h2 class="lh">Who was on the label, when</h2>
+    <div class="lanes">
+      <div class="lane axis"><span></span><div class="ltrack">${ticks.map(t => `<i style="left:${pct(t)}%">${t}</i>`).join('')}</div></div>
+      ${top.map(a => { const ys = a.ys; return `<div class="lane" data-go="${esc(a.id)}"><span>${esc(a.name)}</span>
+        <div class="ltrack"><em style="left:${pct(ys[0])}%;width:${Math.max(pct(ys.at(-1)) - pct(ys[0]), .6)}%"></em>
+          ${ys.map(y => `<b style="left:${pct(y)}%" title="${y}"></b>`).join('')}</div></div>`; }).join('')}
+    </div>
+    <h2 class="lh">Every record, year by year</h2>
+    <div class="wall">${[...byYear].map(([y, rs]) => `<div class="wyear"><div class="wy">${y}<small>${rs.length}</small></div><div class="wcovers">${rs.map(r =>
+      `<a class="wcover" data-album="${esc(r.rg)}" title="${esc(r.artist)} · ${esc(r.title)}"><span>${esc(r.title)}<small>${esc(r.artist)}</small></span>
+        <img loading="lazy" src="https://coverartarchive.org/release-group/${esc(r.rg)}/front-250" alt="" onerror="this.remove()"></a>`).join('')}</div></div>`).join('')}</div>`;
+  box.querySelectorAll('[data-go]').forEach(el => el.onclick = () => { freshTrail = true; go(el.dataset.go); });
+  box.querySelectorAll('[data-album]').forEach(el => el.onclick = () => { freshTrail = true; go('album:' + el.dataset.album); });
 }
 
 /* ---------- City and scene pages as eras ----------
