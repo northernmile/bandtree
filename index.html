@@ -2095,7 +2095,8 @@ function stintsOf(r) {
   return r.periods.filter(p => p.begin || p.end).map(p => {
     const start = toYear(p.begin) ?? rootStart ?? toYear(p.end) - 1;
     const end = toYear(p.end, true) ?? rootEnd;
-    return { start, end: Math.max(end, start + 1 / 12), p, roles: rolesOf(p.attrs.length ? p.attrs : [...r.attrs]) };
+    // No role on the stint or the member: use what they play on the records, so the bar isn't grey "Other".
+    return { start, end: Math.max(end, start + 1 / 12), p, roles: rolesOf(p.attrs.length ? p.attrs : r.attrs.size ? [...r.attrs] : r.instruments || []) };
   });
 }
 function renderTimeline() {
@@ -2126,7 +2127,8 @@ function renderTimeline() {
   // With no dated stints at all, fall back to the band's own lifespan for the axis (or drop the axis).
   const y0 = Math.floor(Math.min(...all.map(b => b.start), rootStart ?? Infinity));
   // Run the axis to today only if someone's still in the band (or the band itself is); otherwise stop at the last stint.
-  const open = state.rels.some(r => r.periods.some(p => (p.begin || p.end) && !p.end && !p.ended)) || (rootStart != null && !(state.artist['life-span'] || {}).ended);
+  // (MusicBrainz often just leaves a band's end date blank, so "not ended" alone doesn't mean still active.)
+  const open = state.rels.some(r => r.periods.some(p => (p.begin || p.end) && !p.end && !p.ended));
   const y1 = Math.ceil(Math.max(...all.map(b => b.end), open || (state.artist['life-span'] || {}).ended ? rootEnd : -Infinity));
   const hasAxis = isFinite(y0) && isFinite(y1) && y1 > y0;
   const W = el.clientWidth, labelW = Math.min(170, W * 0.32), rowH = 26, axisH = hasAxis ? 26 : 4;
