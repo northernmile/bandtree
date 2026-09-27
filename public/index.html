@@ -1229,7 +1229,7 @@ function renderBrowse(h) {
         <input id="bq" placeholder="Any label, city or style…" autocomplete="off"><button class="cgo">Go</button></form>
       ${Object.entries(BROWSE).map(([k, list]) => `<section><h2>${BROWSE_LABEL[k]}</h2><div class="bchips">${list.map(n =>
         `<a href="#browse:${k}:${encodeURIComponent(n)}">${esc(n)}</a>`).join('')}</div></section>`).join('')}
-      ${typeof pathsHTML === 'function' ? pathsHTML() : ''}${typeof trailsHTML === 'function' ? trailsHTML() : ''}</div>`;
+      ${typeof pathsHTML === 'function' ? pathsHTML() : ''}</div>`;
     document.getElementById('bsearch').onsubmit = e => {
       e.preventDefault();
       const q = document.getElementById('bq').value.trim();
@@ -2476,7 +2476,7 @@ function renderHome() {
       <a class="herobrowse" href="#browse">or browse by label, city or scene ›</a>
       <div class="lineup"><h2>Try one</h2><div class="names">${picks.map(p =>
         `<a data-n="${esc(p)}">${esc(p)}</a>`).join('&nbsp;<span class="sl">/</span> ')}</div></div>
-      ${pathsHTML()}${trailsHTML()}
+      ${pathsHTML()}
     </div>`;
   document.getElementById('heroSearch').appendChild(searchBox);
   main.querySelectorAll('[data-n]').forEach(el => el.onclick = () => searchAndGo(el.dataset.n));
