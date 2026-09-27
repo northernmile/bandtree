@@ -591,6 +591,14 @@
   .mimg.fit { height: 380px; background: #1a1b1f; } .mimg.fit img { object-fit: contain; }
   .mimg span { position: absolute; left: 12px; bottom: 10px; font-size: 10.5px; color: #ffffffcc; background: #0009; padding: 2px 8px; border-radius: 6px; }
   .mfeat .mbd { padding: 14px 16px 16px; }
+  .mvid { flex-direction: row; } .mvid .mv { width: 300px; flex: none; } .mvid .mbd { align-self: center; }
+  .mtag.vid { background: #e0322b22; color: #ff6b63; }
+  .mvid .mv.on { width: 100%; } .mvid:has(.mv.on) { flex-direction: column; }
+  .mv { position: relative; cursor: pointer; aspect-ratio: 16 / 9; height: auto !important; background: #000; }
+  .mv img { width: 100%; height: 100%; object-fit: cover; opacity: .82; transition: opacity .2s; } .mv:hover img { opacity: 1; }
+  .mvp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 54px; height: 54px; border-radius: 50%; background: #e0322bdd; color: #fff; display: grid; place-items: center; font-size: 24px; padding-left: 4px; box-shadow: 0 6px 24px #0008; }
+  .mv.on { cursor: default; } .mv iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .mvf { border-radius: 10px; overflow: hidden; margin: 0 0 12px; }
   .mfeat.side { flex-direction: row; } .mfeat.side .mimg { width: 210px; height: auto; min-height: 160px; flex: none; }
   .mquote { background: linear-gradient(135deg, #231a22, #171920); border-color: #ff5d7344; }
   .mbig { font-size: 26px; line-height: 1.2; letter-spacing: -.02em; font-weight: 700; margin: 6px 0 8px; } .mbig span { color: var(--band); }
@@ -624,6 +632,7 @@
     .mera { grid-template-columns: 1fr; } .mebox { position: static; margin-bottom: 8px; }
     .myear::before { left: 0; } .mgap { margin-left: 0; } .mgap::before { left: 0; } .myear { padding-left: 44px; } .mspine { left: 20px; } .mev::before { left: -30px; }
     .mhero { height: 300px; } .mhero h1 { font-size: 44px; } .mxp { grid-template-columns: 1fr; }
+    .mvid { flex-direction: column; } .mvid .mv { width: auto; }
     .mfeat.side { flex-direction: column; } .mfeat.side .mimg { width: auto; height: 180px; } .mcv { width: 84px; height: 84px; } .mrow > .md { width: 64px; }
   }
   /* Feedback */
@@ -2273,45 +2282,44 @@ const MILESTONES = {
     eras: [
       { yr: '1980', title: 'Out of the Teen Idles', text: 'Two teenagers lose their first band and start a faster, angrier one within a month. The small D.C. scene is about to get a rulebook.', years: [
         ['1980', [
-          { k: 'row', d: 'Fall', tag: 'line', who: ['IM', 'JN', 'LP', 'BB'], h: '[[The Teen Idles|84e8d8bf-da21-4488-89e5-50a4c12ff4fa]] fold. Minor Threat starts the next month',
+          { k: 'row', d: 'Fall', tag: 'line', who: ['IM', 'JN', 'LP', 'BB'], h: '[[The Teen Idles|84e8d8bf-da21-4488-89e5-50a4c12ff4fa]] split; Minor Threat starts a month later',
             p: '[[Ian MacKaye|' + MT.IM + ']] moves from bass to the mic, [[Jeff Nelson|' + MT.JN + ']] stays on drums, and they pull in [[Lyle Preslar|' + MT.LP + ']] on guitar and [[Brian Baker|' + MT.BB + ']] on bass.' },
           { k: 'side', img: WM + 'en/f/f9/Teen_Idles_Minor_Disturbance_Album_Cover.jpg', cap: 'The Teen Idles, Minor Disturbance', h: 'The X on the back of the hand',
             p: 'A Teen Idles idea borrowed from California clubs: mark the under-age kids with a black X so they can get in without drinking. Minor Threat carries it onstage, and the X becomes the symbol of everything that follows.' },
           { k: 'feat', img: WM + 'commons/6/60/Bad_brains_1983.jpg', cap: 'Bad Brains, 1983', d: 'December', h: 'First show: a basement, fifty people, opening for [[Bad Brains|e919b253-da5b-4aae-a444-6a368376a2d6]]',
-            p: 'Bad Brains’ H.R. takes them under his wing and calls them his “undergraduates.” They’re fast, short and furious from night one.' },
+            p: 'Bad Brains singer H.R. takes them under his wing and calls them his “undergraduates.”' },
         ]] ] },
       { yr: '1981', title: 'Eight songs and a rulebook', text: 'In a year they make two seven-inches in a basement studio, give a movement its name without meaning to, and then fall apart when their guitarist leaves for college.', years: [
         ['1981', [
-          { k: 'row', d: 'April', tag: 'rec', h: 'Into Don Zientara’s basement', p: 'Four tracks at Inner Ear in Arlington, the room where most of D.C. punk gets made.',
+          { k: 'row', d: 'April', tag: 'rec', h: 'First session at Inner Ear', p: 'They record the first EP on four tracks in Don Zientara’s basement studio in Arlington, Virginia.',
             xp: '<p>Inner Ear is a home studio: Don Zientara’s basement in Arlington, Virginia. The first Minor Threat EP is cut there on four tracks, and for the next decade and more it’s where Dischord bands go to record.</p>' },
           { k: 'card', img: WM + 'en/c/c5/Minor_Threat_-_Minor_Threat_%28E.P.%29.jpg', album: 'b589806a-ceda-3f6e-b294-64c2fd78ead4', play: ['Minor Threat', 'Straight Edge'], d: 'June', tag: 'rec',
-            h: '<i>Minor Threat</i> EP · Dischord No. 3', p: 'Ian’s younger brother Alec, slumped on a set of steps, makes the cover. On it, a short song called “Straight Edge.” MacKaye would spend decades explaining “Straight Edge is not a movement.”' },
-          { k: 'row', d: 'Summer', tag: 'line', who: ['-LP'], h: 'The first break-up', p: 'Preslar leaves for college and the band stops.',
+            h: '<i>Minor Threat</i> EP · Dischord No. 3', p: 'Eight songs, including “Straight Edge,” the short song that named a movement. The cover shows Ian’s younger brother Alec slumped on a set of steps.' },
+          { k: 'row', d: 'Summer', tag: 'line', who: ['-LP'], h: 'Lyle Preslar leaves for college; the band stops', p: 'Preslar enrolls at Northwestern and Minor Threat goes on hold for months.',
             xp: '<p>With Preslar away at school, the others scatter for a few months. Baker, already playing bass in [[Government Issue|9b952ee8-d45d-4a26-8066-57849d871e06]], moves to guitar there. MacKaye and Nelson start Skewbald/Grand Union with guitarist Eddie Janney, later of Rites of Spring. It records three songs at Inner Ear and never plays a show.</p>' },
           { k: 'card', img: WM + 'en/4/4c/Minor_Threat_-_In_My_Eyes_%28E.P.%29.jpg', album: '3c908a48-f662-3910-ba29-6a0d3315398b', play: ['In My Eyes', 'In My Eyes'], d: 'December', tag: 'rec',
-            h: '<i>In My Eyes</i> · Dischord No. 5', p: 'Four more songs, including “Guilty of Being White,” which MacKaye wrote about growing up in D.C. It will follow him for forty years.' },
+            h: '<i>In My Eyes</i> · Dischord No. 5', p: 'Four songs, including “Guilty of Being White,” MacKaye’s song about growing up white in a mostly Black city. It would be misread for decades.' },
         ]] ] },
       { yr: '1982–83', title: 'Five of them, then four, then none', text: 'Preslar comes home with unfinished business. The band gets bigger and louder, makes its defining record, then argues itself apart over what it should sound like next.', years: [
         ['1982', [
-          { k: 'row', d: 'April', tag: 'line', who: ['LP'], h: 'Back together', p: 'Preslar quits college and Minor Threat reforms.' },
-          { k: 'row', d: 'August', tag: 'line', who: ['SH'], h: 'A fifth member', p: 'Baker’s childhood friend [[Steve Hansgen|' + MT.SH + ']] joins on bass; Baker moves to second guitar.' },
+          { k: 'row', d: 'April', tag: 'line', who: ['LP'], h: 'Preslar quits college; Minor Threat reforms', p: 'Lyle Preslar comes home and the original four start playing again.' },
+          { k: 'row', d: 'August', tag: 'line', who: ['SH'], h: 'Steve Hansgen joins on bass', p: 'Brian Baker’s friend [[Steve Hansgen|' + MT.SH + ']] takes over bass, and Baker moves to second guitar.' },
         ]],
         ['1983', [
           { k: 'card', img: WM + 'en/2/2c/Minor_Threat_-_Out_of_Step.jpg', album: 'db4d417f-8295-3843-829d-2b8c0b649517', play: ['Out of Step', 'Out of Step'], d: 'January · April', tag: 'rec',
-            h: '<i>Out of Step</i>, for about $200', p: 'Three days, their first eight-track session, MacKaye singing live under the basement stairs beside the washing machine. 3,500 copies sell out almost before they leave the plant. Hidden at the end: “Cashing In,” a joke about being called sell-outs.' },
-          { k: 'quote', d: 'Early 1983', tag: 'fight', h: 'The fight over one letter', big: 'One letter: <span>(I)</span>', p: 'Nelson wants an “(I)” in the lyric so it reads as a personal choice, not an order.',
-            xp: '<p>By 1983 “Out of Step” has been taken up as a set of commandments, and not everyone in the band is comfortable being a movement’s rulebook. Nelson pushes for an “(I)” on the lyric sheet, so the words read as MacKaye speaking for himself.</p><p>MacKaye resists. The story told since is that he put his fist through his bedroom door over it. The “(I)” goes on the lyric sheet anyway, a one-letter compromise.</p>',
+            h: '<i>Out of Step</i>, for about $200', p: 'Their only album, cut in three days at Inner Ear. The first 3,500 copies sell out almost at once.', xp: '<p>MacKaye sang live under the basement stairs beside the washing machine. The last track, “Cashing In,” is a joke about fans calling them sell-outs.</p>' },
+          { k: 'quote', d: 'Early 1983', tag: 'fight', h: 'Jeff Nelson’s “(I)” on “Out of Step”', big: 'One letter: <span>(I)</span>', p: 'The chorus of “Out of Step” lists what MacKaye won’t do. Nelson wanted an “(I)” added to the lyric sheet so it read as one person’s choice, not a rule.',
+            xp: '<p>By 1983 kids were treating the song as a set of commandments, and not everyone in the band wanted to be a movement’s rulebook. Nelson pushed for the “(I)” so the words read as MacKaye speaking for himself.</p><p>MacKaye resisted. The story told since is that he put his fist through his bedroom door over it. The “(I)” goes on the lyric sheet anyway, a one-letter compromise.</p>',
             q: ['Straight Edge is not a movement. Straight Edge is just an idea.', 'Ian MacKaye'], src: 'Life of the Record · WETA Boundary Stones', go: ['JN', 'IM'], playX: ['Out of Step', 'Out of Step'] },
-          { k: 'row', d: 'June', tag: 'line', who: ['-SH'], h: 'Back to four', p: 'The founders return the band to its original shape. Hansgen is out.' },
-          { k: 'feat', img: WM + 'en/8/8d/LansburghCulturalCenter_showposter_092383.jpg', fit: 'contain', cap: 'The poster for the last show', d: 'September 23', tag: 'fight', h: 'The last show',
-            p: 'Lansburgh Cultural Center, 7th Street NW, with [[Trouble Funk|138aaf2c-77b6-451e-ade2-ce18894eeaa7]] and Austin’s [[Big Boys|fde1cff2-5a7b-4e8c-9666-110fa90500fb]] on the bill. Seventeen songs, and that’s it.',
-            xp: '<p>Baker and Preslar want to go bigger and more melodic, U2 was the reference; MacKaye doesn’t. Rather than turn into a different band, they stop. The last show is a funk-punk double bill in downtown D.C., and an audience tape of the night is how most people have heard it since.</p>' },
-          { k: 'row', d: 'Late 1983', tag: 'rec', h: 'One more session', p: 'They record “Salad Days,” first called “Last Song.” MacKaye agrees on one condition: it never comes out.' },
+          { k: 'row', d: 'June', tag: 'line', who: ['-SH'], h: 'Steve Hansgen is out', p: 'Minor Threat goes back to the original four; Baker returns to bass.' },
+          { k: 'feat', img: WM + 'en/8/8d/LansburghCulturalCenter_showposter_092383.jpg', fit: 'contain', cap: 'The poster for the last show', d: 'September 23', tag: 'fight', h: 'The last show, Lansburgh Cultural Center',
+            p: 'Minor Threat splits over which way to go next. The final show is in downtown D.C. with [[Trouble Funk|138aaf2c-77b6-451e-ade2-ce18894eeaa7]] and Austin’s [[Big Boys|fde1cff2-5a7b-4e8c-9666-110fa90500fb]].',
+            xp: '<p>Baker and Preslar wanted to go bigger and more melodic (U2 was the reference); MacKaye didn’t. Rather than turn into a different band, they stop. The last show is a funk-punk double bill in downtown D.C., and an audience tape of the night is how most people have heard it since.</p>' },
         ]] ] },
       { yr: '1984–89', title: 'The records keep working', text: 'The band is gone, but the records sell year after year, and Dischord keeps every one of them in print.', years: [
-        ['1984', [{ k: 'row', d: '1984', tag: 'rec', album: '2d91b2eb-ea73-32bf-ac1b-5a803c7b4684', h: 'Two EPs become one LP', p: 'The first two seven-inches on one record, Alec back on the cover.' }]],
+        ['1984', [{ k: 'row', d: '1984', tag: 'rec', album: '2d91b2eb-ea73-32bf-ac1b-5a803c7b4684', h: '<i>Minor Threat</i> LP collects both EPs', p: 'The first two seven-inches on one record, with Alec MacKaye on the cover again.' }]],
         ['1985', [{ k: 'card', img: WM + 'en/7/72/Minor_Threat_-_Salad_Days.jpg', album: '29444500-c97f-32d1-9652-41e565779d5f', play: ['Salad Days', 'Salad Days'], d: 'April', tag: 'rec',
-          h: '<i>Salad Days</i> comes out anyway', p: 'Dischord No. 15. The song he wanted buried becomes one of the band’s best-loved.' }]],
+          h: '<i>Salad Days</i> comes out, against MacKaye’s wishes', p: 'Recorded after the break-up in late 1983, MacKaye agreed only if it was never released. Dischord put it out anyway, and it became a fan favorite.' }]],
         ['1989', [{ k: 'card', img: WM + 'en/2/2e/Complete_Discography_Minor_Threat.jpg', album: '800ca06b-3cbe-3807-ad00-6034788773a1', d: '1989', tag: 'rec',
           h: '<i>Complete Discography</i>', p: 'Twenty-six songs, forty-seven minutes. For a generation of kids it’s the front door to hardcore.' }]],
       ] },
@@ -2320,22 +2328,22 @@ const MILESTONES = {
         ['1996', [{ k: 'card', img: WM + 'en/a/aa/Slayer-UndisputedAttitude.jpg', d: '1996', tag: 'fight', h: '[[Slayer|bdacc37b-8633-4bf8-9dd5-4662ee651aec]] changes the words',
           p: 'Their cover of “Guilty of Being White” rewrites the lyric. MacKaye is furious: he hears his anti-racist song turned into the thing it was written against.',
           xp: '<p>The song was MacKaye’s account of growing up white in a mostly Black city, and it had already been misread for years. Slayer’s version, on <i>Undisputed Attitude</i>, changes the words in a way he saw as pushing it toward exactly the reading he’d spent years arguing against.</p>' }]],
-        ['2003', [{ k: 'row', d: '2003', tag: 'rec', album: 'd78f9e30-1a9f-3cc7-a8fe-62b4baaedf6f', h: '<i>First Demo Tape</i>', p: 'The band opens its own vault.' }]],
+        ['2003', [{ k: 'row', d: '2003', tag: 'rec', album: 'd78f9e30-1a9f-3cc7-a8fe-62b4baaedf6f', h: '<i>First Demo Tape</i> released', p: 'Dischord issues the band’s 1981 demo, recorded before the first EP.' }]],
         ['2005', [
           { k: 'feat', img: 'img/nike-major-threat.webp', cap: 'The original, and Nike’s “Major Threat”', d: 'June', tag: 'fight', h: 'Nike’s “Major Threat”',
             p: 'Nike Skateboarding lifts the first EP’s cover, Alec on the steps and the lettering, for a tour poster. Dischord calls it out; by June 27 Nike apologizes, calls it “a poor judgment call,” and destroys the art.',
             xp: '<p>Dischord’s complaint was less about money than about a giant brand borrowing the look of a scene built on doing things yourself, and what that might teach kids who met Minor Threat through a sneaker ad. Nike pulled the artwork within days.</p>', src: 'Rolling Stone · Punknews' },
-          { k: 'row', d: 'October 29', tag: 'fight', h: 'Fox, without asking', p: '“Salad Days” turns up in an NFL broadcast. Nobody had cleared it.' },
+          { k: 'row', d: 'October 29', tag: 'fight', h: 'Fox uses “Salad Days” without asking', p: 'The song turns up in a Fox NFL broadcast. Nobody had cleared it with the band.' },
         ]],
-        ['2007', [{ k: 'row', d: '2007', h: 'The one they said yes to', p: 'Minor Threat hot sauce, with MacKaye’s blessing once the label was changed.' }]],
-        ['2009', [{ k: 'row', d: '2009', tag: 'fight', h: 'Forever 21', p: 'Dischord goes after the chain over unlicensed shirts.' }]],
-        ['2013', [{ k: 'row', d: '2013', h: 'The shirt at the mall', p: 'Licensed tees at Urban Outfitters. MacKaye’s time, he says, is better spent than chasing bootlegs.' }]],
+        ['2007', [{ k: 'row', d: '2007', h: 'Minor Threat hot sauce gets a yes', p: 'A rare approved product: MacKaye signed off once the bottle’s label was changed.' }]],
+        ['2009', [{ k: 'row', d: '2009', tag: 'fight', h: 'Dischord goes after Forever 21', p: 'The clothing chain was selling unlicensed Minor Threat shirts.' }]],
+        ['2013', [{ k: 'row', d: '2013', h: 'Licensed shirts at Urban Outfitters', p: 'MacKaye says he has better things to do than chase every bootleg.' }]],
       ] },
       { gap: '2014 – 2020' },
       { yr: '2021–now', later: 1, title: 'Still finding tape', text: 'Four decades on, the archive is still giving things up.', years: [
-        ['2021', [{ k: 'row', d: '2021', tag: 'rec', h: 'Found in the multitrack', p: 'Digitizing the <i>Out of Step</i> reels turns up forgotten takes: new versions of “In My Eyes” and “Filler,” and an instrumental nicknamed “Addams Family.”' }]],
+        ['2021', [{ k: 'row', d: '2021', tag: 'rec', h: 'Lost <i>Out of Step</i> takes found', p: 'Digitizing the <i>Out of Step</i> reels turns up forgotten takes: new versions of “In My Eyes” and “Filler,” and an instrumental nicknamed “Addams Family.”' }]],
         ['2023', [{ k: 'card', img: WM + 'en/2/2c/Minor_Threat_-_Out_of_Step.jpg', album: 'fe8d38d9-7b13-4619-bbde-498bed78fa60', d: 'December', tag: 'rec',
-          h: '<i>Out of Step Outtakes</i>', p: 'Out for the record’s fortieth anniversary, on clear vinyl, for eight dollars.' }]],
+          h: '<i>Out of Step Outtakes</i> released', p: 'The 2021 finds come out for the album’s 40th anniversary, on clear vinyl, for eight dollars.' }]],
       ] },
     ],
   },
@@ -2379,25 +2387,28 @@ async function renderMilestones(id) {
     const a = [];
     if (e.play) a.push(`<button class="mplay" data-mplay="${esc(e.play.join('|'))}">▶ ${esc(e.play[1])}</button>`);
     if (e.album) a.push(`<a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a>`);
+    if (e.yt && e.k !== 'vid') a.push(`<button class="mplay" data-yt="${esc(e.yt[0])}">▶ Watch</button>`);
     if (e.xp) a.push(`<button class="mbtn mmore" data-mx>More ▾</button>`);
     return a.length ? `<div class="macts">${a.join('')}</div>` : '';
   };
   const xp = e => e.xp ? `<div class="mxp"><div>${msLinks(e.xp)}${e.q ? `<blockquote>${esc(e.q[0])}<cite>${esc(e.q[1])}</cite></blockquote>` : ''}${e.src ? `<div class="msrc">Sources: ${esc(e.src)}</div>` : ''}</div>
     <div class="mside"><b>Go deeper</b>${e.playX ? `<a data-mplay="${esc(e.playX.join('|'))}">▶ Hear “${esc(e.playX[1])}”</a>` : ''}${(e.go || []).map(k => `<a data-go="${esc(m.people[k][1])}"><span class="p">${esc(m.people[k][0])}</span> ›</a>`).join('')}${PATHS.filter(p => p.root === id).map(p => `<a href="#path:${p.id}"><em>Path</em> · ${esc(p.title)} ›</a>`).join('')}</div></div>` : '';
+  const isrc = u => u && u.startsWith('dg:') ? `data-dg="${esc(u.slice(3))}"` : `src="${esc(u)}"`;
   const head = e => `<div class="md">${esc(e.d || '')}${tag(e.tag)}${who(e.who)}</div><h3>${msLinks(e.h)}</h3>`;
   const ev = e => {
     const xa = e.xp ? ' data-xp' : '';
     if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${esc(e.d || '')}</span><div class="mrb"><h3>${msLinks(e.h)}${tag(e.tag)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${e.album && !e.play ? `<div class="macts"><a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a></div>` : ''}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
     if ((e.k === 'feat' || e.k === 'side') && !e.img) e = { ...e, k: 'card' };
-    if (e.k === 'card') return `<div class="mcard"${xa}>${e.img ? `<img class="mcv" src="${esc(e.img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
-    if (e.k === 'feat' || e.k === 'side') return `<div class="mcard mfeat ${e.k}"${xa}><div class="mimg${e.fit ? ' fit' : ''}"><img src="${esc(e.img)}" alt="" loading="lazy"><span>${esc(e.cap || '')}</span></div><div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
+    if (e.k === 'card') return `<div class="mcard"${xa}>${e.img ? `<img class="mcv" ${isrc(e.img)} alt="" loading="lazy" onerror="this.remove()">` : ''}<div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
+    if (e.k === 'vid' && e.yt) return `<div class="mcard mfeat mvid"${xa}><div class="mimg mv" data-yt="${esc(e.yt[0])}"><img src="https://i.ytimg.com/vi/${esc(e.yt[0])}/hqdefault.jpg" alt="" loading="lazy"><b class="mvp">▶</b></div><div class="mbd"><div class="md"><span class="mtag vid">Video</span> ${esc(e.cap || 'YouTube')}</div><h3>${msLinks(e.h)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${acts(e)}${xp(e)}</div></div>`;
+    if (e.k === 'feat' || e.k === 'side') return `<div class="mcard mfeat ${e.k}"${xa}><div class="mimg${e.fit ? ' fit' : ''}"><img ${isrc(e.img)} alt="" loading="lazy" onerror="this.closest('.mfeat').classList.add('noimg'); this.parentElement.remove()"><span>${esc(e.cap || '')}</span></div><div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
     if (e.k === 'quote') return `<div class="mcard mquote"${xa}><div class="mbd">${head(e)}<div class="mbig">${e.big}</div><p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
     return '';
   };
   main.innerHTML = `<div class="ms">${bandTabs(id, m.name, 'ms')}
-    <div class="mhero${m.hero?.src ? '' : ' none'}">${m.hero?.src ? `<img src="${esc(m.hero.src)}" alt="" onerror="this.parentElement.classList.add('none'); this.remove()">` : ''}<span class="mcr">${esc(m.hero?.by || '')}</span><div class="mov"><div class="kicker">Milestones${m.label ? ` · ${esc(m.label)}` : ''}</div><h1>${esc(m.name)}</h1><p class="lede">${esc(m.lede)}</p></div></div>
+    <div class="mhero${m.hero?.src ? '' : ' none'}">${m.hero?.src ? `<img ${isrc(m.hero.src)} alt="" onerror="this.parentElement.classList.add('none'); this.remove()">` : ''}<span class="mcr">${esc(m.hero?.by || '')}</span><div class="mov"><div class="kicker">Milestones${m.label ? ` · ${esc(m.label)}` : ''}</div><h1>${esc(m.name)}</h1><p class="lede">${esc(m.lede)}</p></div></div>
     ${m.eras.map(e => e.gap ? `<div class="mgap"><span>${esc(e.gap)} · quiet years</span></div>` : `
-    <section class="mera${e.later ? ' later' : ''}"><div class="mebox"><div class="myr">${esc(e.yr)}</div><h2>${esc(e.title)}</h2><p>${esc(e.text)}</p><div class="mcount">${e.years.reduce((n, [, v]) => n + v.length, 0)} moments</div></div>
+    <section class="mera${e.later ? ' later' : ''}"><div class="mebox"><div class="myr">${esc(e.yr)}</div><h2>${esc(e.title)}</h2><p>${esc(e.text)}</p></div>
       <div class="myears"><div class="mspine"></div>${e.years.map(([y, list]) => `<div class="myear"><span class="my">${esc(y)}</span>${list.map(x => `<div class="mev">${ev(x)}</div>`).join('')}</div>`).join('')}</div></section>`).join('')}
     ${bandTabs(id, m.name, 'ms')}</div>`;
   const box = main.querySelector('.ms');
@@ -2406,10 +2417,27 @@ async function renderMilestones(id) {
     if (pl) { const [album, song] = pl.dataset.mplay.split('|'); renderPlayer('Finding previews…');
       try { const songs = await albumSongs(m.name, album); const k = songs.findIndex(s => norm(s.title) === norm(song) || norm(s.title).startsWith(norm(song))); playQueue(songs, Math.max(0, k), album); }
       catch { renderPlayer('Couldn’t reach Apple Music for previews just now.'); } return; }
+    const yt = ev2.target.closest('[data-yt]');
+    if (yt) { const src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(yt.dataset.yt)}?autoplay=1&rel=0`;
+      const f = `<iframe src="${src}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Video"></iframe>`;
+      if (yt.classList.contains('mv')) { yt.innerHTML = f; yt.classList.add('on'); yt.removeAttribute('data-yt'); }
+      else { const bd = yt.closest('.mbd'); if (!bd.querySelector('.mvf')) bd.insertAdjacentHTML('afterbegin', `<div class="mimg mv on mvf">${f}</div>`); yt.remove(); }
+      return; }
     if (g && g.dataset.go) { freshTrail = true; return go(g.dataset.go); }
     if (ev2.target.closest('a[href]')) return;
     if (mx || (x && x.classList.contains('mrow'))) { const card = (mx || x).closest('[data-xp]'); card.classList.toggle('open'); const b = card.querySelector('.mmore'); if (b) b.textContent = card.classList.contains('open') ? 'Less ▴' : 'More ▾'; }
   };
+  const dgs = box.querySelectorAll('img[data-dg]');
+  if (dgs.length) {   // photos from the band's Discogs page, looked up live (their links are signed, so we can't store them)
+    (async () => {
+      let list = [];
+      try { if (!m.dg) throw 0; const k = 'dgimg:' + m.dg; list = JSON.parse(sessionStorage.getItem(k) || 'null');
+        if (!list) { const d = await fetch('https://api.discogs.com/artists/' + m.dg, { signal: AbortSignal.timeout(15000) }).then(r => r.json());
+          list = (d.images || []).filter(i => i.width >= 300 && i.height >= 200).map(i => i.uri); try { sessionStorage.setItem(k, JSON.stringify(list)); } catch {} } } catch { list = []; }
+      if (my !== gen) return;
+      dgs.forEach(img => { const u = list[+img.dataset.dg]; if (u) img.src = u; else img.dispatchEvent(new Event('error')); });
+    })();
+  }
   const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { rootMargin: '0px 0px -8% 0px' });
   box.querySelectorAll('.mev').forEach(n => io.observe(n));
   window.scrollTo(0, 0);
