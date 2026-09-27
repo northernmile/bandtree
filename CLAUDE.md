@@ -41,6 +41,19 @@ and JS, with D3 from cdnjs used for the timeline only.
 - **Descriptions.** `loadBlurb()`: Wikipedia's first 1–2 sentences, else Wikidata's description, MusicBrainz's
   note, Discogs' profile (`shortBlurb` skips sentences broken by unresolved links), else one built from the data.
   Albums use their Wikipedia intro or "1997 album by X".
+- **How are these connected?** Header button (`openConnect`). `findPath()` is a bidirectional breadth-first search
+  over the member graph (band -> members -> their bands), growing the smaller side, capped at ~150 lookups;
+  `openPath()` lays the chain out as the breadcrumb trail. Shareable as `#connect:<id>:<id>`.
+- **Listen as you browse.** iTunes Search API 30-second previews (`artistSongs`, `albumSongs`, with a song-search
+  fallback for reissued titles). Mini player bottom right survives navigation.
+- **Browse.** `#browse` index of curated labels / cities / styles plus free search; `#browse:<type>:<name>` lists
+  artists: label = its releases on MusicBrainz; city = Wikidata "location of formation" + MusicBrainz area search
+  (untagged results dropped); scene = MusicBrainz tag in the artist's top 3. Ranked by Wikipedia language count.
+- **Guided trails.** `TRAILS` waypoints; each hop verified with `findPath` then opened with `openPath`. All eight
+  verified 2026-09-27.
+- **Family tree.** `openTree()` on bands with 4+ connected bands: line-ups (from member stints) down the middle,
+  members' earlier bands left, later/parallel right, SVG connectors to the nearest line-up in time. Paper + Special
+  Elite font; print CSS; shareable as `#tree:<id>`.
 - **Column navigator.** Each breadcrumb stop is a "stage" with three columns: info, list, and sub (the selected
   member's other bands). Stages sit side by side on one track that slides. The breadcrumb `trail`
   (sessionStorage) drives it, including the selected member (`sel`) per stage. On musician pages a band row opens

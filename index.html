@@ -309,7 +309,10 @@
   .cnode.person i { background: var(--person); border-radius: 50%; }
   .clink { color: var(--muted); }
   .cacts { display: flex; gap: 8px; margin-top: 18px; }
-  @media (max-width: 640px) { .cpick { grid-template-columns: 1fr; } .cto { padding: 0; } .hbtn { margin-left: 0; } }
+  .hbtn .short { display: none; }
+  @media (max-width: 640px) { .cpick { grid-template-columns: 1fr; } .cto { padding: 0; } .hbtn { margin-left: auto; }
+    .hbtn .long { display: none; } .hbtn .short { display: inline; }
+    header .search { order: 5; flex-basis: 100%; max-width: none; } }
   /* Listen as you browse */
   .lbtn { margin-top: 14px; font-size: 12.5px; padding: 7px 14px; border-radius: 99px; background: #ffffff10; border-color: #ffffff22; }
   .lbtn:hover { border-color: var(--accent); color: var(--accent); }
@@ -401,7 +404,7 @@
   </div>
   <a class="hlink" href="#browse">Browse</a>
   <div class="status" id="status"></div>
-  <button class="hbtn" id="connectBtn" onclick="openConnect()">How are these connected?</button>
+  <button class="hbtn" id="connectBtn" onclick="openConnect()"><span class="long">How are these connected?</span><span class="short">Connect two artists</span></button>
 </header>
 <main id="main"></main>
 <div class="tip navtip" id="navtip"></div>
