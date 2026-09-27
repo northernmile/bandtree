@@ -552,6 +552,21 @@
   .btabs a { font-size: 12.5px; padding: 6px 12px; border-radius: 99px; border: 1px solid #ffffff22; background: #ffffff0d; color: var(--text); text-decoration: none; cursor: pointer; }
   .btabs a:hover { border-color: var(--accent); color: var(--accent); } .btabs a.on { background: var(--text); color: var(--bg); border-color: var(--text); }
   .ms > .btabs:last-child { margin-top: 40px; }
+  .bh { position: relative; height: 250px; border-radius: 18px 18px 0 0; overflow: hidden; background: #000; }
+  .bh.tall { height: 380px; } .bh.none { height: 190px; background: linear-gradient(135deg, #2a1a22, #151820); }
+  .bh img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: grayscale(.2) contrast(1.05); opacity: .72; animation: fadein .6s; }
+  .bh .ov { position: absolute; inset: 0; background: linear-gradient(transparent 20%, #0e0f13f0 95%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px 28px 18px; }
+  .bh h1 { font-size: 56px; letter-spacing: -.045em; line-height: 1; margin: 6px 0 8px; } .bh.tall h1 { font-size: 68px; }
+  .bh .lede { color: #d4d7df; font-size: 16.5px; max-width: 720px; margin: 0; }
+  .bh .facts { font-size: 12px; color: #aab0bd; margin-top: 10px; display: flex; gap: 16px; flex-wrap: wrap; } .bh .facts:empty { display: none; } .bh .facts b { color: #fff; font-weight: 600; }
+  .bht { display: flex; gap: 4px; margin: 0 0 20px; padding: 0 14px; background: #14161c; border-radius: 0 0 14px 14px; border-bottom: 1px solid #ffffff1c; overflow-x: auto; scrollbar-width: none; }
+  .bht a { flex: none; padding: 13px 14px 11px; font-size: 14px; color: #aab0bd; text-decoration: none; cursor: pointer; border-bottom: 2px solid transparent; display: flex; gap: 7px; align-items: center; white-space: nowrap; }
+  .bht a:hover { color: #fff; } .bht a.on { color: #fff; border-bottom-color: var(--accent); font-weight: 600; }
+  .bht a i { font-style: normal; font-size: 11px; color: #7d8391; background: #ffffff10; border-radius: 99px; padding: 1px 7px; font-weight: 400; } .bht a.path { color: #f0b75a; }
+  .ms .bht { margin-bottom: 28px; }
+  .stage.headed .col.info > .photo, .stage.headed .col.info > .kicker, .stage.headed .col.info > h1, .stage.headed .col.info > .blurb,
+  .stage.headed .col.info > .inpath, .stage.headed .col.info > .mscard, .stage.headed .col.info > .jumps, .stage.headed [data-tree] { display: none; }
+  @media (max-width: 640px) { .bh { height: 200px; } .bh.tall { height: 270px; } .bh h1, .bh.tall h1 { font-size: 38px; } .bh .ov { padding: 18px; } .bh .lede { font-size: 14.5px; } .bht a { padding: 12px 10px 10px; font-size: 13.5px; } }
   .mhero { position: relative; height: 360px; margin: 0 0 28px; border-radius: 18px; overflow: hidden; background: #000; }
   .mhero img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: grayscale(.2) contrast(1.05); opacity: .75; }
   .mhero .mov { position: absolute; inset: 0; background: linear-gradient(transparent 30%, #0e0f13ee 92%); display: flex; flex-direction: column; justify-content: flex-end; padding: 28px 30px; }
@@ -2370,9 +2385,61 @@ const msSpan = m => { const ys = m.eras.flatMap(e => (e.years || []).map(([y]) =
 const milestonesLine = st => { const m = msInfo(st.id); return m ? `<a class="mscard" href="#milestones:${st.id}"><img src="${esc(m.hero || '')}" alt="" onerror="this.style.visibility='hidden'">
   <span><b>Milestones</b><small>${m.n} moments · ${esc(m.span)}</small></span><i>›</i></a>` : ''; };
 // The views one band can have, as tabs: its page, its milestones, the paths that start from it.
+const isrc = u => u && u.startsWith('dg:') ? `data-dg="${esc(u.slice(3))}"` : `src="${esc(u)}"`;
+/* ---------- Band header ----------
+   One header for every view of a band: photo, name, a line about them, a few facts, and tabs for
+   Story (milestones, when we have them) · Members (the column browser) · Lineup · Records · Band tree (the diagram) · Paths. */
+function bandFacts(st) {
+  if (!st?.artist) return '';
+  const a = st.artist, ls = a['life-span'] || {}, band = st.kind === 'band';
+  const yrs = band && year(ls.begin) ? `${year(ls.begin)}–${ls.ended ? (year(ls.end) || '') : 'now'}` : '';
+  const albums = st.releases ? st.releases.filter(r => relType(r) === 'Album').length : 0;
+  const conn = new Set([...st.links.values()].flat().map(x => x.id)).size;
+  return [yrs && `<b>${yrs}</b>`, st.rels.length && `<b>${st.rels.length}</b> ${band ? 'members' : 'bands'}`,
+    albums && `<b>${albums}</b> album${albums === 1 ? '' : 's'}`, conn && `<b>${conn}</b> connected musicians`].filter(Boolean).map(x => `<span>${x}</span>`).join('');
+}
+function bandHead(id, on, o = {}) {
+  const st = stages.get(id), a = st?.artist, ms = msInfo(id), band = !a || st.kind === 'band';
+  const name = o.name || a?.name || ms?.name || '';
+  const img = o.img || ms?.hero || st?.image?.src || '';
+  const by = o.img ? o.by || '' : ms?.hero ? '' : st?.image?.by ? 'Photo: ' + st.image.by : '';
+  const place = a ? (st.place || (a['begin-area'] || a.area)?.name || '') : '';
+  const kicker = [band ? 'Band' : 'Musician', place, ms?.label].filter(Boolean).join(' · ');
+  const lede = o.lede ?? (a ? artistBlurb(st) : '');
+  const tab = (label, attrs, key, cls = '') => `<a ${attrs} class="${[on === key ? 'on' : '', cls].join(' ').trim()}">${label}</a>`;
+  const tabs = [
+    ms ? tab(`Story <i>${ms.n} moments</i>`, `href="#milestones:${id}"`, 'story') : '',
+    tab(band ? 'Members' : 'Bands', `data-go="${esc(id)}"`, 'members'),
+    tab(band ? 'Lineup' : 'Timeline', `data-bjump="lowerTimeline" data-id="${esc(id)}"`, 'lineup'),
+    tab('Records', `data-bjump="lowerDisco" data-id="${esc(id)}"`, 'records'),
+    band && (ms || (st && treeWorthy(st))) ? tab('Band tree', `href="#tree:${id}"`, 'tree') : '',
+    ...PATHS.filter(p => p.root === id).map(p => tab(`Path: ${esc(p.title)}`, `href="#path:${p.id}"`, p.id, 'path')),
+  ].join('');
+  return `<div class="bh${on === 'story' ? ' tall' : ''}${img ? '' : ' none'}">${img ? `<img ${isrc(img)} alt="" onerror="this.parentElement.classList.add('none'); this.remove()">` : ''}${by ? `<span class="mcr">${esc(by)}</span>` : ''}
+    <div class="ov"><div class="kicker">${esc(kicker)}</div><h1>${esc(name)}</h1>${lede ? `<p class="lede">${esc(lede)}</p>` : ''}<div class="facts">${bandFacts(st)}</div></div></div>
+    <nav class="bht">${tabs}</nav>`;
+}
+// Lineup / Records from a page that doesn't have them (Story): open the band page, then scroll there.
+function bandJump(id, where) {
+  const el = document.getElementById(where);
+  if (el && trail[cur]?.id === id) return el.scrollIntoView({ behavior: 'smooth' });
+  freshTrail = true; go(id);
+  let k = 0; const t = setInterval(() => { const e = document.getElementById(where); if (e || ++k > 40) { clearInterval(t); e?.scrollIntoView({ behavior: 'smooth' }); } }, 150);
+}
+// Band page: the header follows whichever band or musician is in front.
+function renderBandHead() {
+  const el = document.getElementById('bhead'); if (!el) return;
+  const t = trail[cur], st = t && stages.get(t.id);
+  document.querySelectorAll('#track .stage.headed').forEach(x => x.classList.remove('headed'));
+  if (!st?.artist || st.kind === 'album') { el.innerHTML = ''; el.dataset.k = ''; return; }
+  const html = bandHead(t.id, 'members'), key = html.replace(/<div class="facts">[\s\S]*?<\/div><\/div><\/div>/, '');
+  if (el.dataset.k !== key) { el.innerHTML = html; el.dataset.k = key; }
+  else { const f = el.querySelector('.facts'), nf = bandFacts(st); if (f && f.innerHTML !== nf) f.innerHTML = nf; }
+  document.getElementById('track')?.children[cur]?.classList.add('headed');
+}
 function bandTabs(id, name, on) {
   const ps = PATHS.filter(p => p.root === id);
-  return `<nav class="btabs"><a data-go="${esc(id)}" class="${on === 'band' ? 'on' : ''}">‹ ${esc(name)}</a>${msInfo(id) ? `<a href="#milestones:${id}" class="${on === 'ms' ? 'on' : ''}">Milestones</a>` : ''}${ps.map(p =>
+  return `<nav class="btabs"><a data-go="${esc(id)}" class="${on === 'band' ? 'on' : ''}">‹ ${esc(name)}</a>${msInfo(id) ? `<a href="#milestones:${id}" class="${on === 'ms' ? 'on' : ''}">Story</a>` : ''}${ps.map(p =>
     `<a href="#path:${p.id}" class="${on === p.id ? 'on' : ''}">Path: ${esc(p.title)}</a>`).join('')}</nav>`;
 }
 async function renderMilestones(id) {
@@ -2393,7 +2460,6 @@ async function renderMilestones(id) {
   };
   const xp = e => e.xp ? `<div class="mxp"><div>${msLinks(e.xp)}${e.q ? `<blockquote>${esc(e.q[0])}<cite>${esc(e.q[1])}</cite></blockquote>` : ''}${e.src ? `<div class="msrc">Sources: ${esc(e.src)}</div>` : ''}</div>
     <div class="mside"><b>Go deeper</b>${e.playX ? `<a data-mplay="${esc(e.playX.join('|'))}">▶ Hear “${esc(e.playX[1])}”</a>` : ''}${(e.go || []).map(k => `<a data-go="${esc(m.people[k][1])}"><span class="p">${esc(m.people[k][0])}</span> ›</a>`).join('')}${PATHS.filter(p => p.root === id).map(p => `<a href="#path:${p.id}"><em>Path</em> · ${esc(p.title)} ›</a>`).join('')}</div></div>` : '';
-  const isrc = u => u && u.startsWith('dg:') ? `data-dg="${esc(u.slice(3))}"` : `src="${esc(u)}"`;
   const head = e => `<div class="md">${esc(e.d || '')}${tag(e.tag)}${who(e.who)}</div><h3>${msLinks(e.h)}</h3>`;
   const ev = e => {
     const xa = e.xp ? ' data-xp' : '';
@@ -2405,14 +2471,14 @@ async function renderMilestones(id) {
     if (e.k === 'quote') return `<div class="mcard mquote"${xa}><div class="mbd">${head(e)}<div class="mbig">${e.big}</div><p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
     return '';
   };
-  main.innerHTML = `<div class="ms">${bandTabs(id, m.name, 'ms')}
-    <div class="mhero${m.hero?.src ? '' : ' none'}">${m.hero?.src ? `<img ${isrc(m.hero.src)} alt="" onerror="this.parentElement.classList.add('none'); this.remove()">` : ''}<span class="mcr">${esc(m.hero?.by || '')}</span><div class="mov"><div class="kicker">Milestones${m.label ? ` · ${esc(m.label)}` : ''}</div><h1>${esc(m.name)}</h1><p class="lede">${esc(m.lede)}</p></div></div>
+  main.innerHTML = `<div class="ms">${bandHead(id, 'story', { name: m.name, img: m.hero?.src, by: m.hero?.by, lede: m.lede })}
     ${m.eras.map(e => e.gap ? `<div class="mgap"><span>${esc(e.gap)} · quiet years</span></div>` : `
     <section class="mera${e.later ? ' later' : ''}"><div class="mebox"><div class="myr">${esc(e.yr)}</div><h2>${esc(e.title)}</h2><p>${esc(e.text)}</p></div>
       <div class="myears"><div class="mspine"></div>${e.years.map(([y, list]) => `<div class="myear"><span class="my">${esc(y)}</span>${list.map(x => `<div class="mev">${ev(x)}</div>`).join('')}</div>`).join('')}</div></section>`).join('')}
     ${bandTabs(id, m.name, 'ms')}</div>`;
   const box = main.querySelector('.ms');
   box.onclick = async ev2 => {
+    const bj = ev2.target.closest('[data-bjump]'); if (bj) return bandJump(bj.dataset.id, bj.dataset.bjump);
     const g = ev2.target.closest('[data-go]'), pl = ev2.target.closest('[data-mplay]'), mx = ev2.target.closest('[data-mx]'), x = ev2.target.closest('[data-xp]');
     if (pl) { const [album, song] = pl.dataset.mplay.split('|'); renderPlayer('Finding previews…');
       try { const songs = await albumSongs(m.name, album); const k = songs.findIndex(s => norm(s.title) === norm(song) || norm(s.title).startsWith(norm(song))); playQueue(songs, Math.max(0, k), album); }
@@ -3881,12 +3947,17 @@ async function mergeMembers(st) {
 
 function shell() {
   main.innerHTML = `
-    <section style="margin-top:0"><nav id="crumbs"></nav><div class="nav" id="nav"><div class="loadbar" id="loadbar"><i></i></div><div class="track" id="track"></div></div></section>
+    <nav id="crumbs"></nav><div id="bhead"></div><section style="margin-top:0"><div class="nav" id="nav"><div class="loadbar" id="loadbar"><i></i></div><div class="track" id="track"></div></div></section>
     <div class="lower"><section id="lowerTimeline" style="margin-top:0"><h2><span id="tlTitle"></span> <b id="tlCount"></b></h2>
       <div class="timewrap"><div id="timeline"></div><div class="tip" id="tip"></div><div class="tlegend" id="tlegend"></div></div></section>
     <section id="lowerDisco"><h2 style="display:flex;justify-content:space-between">
       <span><span id="discoTitle">Discography</span> <b id="relCount">…</b></span></h2>
       <div class="filters" id="filters"></div><div class="releases" id="releases"></div></section></div>`;
+  document.getElementById('bhead').addEventListener('click', e => {
+    const bj = e.target.closest('[data-bjump]'); if (bj) return bandJump(bj.dataset.id, bj.dataset.bjump);
+    const g = e.target.closest('[data-go]');
+    if (g) { if (trail[cur]?.id === g.dataset.go) { mobileCol = 0; focusNav(); return window.scrollTo({ top: 0, behavior: 'smooth' }); } return go(g.dataset.go); }
+  });
   const track = document.getElementById('track');
   track.addEventListener('click', e => {
     const i = +e.target.closest('.stage')?.dataset.i;
@@ -4005,6 +4076,7 @@ function scheduleRefresh(id) {
   refreshTimers.set(id, setTimeout(() => { refreshTimers.delete(id); refreshStage(id); }, 150));
 }
 function focusNav() {
+  renderBandHead();
   const nav = document.getElementById('nav'), track = document.getElementById('track');
   const el = track?.children[cur];
   if (!el) return;
