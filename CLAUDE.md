@@ -65,6 +65,10 @@ and JS, with D3 from cdnjs used for the timeline only.
 - **One name, one role.** `normRole()` folds source wording into a short set (bass, drums, vocals, producer…);
   `sameName()` matches "David Wm. Sims" = "David Sims" and nicknames ("Jim" = "James"). Album credits use the band
   page's names and order.
+- **Album credits source order.** The album's Wikipedia "Personnel" section first (`wikipediaPersonnel()`, keeps its
+  band / additional musicians / production groups, names linked to MusicBrainz IDs via Wikidata), then MusicBrainz,
+  then Discogs. MusicBrainz/Discogs only add production people Wikipedia leaves out. The band-wide pass uses the
+  same order.
 - **Album pages.** Clicking a record opens it as a stop on the trail (`album:<release-group MBID>` or
   `album:dg-master-<id>`): cover, facts, Wikipedia notes · credits (who played on it, then production) · the selected
   person's other bands. Credits: MusicBrainz release + per-track credits, then Discogs credits, then the band's lineup

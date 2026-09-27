@@ -966,7 +966,7 @@ function parseWpMember(li) {
 async function idsForTitles(titles) {
   const out = new Map();
   if (!titles.length) return out;
-  const d = await getJSON(`${WD}action=wbgetentities&sites=enwiki&normalize=1&props=claims|sitelinks&sitefilter=enwiki&titles=${encodeURIComponent(titles.slice(0, 50).join('|'))}`);
+  const d = await getJSON(`${WD}action=wbgetentities&sites=enwiki&props=claims|sitelinks&sitefilter=enwiki&titles=${encodeURIComponent(titles.slice(0, 50).join('|'))}`);
   for (const [qid, e] of Object.entries(d.entities || {})) {
     const t = e.sitelinks?.enwiki?.title;
     if (t) out.set(norm(t), e.claims?.P434?.[0]?.mainsnak?.datavalue?.value || 'wd:' + qid);
@@ -1081,8 +1081,15 @@ async function albumCoreDiscogs(st, key) {
 function albumDetails(st) {
   const done = () => { refreshStage(st.id); if (trail[cur]?.id === st.id) showAlbumLower(st); };
   const credits = st.rg.src === 'discogs' ? albumDiscogsCredits(st, st.rg.dgType, st.rg.dgId) : albumMBCredits(st);
+  const wpCredits = albumWikiTitle(st.rg, st.album.band?.name || '', st.info)
+    .then(t => t ? wikipediaPersonnel(t, st.album.band?.name || '') : []).catch(() => []);
   credits.catch(() => []).then(async list => {
     let source = list.length ? (st.rg.src === 'discogs' ? 'Discogs' : 'MusicBrainz') : null;
+    const wp = await wpCredits;
+    if (wp.some(p => p.play.length)) {
+      const extra = list.filter(p => !p.play.length && p.prod.length && !wp.some(q => sameName(q.name, p.name))).length;
+      list = mergeWithWikipedia(wp, list); source = 'Wikipedia' + (extra ? ` + ${source}` : '');
+    } else {
     if (!list.some(p => p.play.length) && st.rg.src !== 'discogs' && st.dgLink) {
       const dgList = await albumDiscogsCredits(st, ...st.dgLink).catch(() => []);
       // Discogs has the players; keep any production credits MusicBrainz had that Discogs doesn't.
@@ -1091,6 +1098,7 @@ function albumDetails(st) {
     if (!list.some(p => p.play.length)) {
       const lineup = await lineupWhenReleased(st).catch(() => []);
       if (lineup.length) { list = [...lineup, ...list]; source = 'band lineup at the time'; }
+    }
     }
     const band = st.album.band;
     st.rels = band ? list.filter(p => p.id !== band.id && !sameName(p.name, band.name)) : list;
@@ -1125,6 +1133,77 @@ function normRole(x) {
   if (/engineer|recorded|recording/.test(r)) return 'engineer';
   return r;
 }
+/* ---------- Album credits from Wikipedia ----------
+   An album's Wikipedia "Personnel" section is written from the liner notes and edited by hand, so it's the first
+   choice for who played on a record. It keeps its own groups: the band, additional musicians, production.
+   MusicBrainz and Discogs only add production people it leaves out; they never override it. */
+async function albumWikiTitle(rg, bandName, info) {
+  const wdUrl = (info?.relations || []).find(r => r.type === 'wikidata')?.url?.resource;
+  if (wdUrl) {
+    const qid = wdUrl.split('/').pop();
+    const ent = (await getJSON(`${WD}action=wbgetentities&ids=${qid}&props=claims|sitelinks&sitefilter=enwiki`)).entities[qid];
+    if (ent?.sitelinks?.enwiki) return ent.sitelinks.enwiki.title;
+  }
+  return guessWikiTitle(bandName, rg.title);
+}
+const PERSONNEL = /^(personnel|credits|musicians|personnel and credits|credits and personnel|track listing and personnel)$/i;
+async function wikipediaPersonnel(title, bandName) {
+  const secs = (await getJSON(`${WIKI}action=parse&prop=sections&redirects=1&page=${encodeURIComponent(title)}`)).parse?.sections || [];
+  const sec = secs.find(s => PERSONNEL.test(s.line.replace(/<[^>]+>/g, '').trim()));
+  if (!sec) return [];
+  const html = (await getJSON(`${WIKI}action=parse&prop=text&redirects=1&section=${sec.index}&page=${encodeURIComponent(title)}`)).parse.text['*'];
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('sup, .mw-editsection, style, table').forEach(n => n.remove());
+  const groupOf = label => {
+    const l = norm(label);
+    if (!l) return null;
+    if (/produc|technical|engineer|artwork|design|packag|recording/.test(l)) return 'prod';
+    if (/additional|guest|other|session|featur|contribut|with/.test(l)) return 'extra';
+    return 'band';   // "Labradford", "Band", "Musicians", "Members"
+  };
+  const people = new Map();
+  let group = null;
+  const walk = node => {
+    for (const el of node.children) {
+      const tag = el.tagName;
+      if (/^H[2-6]$/.test(tag) || el.classList.contains('mw-heading')) { group = groupOf(el.textContent); continue; }
+      if (tag === 'P' || tag === 'DL') {
+        const b = el.querySelector('b, dt');
+        if (b && el.textContent.trim().length < 60) { group = groupOf(b.textContent.replace(/:$/, '')); continue; }
+      }
+      if (tag === 'UL' || tag === 'OL') { for (const li of el.querySelectorAll(':scope > li')) addPerson(li); continue; }
+      if (el.children.length) walk(el);
+    }
+  };
+  const addPerson = li => {
+    const own = li.cloneNode(true); own.querySelectorAll('ul, ol').forEach(n => n.remove());
+    const text = own.textContent.replace(/\s+/g, ' ').trim();
+    const m = text.match(/^(.+?)\s*(?:[–—-]|:)\s+(.+)$/);
+    if (!m) return;
+    const name = m[1].replace(/\(.*?\)/g, '').trim();
+    if (!name || name.length > 50 || /\d/.test(name) || sameName(name, bandName) || norm(name) === norm(bandName)) return;
+    const roles = m[2].replace(/\(.*?\)/g, '').split(/,|;|\band\b|\//).map(s => s.trim()).filter(s => s && s.length < 40 && !/^(on )?tracks?\b/i.test(s));
+    const a = [...own.querySelectorAll('a')].find(a => /^\/wiki\/[^:]+$/.test(a.getAttribute('href') || '') && name.includes(a.textContent.trim()));
+    const title = a ? decodeURIComponent(a.getAttribute('href').slice(6)).replace(/_/g, ' ') : null;
+    const key = norm(name);
+    const p = people.get(key) || { id: null, title, name, type: 'Person', periods: [], attrs: new Set(), play: new Set(), prod: new Set(), tracks: new Set(), group };
+    for (const r of roles) {
+      if (SKIP_CREDIT.test(r)) continue;
+      (group === 'prod' || PRODUCTION.test(r) ? p.prod : p.play).add(r);
+    }
+    if (p.play.size || p.prod.size) people.set(key, p);
+  };
+  walk(doc.body);
+  const list = [...people.values()];
+  const ids = await idsForTitles(list.map(p => p.title).filter(Boolean)).catch(() => new Map());
+  for (const p of list) p.id = (p.title && ids.get(norm(p.title))) || 'wd:' + norm(p.name).replace(/ /g, '-');
+  return finishCredits(new Map(list.map(p => [p.id, p]))).map(p => ({ ...p, group: p.play.length ? (p.group === 'prod' ? 'extra' : p.group || 'band') : 'prod' }));
+}
+// Wikipedia's list, plus production people the other sources know that it doesn't mention.
+function mergeWithWikipedia(wp, others) {
+  return [...wp, ...others.filter(p => !p.play.length && p.prod.length && !wp.some(q => sameName(q.name, p.name)))];
+}
+
 function creditPerson(people, id, name) {
   if (!people.has(id)) people.set(id, { id, name, type: 'Person', periods: [], attrs: new Set(), play: new Set(), prod: new Set(), tracks: new Set() });
   return people.get(id);
@@ -1288,10 +1367,11 @@ function creditsCol(st, selId) {
       <div class="txt"><div class="nm">${esc(r.name)}</div><div class="meta">${esc(roles)}${some}${recs}</div></div>${badge}</div>`;
   };
   const played = st.rels.filter(r => r.play.length), prod = st.rels.filter(r => !r.play.length);
+  const inBand = played.filter(r => r.member || r.group === 'band'), extra = played.filter(r => !inBand.includes(r));
+  const section = (label, list) => list.length ? `<div class="subhead">${esc(label)}</div>${list.map(row).join('')}` : '';
   const body = st.credits === 'loading' ? '<div class="skel" style="padding:0 10px">Looking up who played on it…</div>'
-    : !st.rels.length ? '<div class="skel" style="padding:0 10px">No credits on MusicBrainz or Discogs for this one.</div>'
-    : (played.length ? `<div class="subhead">Played on it</div>${played.map(row).join('')}` : '') +
-      (prod.length ? `<div class="subhead">Production</div>${prod.map(row).join('')}` : '');
+    : !st.rels.length ? '<div class="skel" style="padding:0 10px">No credits on Wikipedia, MusicBrainz or Discogs for this one.</div>'
+    : section(inBand.length ? st.album.band?.name || 'Band' : '', inBand) + section(inBand.length ? 'Additional musicians' : 'Played on it', extra) + section('Production', prod);
   return `<div class="col list"><div class="colhead"><span><button class="back">‹</button>Credits · ${st.rels.length}${st.relSource ? ` · via ${st.relSource}` : ''}</span></div>
     <div class="rows">${body}</div></div>`;
 }
@@ -1327,8 +1407,12 @@ const mostlyUndated = st => st.rels.filter(r => !isDated(r)).length >= Math.max(
    on what: each person's usual role, how many records they're on, regular collaborators, line-ups when there are
    no dates, and a stand-in line-up for records with no credits of their own. */
 const creditCache = new Map();   // release-group id -> promise of that record's credits
-function recordCredits(rg, opts = {}) {
+function recordCredits(rg, opts = {}, bandName = '') {
   if (!creditCache.has(rg.id)) creditCache.set(rg.id, (async () => {
+    // Wikipedia's Personnel section when the record has an article (no rate limit, hand-checked).
+    const t = await guessWikiTitle(bandName, rg.title).catch(() => null);
+    const wp = t ? await wikipediaPersonnel(t, bandName).catch(() => []) : [];
+    if (wp.some(p => p.play.length)) return wp;
     const tmp = { rg, facts: {}, listen: {}, info: null, tracks: null };
     let list = rg.src === 'discogs' ? await albumDiscogsCredits(tmp, rg.dgType, rg.dgId, opts) : await albumMBCredits(tmp, opts);
     if (list.some(p => p.play.length) || rg.src === 'discogs') return list;
@@ -1368,7 +1452,7 @@ async function loadBandCredits(st) {
   const show = () => { if (trail[cur]?.id === st.id && state.artist?.type !== 'Album' && st.lineups) renderTimeline(); };
   show();
   for (const rg of records) {
-    const list = await recordCredits(rg).catch(() => []);
+    const list = await recordCredits(rg, {}, st.artist.name).catch(() => []);
     const players = new Set();
     for (const p of list) {
       if (p.id === st.id || sameName(p.name, st.artist.name)) continue;   // "produced by the band" isn't a person
