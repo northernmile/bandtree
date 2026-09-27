@@ -1256,7 +1256,7 @@ async function routeTree(id) {
   await load(id);
   const st = stages.get(id);
   for (let k = 0; k < 60 && st && st.rels.some(r => !r.id.startsWith('wd:') && !st.links.has(r.id)); k++) await sleep(500);
-  if (st) { openTree(st); history.replaceState('', '', location.pathname + '#tree:' + id); }
+  if (st && trail[cur]?.id === id) { openTree(st); history.replaceState('', '', location.pathname + '#tree:' + id); }   // unless you've moved on
 }
 
 /* ---------- Routing ---------- */
@@ -1393,6 +1393,7 @@ function loadLinks(st, rel, opts = {}) {
 
 async function load(id) {
   const myGen = ++gen;
+  if (document.getElementById('tree')?.classList.contains('open')) closeTree();
   leaveHome();
   hideNavTip();
   if (twinPickFor && twinPickFor !== id) pickDone?.(undefined);   // that question was about the band you just left
