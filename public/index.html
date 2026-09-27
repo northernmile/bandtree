@@ -23,7 +23,7 @@
   .search input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line);
     background: var(--panel); color: var(--text); font: inherit; outline: none; }
   .search input:focus { border-color: var(--band); }
-  #results { position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px; background: var(--panel);
+  #results { position: absolute; z-index: 60; top: 100%; left: 0; right: 0; margin-top: 6px; background: var(--panel);
     border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: none; box-shadow: 0 12px 40px #0008; }
   #results div { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid var(--line); }
   #results div:last-child { border-bottom: 0; }
@@ -258,7 +258,8 @@
     margin: 0; text-shadow: 0 2px 40px #000a; }
   .home-hero h1 em { font-style: normal; color: var(--band); }
   .home-hero p { max-width: 520px; color: #c4c8d3; font-size: 17px; line-height: 1.55; margin: 24px 0 30px; }
-  .home-hero .search { max-width: 640px; flex: none; }
+  .home-hero .search { max-width: 640px; flex: none; position: relative; z-index: 60; }
+  #heroSearch { position: relative; z-index: 60; }   /* the fade-in animation gives each hero row its own layer; keep the results on top */
   .home-hero .search input { padding: 17px 22px; font-size: 18px; border-radius: 14px; background: #171920b3;
     border-color: #ffffff26; backdrop-filter: blur(10px); }
   .home-hero .search input:focus { border-color: var(--band); }
@@ -805,7 +806,12 @@ async function runSearch() {
   const seq = ++searchSeq, term = q.value.trim();
   const data = await mb(`artist?query=${encodeURIComponent(term)}&limit=8`, { priority: true });
   if (seq !== searchSeq) return;
-  hits = data.artists || []; sel = 0;
+  // Drop the long tail MusicBrainz pads results with (typing "ian" shouldn't offer J.S. Bach): keep close scores only.
+  const all = data.artists || [], top = all[0]?.score || 0;
+  const words = norm(term).split(' ').filter(Boolean), named = a => words.every(w => norm(a.name).includes(w));
+  hits = all.filter(a => (a.score || 0) >= Math.min(80, top * .85))
+    .sort((x, y) => named(y) - named(x));   // names that actually contain what you typed first (an alias match can outscore them)
+  sel = 0;
   drawHits();
 }
 function drawHits() {
@@ -1982,7 +1988,7 @@ function stageFor(id) {
       else mergeMembers(st).catch(() => {}).then(() => fillDates(st)).catch(() => {}).finally(() => { st.datesChecked = true; maybeBandCredits(st); });
       loadNames(st).catch(() => {});
       loadBlurb(st).catch(() => {});
-      if (st.kind === 'person') fetchBandYears(st.rels).then(got => got && refreshStage(id)).catch(() => {});
+      if (st.kind === 'person') fillPersonGaps(st).catch(() => {});
       return st;
     });
     // Only needs the ID, so fetch the photo alongside the MusicBrainz lookup.
@@ -2308,7 +2314,7 @@ const MB_PROD = ['producer', 'engineer', 'recording', 'mix', 'mastering', 'audio
 function openAlbumStage(rg) {
   const here = stages.get(trail[cur]?.id);
   if (!rg || !here?.artist) return;
-  const band = here.kind === 'album' ? here.album.band : { id: here.id, name: here.artist.name };
+  const band = rg.bandId ? { id: rg.bandId, name: rg.band } : here.kind === 'album' ? here.album.band : { id: here.id, name: here.artist.name };
   const id = 'album:' + rg.id;
   const img = document.querySelector(`[data-rg="${rg.id}"] .cover img`);
   albumSeeds.set(id, { rg, band, cover: img?.naturalWidth ? img.src.replace('front-250', 'front-500') : null });
@@ -3162,6 +3168,33 @@ function infoCol(st, i) {
 // Band lists read like a career: oldest first, years beside the name. When a person's stint has no dates, the band's
 // own years (Wikidata inception / dissolution, one query for the lot) place it, shown greyed out.
 const bandYears = new Map();   // MusicBrainz band id -> { first, txt }
+/* A musician's page: bands with no dates for them get the band's own years (drawn faded), and bands with no
+   role listed get what they usually play (their other bands, then Wikidata's instruments for them). */
+async function fillPersonGaps(st) {
+  await fetchBandYears(st.rels).catch(() => false);
+  for (const r of st.rels) {
+    if (r.periods.some(p => p.begin || p.end)) continue;
+    const b = bandYears.get(r.id); if (!b) continue;
+    let [s0, e0] = b.txt.split('–');
+    // No end year on Wikidata: ask MusicBrainz for the band's own end; failing that, don't run the bar to today.
+    if (!e0) { const a = await getArtist(r.id).catch(() => null); const ls = a?.['life-span'] || {}; e0 = year(ls.end) || (ls.ended || !a ? s0 : ''); }
+    r.periods = [{ begin: s0, end: e0 || '', ended: !!e0, attrs: [], fromBand: true }];
+  }
+  const counts = new Map();
+  st.rels.forEach(r => r.instruments.forEach(x => counts.set(x, (counts.get(x) || 0) + 1)));
+  let usual = topRoles(counts, 2);
+  const ent = await wikidataEntity(st.id).catch(() => null);
+  const ids = (ent?.claims?.P1303 || []).map(c => c.mainsnak?.datavalue?.value?.id).filter(Boolean).slice(0, 8);
+  if (ids.length) {
+    const labels = (await getJSON(`${WD}action=wbgetentities&ids=${ids.join('|')}&props=labels&languages=en`).catch(() => null))?.entities || {};
+    const wd = ids.map(i => normRole(labels[i]?.labels?.en?.value)).filter(x => x && x !== 'performer');
+    usual = [...new Set([...usual, ...wd])].slice(0, 2);
+  }
+  if (usual.length) for (const r of st.rels) if (!r.instruments.length) { usual.forEach(x => r.attrs.add(x)); r.roleGuess = true; }
+  st.rels = finalizeRels(st.rels);
+  refreshStage(st.id);
+  if (trail[cur]?.id === st.id && state.artist === st.artist) { state.rels = st.rels; renderTimeline(); }
+}
 async function fetchBandYears(list) {
   const ids = [...new Set(list.filter(l => !l.span && !l.id.includes(':') && !bandYears.has(l.id)).map(l => l.id))].slice(0, 60);
   if (!ids.length) return false;
@@ -3426,7 +3459,8 @@ function stintsOf(r) {
     const start = toYear(p.begin) ?? rootStart ?? toYear(p.end) - 1;
     const end = toYear(p.end, true) ?? rootEnd;
     // No role on the stint or the member: use what they play on the records, so the bar isn't grey "Other".
-    return { start, end: Math.max(end, start + 1 / 12), p, roles: rolesOf(p.attrs.length ? p.attrs : r.attrs.size ? [...r.attrs] : r.instruments || []) };
+    const own = p.attrs.filter(x => !['original', 'founder', 'additional', 'minor', 'guest', 'touring'].includes(String(x).toLowerCase()) && normRole(x) !== 'performer');   // "original" or "founder" alone isn't a role
+    return { start, end: Math.max(end, start + 1 / 12), p, roles: rolesOf(own.length ? own : r.attrs.size ? [...r.attrs] : r.instruments || []) };
   });
 }
 function renderTimeline() {
@@ -3498,11 +3532,11 @@ function renderTimeline() {
   gap.filter(g => g.prev.roles[1]).append('rect').attr('x', g => x(g.from)).attr('width', g => Math.max(0, x(g.to) - x(g.from)))
     .attr('y', rowH / 2 - 2).attr('height', 4).attr('fill', g => g.prev.roles[1].color).attr('fill-opacity', .35);
   const bar = row.selectAll('g.bar').data(d => d.bars.map(b => ({ ...b, r: d.r }))).join('g').attr('class', 'bar')
-    .on('mousemove', (ev, b) => showTip(ev, `<b>${esc(b.r.name)}</b><br>${esc(fmtPeriod(b.p))}${b.p.fromRecords ? ' <span class="muted">(from album credits)</span>' : ''}<br>
+    .on('mousemove', (ev, b) => showTip(ev, `<b>${esc(b.r.name)}</b><br>${esc(fmtPeriod(b.p))}${b.p.fromRecords ? ' <span class="muted">(from album credits)</span>' : b.p.fromBand ? ' <span class="muted">(the band’s years)</span>' : ''}<br>
         <span class="muted">${esc(b.p.attrs.filter(a => !['original'].includes(a)).join(', ') || [...b.r.attrs].join(', ') || 'role unknown')}</span>`))
     .on('mouseleave', hideTip).on('click', (ev, b) => selectMember(b.r.id));
   bar.append('rect').attr('x', b => x(b.start)).attr('width', b => Math.max(3, x(b.end) - x(b.start)))
-    .attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', b => b.roles[0].color).attr('fill-opacity', b => b.p.fromRecords ? .45 : 1);
+    .attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', b => b.roles[0].color).attr('fill-opacity', b => b.p.fromRecords || b.p.fromBand ? .45 : 1);
   const und = row.filter(d => d.undated);
   und.append('line').attr('x1', labelW).attr('x2', W - 4).attr('y1', rowH / 2).attr('y2', rowH / 2)
     .attr('stroke', 'var(--muted)').attr('stroke-opacity', .5).attr('stroke-dasharray', '4 4');
@@ -3524,7 +3558,7 @@ function renderTimeline() {
   document.getElementById('tlegend').innerHTML = used.map(R => `<span><i style="background:${R.color}"></i>${R.name}</span>`).join('')
     + (albums.length && hasAxis ? `<span><i style="background:none;border-left:1px dashed #fff8;border-radius:0;width:1px"></i>${albums.some(a => a.ep) ? 'Album / EP' : 'Studio album'}</span>` : '')
     + (used.length ? `<span>Center stripe = second role</span>` : '')
-    + (rows.some(r => r.bars.some(b => b.p.fromRecords)) ? '<span>Faded = years from album credits</span>' : '');
+    + (rows.some(r => r.bars.some(b => b.p.fromRecords || b.p.fromBand)) ? '<span>Faded = estimated years</span>' : '');
 }
 function fmtPeriod(p) {
   const b = p.begin || '?', e = p.end || (p.ended ? '?' : 'present');
@@ -3552,6 +3586,25 @@ async function loadReleases(st, myGen) {
       if (all.length >= d['release-group-count'] || !d['release-groups'].length) break;
     }
     if (!all.length && st.discogsId) all = await discogsReleases(st.discogsId, myGen);
+    // A musician who mostly records with bands: add their bands' albums and EPs from while they were in them.
+    if (st.kind === 'person' && all.filter(r => ['Album', 'EP'].includes(relType(r))).length < 3) {
+      await st.ready;
+      for (const b of st.rels.filter(r => !r.id.includes(':')).sort(byCareer).slice(0, 12)) {
+        const d = await mb(`release-group?artist=${b.id}&type=album|ep&limit=100`, { gen: myGen }).catch(e => { if (e.message === 'stale') throw e; return null; });
+        const ys = b.periods.map(p => [+year(p.begin) || 0, +year(p.end) || 9999]).filter(([x]) => x);
+        for (const rg of d?.['release-groups'] || []) {
+          const y = +year(rg['first-release-date']) || 0;
+          if ((rg['secondary-types'] || []).length) continue;   // studio records only, no live albums or compilations
+          if (ys.length && y && !ys.some(([a, z]) => y >= a - 1 && y <= z + 1)) continue;
+          if (!all.some(x => x.id === rg.id)) all.push({ ...rg, band: b.name, bandId: b.id });
+        }
+        // Still no dates for them in this band: the years of the band's records stand in (drawn faded).
+        if (!b.periods.some(p => p.begin || p.end)) {
+          const yrs = (d?.['release-groups'] || []).map(rg => +year(rg['first-release-date'])).filter(Boolean).sort((x, z) => x - z);
+          if (yrs.length) { b.periods = [{ begin: String(yrs[0]), end: String(yrs.at(-1)), ended: true, attrs: [], fromBand: true }]; st.rels = finalizeRels(st.rels); }
+        }
+      }
+    }
   } catch (e) { if (e.message === 'stale') return; }
   st.releases = all.sort((a, b) => (a['first-release-date'] || '9999').localeCompare(b['first-release-date'] || '9999'));
   refreshStage(st.id);  // album count in the info column
@@ -3589,7 +3642,7 @@ function renderReleases() {
   const here = stages.get(trail[cur]?.id), onAlbum = here?.kind === 'album' ? here.rg?.id : null;
   el.innerHTML = list.length ? list.map(r => `<div class="rel"><button data-rg="${r.id}"${r.id === onAlbum ? ' class="on"' : ''}>
       <div class="cover">${esc(r.title[0] || '')}<img loading="lazy" alt="" data-title="${esc(r.title)}" src="${r.src === 'discogs' ? esc(r.thumb || 'data:,') : `https://coverartarchive.org/release-group/${r.id}/front-250`}" onerror="coverFallback(this, '${r.id}')"></div>
-      <div class="t">${esc(r.title)}</div><div class="y">${year(r['first-release-date']) || '—'} · ${esc(relType(r))}</div></button></div>`).join('')
+      <div class="t">${esc(r.title)}</div><div class="y">${year(r['first-release-date']) || '—'} · ${r.band ? esc(r.band) : esc(relType(r))}</div></button></div>`).join('')
     : '<span class="muted">No releases listed.</span>';
   el.querySelectorAll('[data-rg]').forEach(b => b.onclick = e => { e.stopPropagation(); openAlbumStage(state.releases.find(r => r.id === b.dataset.rg)); window.scrollTo({ top: 0, behavior: 'smooth' }); });
   const dl = document.getElementById('discogsLink');

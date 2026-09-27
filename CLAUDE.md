@@ -88,6 +88,12 @@ No build step. Locally the page asks the data sources directly.
   (sessionStorage) drives it, including the selected member (`sel`) per stage. On musician pages a band row opens
   that band directly (no third column).
 - **Record-derived years.** A member on the band's first record (while together) starts at the band's formation year, and one on its last runs to the band's end year, if within 3 years. Timeline markers show albums and EPs; the axis stretches to take in a record released up to 3 years after the last stint.
+- **Musician pages.** `fillPersonGaps`: bands with no dates for the person get the band's own years (Wikidata, else
+  MusicBrainz's end, never open-ended by default), then their band's record years; bands with no role get what they
+  usually play (their other bands, then Wikidata P1303 instruments). Drawn faded ("estimated years"). If they have
+  fewer than 3 albums/EPs of their own, the discography adds their bands' studio albums and EPs from their years in
+  each band, labelled with the band (clicking opens the album under that band).
+- **Search results.** Low-scoring MusicBrainz padding is dropped and names that contain what you typed come first.
 - **Timeline gaps.** A member's break between stints is drawn as a faded continuation of their bar (tooltip "Break, 2006–2011"), so one run reads as one line.
 - **Below the navigator.** The lineup timeline (D3) and the discography for the current stage.
 - **Covers.** Cover Art Archive (release-group) first. If that 404s: iTunes, then Deezer (JSONP), then Wikipedia
