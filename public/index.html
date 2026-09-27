@@ -564,6 +564,19 @@
 
 <script>
 /* ---------- API clients: one request at a time per service, spaced to respect rate limits ---------- */
+/* ---------- Hosted: lookups go through our own server ----------
+   On the live site every request to a data source goes through /api/fetch, which keeps a shared copy so each lookup
+   is made once for everyone (functions/api/fetch.js). Running locally (localhost), the page asks the sources directly. */
+const PROXY_HOSTS = ['musicbrainz.org', 'api.discogs.com', 'www.wikidata.org', 'query.wikidata.org', 'en.wikipedia.org', 'itunes.apple.com'];
+const HOSTED = /^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+if (HOSTED) {
+  const direct = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    const u = typeof input === 'string' ? input : input?.url;
+    try { if (PROXY_HOSTS.includes(new URL(u, location.href).hostname)) return direct('/api/fetch?u=' + encodeURIComponent(u), init); } catch {}
+    return direct(input, init);
+  };
+}
 const API = 'https://musicbrainz.org/ws/2/';
 let pending = 0, gen = 0;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -607,6 +620,7 @@ function makeClient({ name, url, gap }) {
       try { r = await fetch(url(path)); } catch { await sleep(2500 * (attempt + 1)); continue; }
       if (r.status === 503 || r.status === 429) { await sleep(2000 * (attempt + 1)); continue; }
       if (!r.ok) throw new Error(`${name} returned ${r.status}`);
+      if (/^hit/.test(r.headers.get('X-BT-Cache') || '')) last = 0;   // came from our shared copy: no need to wait
       return r.json();
     }
     throw new Error(`${name} is rate limiting us, try again shortly`);

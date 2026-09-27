@@ -18,11 +18,24 @@ under `jhills-DS` / `jhills@dwellsafe.ai`, and no pushes to the Prev-ai org.
 ## Run
 
 ```sh
-python3 -m http.server 8765   # then open http://localhost:8765
+cd ~/bandtree/public && python3 -m http.server 8765   # then open http://localhost:8765
 ```
 
-There's no build step, no dependencies to install, and no API keys. All of it lives in `index.html`: inline CSS
-and JS, with D3 from cdnjs used for the timeline only.
+The site is `public/` (`index.html` with inline CSS and JS, D3 from cdnjs for the timeline, plus `hero.mp4`/`hero.jpg`).
+No build step. Locally the page asks the data sources directly.
+
+## Hosting (Cloudflare Pages, bandtree.northernmile.com)
+
+- Pages project connected to github.com/northernmile/bandtree; build command none, output directory `public`.
+- `functions/api/fetch.js` is the shared lookup pass-through at `/api/fetch?u=<source URL>`: allowlisted hosts
+  only, edge cache first, then a D1 table (`DB` binding, table created on first use), then the source with retries
+  on 503/429. Keeps copies 7–21 days by host; stores 404s for a day; never stores errors. Header `X-BT-Cache`
+  (hit-edge / hit-db / miss); the page skips its rate-limit wait after a hit.
+- The page switches to the pass-through automatically when it isn't on localhost (`HOSTED`, a small `fetch` wrapper
+  at the top of the script).
+- Secrets in the dashboard: `DISCOGS_TOKEN` (optional), `CONTACT` (optional, for the MusicBrainz User-Agent).
+  `DEV_UPSTREAM` is for local tests only (points the function at a stand-in server); never set it in production.
+- northernmile.com DNS is at DreamHost: `bandtree` is a CNAME to the Pages project.
 
 ## How it works
 
