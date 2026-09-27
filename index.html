@@ -399,17 +399,35 @@ const dg = makeClient({ name: 'Discogs', gap: () => discogsToken() ? 1100 : 2500
   return 'https://api.discogs.com/' + p + (t ? (p.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(t) : '');
 } });
 // Loading bar along the top of the band window: fills as this batch of lookups finishes, then fades out.
+/* Loading bar along the top of the band window. It tracks the page you're on, not just network traffic (saved
+   answers come back from the browser's cache without any), so it shows on every visit: artist, members' other
+   bands, discography, description, then the band-wide credits (or, on an album, credits, notes and tracklist). */
 let batch = 0, barTimer;
+function pageSteps() {
+  const st = stages.get(trail[cur]?.id);
+  if (!st || document.body.classList.contains('home')) return null;
+  if (st.kind === 'album') return [!!st.artist, st.credits === 'done', st.aboutState === 'done', st.tracks !== null];
+  const rels = st.rels.filter(r => !r.id.startsWith('wd:'));
+  return [!!st.artist, !!st.releases, rels.every(r => st.links.has(r.id)), !!st.blurbDone,
+    st.kind !== 'band' || !st.rels.length || st.bandCredits?.state === 'done'];
+}
 function setStatus() {
   document.getElementById('status').textContent = pending ? `Fetching… ${pending} queued` : '';
   const bar = document.getElementById('loadbar');
-  if (bar) {
-    clearTimeout(barTimer);
-    bar.firstElementChild.style.width = (batch ? Math.max(8, (batch - pending) / batch * 100) : 100) + '%';
-    if (pending) bar.classList.add('on');
-    else barTimer = setTimeout(() => { bar.classList.remove('on'); batch = 0; }, 400);
-  }
-  if (!pending && !document.getElementById('loadbar')) batch = 0;
+  if (!pending && !bar) batch = 0;
+  if (!bar) return;
+  const steps = pageSteps();
+  const st = stages.get(trail[cur]?.id);
+  if (st && !st.t0) st.t0 = Date.now();
+  const pageDone = !steps || steps.every(Boolean) || Date.now() - st.t0 > 120000;   // never spin forever
+  const netPart = batch ? (batch - pending) / batch : 1, pagePart = steps ? steps.filter(Boolean).length / steps.length : 1;
+  clearTimeout(barTimer);
+  if ((pending || !pageDone) && !bar.classList.contains('on')) { bar.classList.add('on'); bar.shownAt = Date.now(); bar.pct = 0; }
+  // Only ever moves forward while it's up (new lookups joining the queue would otherwise pull it back).
+  bar.pct = Math.max(bar.pct || 0, 8, Math.min(netPart, pagePart) * 100, pageDone && !pending ? 100 : 0);
+  bar.firstElementChild.style.width = bar.pct + '%';
+  // Done: stay up long enough to register even when everything comes from the cache in a blink.
+  if (!pending && pageDone) barTimer = setTimeout(() => { bar.classList.remove('on'); batch = 0; }, Math.max(500, 900 - (Date.now() - (bar.shownAt || 0))));
 }
 
 const lookup = (id, o) => mb(`artist/${id}?inc=artist-rels+genres+url-rels`, o);
@@ -773,6 +791,8 @@ async function load(id) {
   mobileCol = pendingMobileCol ?? 0; pendingMobileCol = null;
   const st = stageFor(id);
   renderNav();
+  const lb = document.getElementById('loadbar'); if (lb) lb.pct = 0;   // new page: bar starts over
+  setStatus();
   // Every other stop on the trail (e.g. after a refresh) loads too, so sliding back is instant.
   trail.forEach(t => {
     if (t.id === id) return;
@@ -1757,6 +1777,7 @@ function renderNav() {
   focusNav();
 }
 function refreshStage(id) {
+  setStatus();
   const i = trail.findIndex(t => t.id === id), track = document.getElementById('track');
   const old = track?.children[i];
   if (!old) return;
@@ -1793,6 +1814,9 @@ function stageHTML(i) {
 /* One or two sentences under the name. Wikipedia's opening lines first, then Wikidata's short description, then
    MusicBrainz's note, then Discogs' profile; failing all of those, one written from what we know. */
 async function loadBlurb(st) {
+  try { await loadBlurbInner(st); } finally { st.blurbDone = true; setStatus(); }
+}
+async function loadBlurbInner(st) {
   if (st.artist.src !== 'mb') return;
   const e = await wikidataEntity(st.id);
   if (!e) return;
