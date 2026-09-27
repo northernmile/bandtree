@@ -74,6 +74,14 @@ No build step. Locally the page asks the data sources directly.
   Faint curves = branches, bold gold = the route with the linking person's name. Hover a tile or a person to light up
   shared-member bands; tap a tile for a side panel (photo, intro, people, Listen/Open, "Grow this branch", "Next stop").
   The old step-by-step page is `#story:steps:<n>`.
+- **What came out of it (lineage).** `#lineage:<band MBID>` (`buildLineage` / `linChapters` / `drawLineage`). One band
+  at the top; each member's line runs down through their later bands (max 10 members, 8 bands each), plus the band
+  they came from (dashed box above). Undated later memberships are placed no earlier than the root's end and the text
+  says "plays in" instead of claiming a year. Chapters: the root forming, then clusters of new bands (a new chapter
+  after a 2-year gap or 4 bands). Chapter heights fit both the text and that stretch of the map. People from outside
+  who were there at the start of the best-known bands get a "+N joined" tag (names in the text and tooltip). The
+  chapter you're reading lights up its bands and lines; "Follow" chips light up one member's whole path.
+  Plan: chapter text will be written once by AI from these facts and saved in D1; featured trails become lineages.
 - **Scroll story (guided trails).** `#story:line:<n>` (`drawBubbles`), reusing the family-map data. A pinned stage;
   scrolling moves the year. Bands are bubbles sized by fame; a band grows out of the earlier band a founding member
   came from (`fam.mem` membership years decide who was there at the start), stays full size while together, then

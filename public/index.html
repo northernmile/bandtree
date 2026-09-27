@@ -389,6 +389,36 @@
   @media (max-width: 700px) { .lstats { grid-template-columns: repeat(2, 1fr); } .lane { grid-template-columns: 110px 1fr; } .wyear { grid-template-columns: 1fr; } .wcover { width: 80px; height: 80px; } }
 
 
+  /* Lineage stories */
+  .lin { max-width: 1080px; margin: 0 auto; padding-bottom: 90px; }
+  .lin > h1 { font-size: clamp(38px, 5vw, 58px); letter-spacing: -.04em; line-height: 1; margin: 8px 0 8px; }
+  .lin .lede { color: #c4c8d3; font-size: 17px; margin: 0 0 14px; }
+  .lchips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; margin-bottom: 26px; position: sticky; top: 64px; z-index: 4; background: var(--bg); padding: 8px 0; }
+  .lchips a { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 99px; border: 1px solid var(--line); cursor: pointer; }
+  .lchips a i { width: 10px; height: 3px; border-radius: 2px; background: var(--c); }
+  .lchips a.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+  .lflow { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 36px; }
+  .lch { box-sizing: border-box; padding: 22px 0 0; border-top: 1px solid var(--line); transition: opacity .3s; opacity: .55; }
+  .lch:first-child { border-top: 0; } .lch.on { opacity: 1; }
+  .lch .yr { font-size: 13px; font-weight: 800; letter-spacing: .1em; color: var(--accent); }
+  .lch h2 { font-size: 23px; letter-spacing: -.02em; margin: 4px 0 8px; line-height: 1.15; text-transform: none; color: var(--text); }
+  .lch p { color: #c9ccd5; font-size: 14.5px; margin: 0 0 12px; } .lch p b { color: var(--text); } .lch .p { color: var(--person); font-weight: 600; } .lch .from { color: var(--muted); }
+  .lch .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .lmap { overflow-x: auto; }
+  .lmap svg { display: block; }
+  .lsep { stroke: var(--line); }
+  .lline { fill: none; stroke-width: 3; stroke-linecap: round; opacity: .95; transition: opacity .3s; }
+  .lname { font-size: 12px; font-weight: 700; }
+  .lband { cursor: pointer; transition: opacity .3s; }
+  .lband rect { fill: #243049; stroke: #ffffff30; } .lband.root rect { fill: #3a2e14; stroke: var(--accent); stroke-width: 2; }
+  .lband.before rect { fill: #1b1e27; stroke-dasharray: 4 3; }
+  .lband:hover rect { stroke: var(--accent); }
+  .lband .n { fill: var(--text); font-size: 13.5px; font-weight: 700; } .lband .y { fill: var(--muted); font-size: 10.5px; }
+  .ljoin { cursor: help; } .ljoin rect { fill: #0e0f13; stroke: #8b91a1; stroke-dasharray: 3 3; }
+  .ljoin text { fill: #c4c8d3; font-size: 10.5px; font-weight: 600; }
+  #linsvg.dim .lline, #linsvg.dim .lband, #linsvg.dim .ljoin, #linsvg.dim .lname { opacity: .18; }
+  #linsvg.dim .lit { opacity: 1; }
+  @media (max-width: 800px) { .lflow { grid-template-columns: 1fr; } .lch { height: auto !important; padding-bottom: 14px; } .lchips { position: static; } }
   /* Scroll story */
   .bubscroll { position: relative; margin-top: 8px; }
   .bubstage { position: sticky; top: 64px; height: calc(100vh - 80px); overflow: hidden; border-radius: 18px; background: radial-gradient(ellipse at 50% 60%, #16181f, var(--bg) 70%); }
@@ -1809,6 +1839,237 @@ function drawBubbles(fam) {
   });
 }
 
+/* ---------- What came out of it (lineage stories) ----------
+   One band at the top; its members' lines flow down the page through every band they went on to, in time order.
+   The story is split into short chapters (the band forming, then clusters of new bands), each written beside its part
+   of the map. People from outside the family who join a band here come in from the side with where they came from.
+   Chips under the title follow one member. #lineage:<band MBID>. */
+const LIN_W = 640, LIN_BW = 150, LIN_BH = 40, LIN_ROW = 92;
+const LIN_COLORS = ['#ffcf5c', '#93e39a', '#ff8a9a', '#c79bff', '#5cc8ff', '#ff9f5c', '#5ce1c8', '#f78fd0', '#b8c46a', '#8fa8ff'];
+async function buildLineage(rootId, msg, stop) {
+  const root = await getArtist(rootId);
+  const ls = root['life-span'] || {}, NOW_Y = new Date().getFullYear();
+  const members = (root.members || []).filter(m => !m.id.includes(':'))
+    .sort((a, b) => (memSpan(a.periods).s || 9999) - (memSpan(b.periods).s || 9999)).slice(0, 10);
+  let rs = +year(ls.begin) || Math.min(...members.map(m => memSpan(m.periods).s || 9999));
+  if (rs === 9999) rs = 0;
+  const re = +year(ls.end) || (ls.ended ? rs + 3 : NOW_Y);
+  const L = { root, rootId, rs, re, people: [], bands: new Map(), joins: [] };
+  L.bands.set(rootId, { id: rootId, name: root.name, s: rs, root: true });
+  for (let i = 0; i < members.length; i++) {
+    if (stop()) return null;
+    const m = members[i]; msg(`Following ${m.name}…`);
+    const p = await getArtist(m.id).catch(() => null);
+    const own = memSpan(m.periods);
+    const steps = [{ id: rootId, s: own.s || rs }];
+    let before = null;
+    for (const b of (p?.bands || []).filter(b => !b.id.includes(':') && b.id !== rootId)) {
+      const ms = memSpan(b.periods);
+      const e = { id: b.id, name: b.name, s: ms.s, e: ms.e };
+      if (ms.s && ms.s < (own.s || rs)) { if (!before || ms.s > before.s) before = e; continue; }   // the band just before, if any
+      steps.push(e);
+    }
+    const later = steps.slice(1).sort((a, b) => (a.s || 9999) - (b.s || 9999)).slice(0, 8);
+    L.people.push({ id: m.id, name: m.name, before, later, color: LIN_COLORS[i % LIN_COLORS.length], lane: i, joined: own.s || rs });
+    for (const e of [before, ...later].filter(Boolean)) if (!L.bands.has(e.id)) L.bands.set(e.id, { id: e.id, name: e.name, s: e.s || 0, before: e === before });
+  }
+  // Dates and fame for every band in one query; a band with no date for the member takes the band's own start.
+  const ids = [...L.bands.keys()];
+  const q = `SELECT ?mbid ?s ?e ?n WHERE { VALUES ?mbid { ${ids.map(x => `"${x}"`).join(' ')} } ?b wdt:P434 ?mbid; wikibase:sitelinks ?n.
+    OPTIONAL { ?b wdt:P571 ?s } OPTIONAL { ?b wdt:P576 ?e } }`;
+  const d = await fetch('https://query.wikidata.org/sparql', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/sparql-results+json' },
+    body: 'query=' + encodeURIComponent(q) }).then(r => r.ok ? r.json() : null).catch(() => null);
+  for (const r of d?.results?.bindings || []) {
+    const b = L.bands.get(r.mbid.value); if (!b) continue;
+    b.fame = Math.max(b.fame || 0, +r.n.value);
+    const s = +r.s?.value.slice(0, 4); if (s && (!b.begin || s < b.begin)) b.begin = s;
+    const e = +r.e?.value.slice(0, 4); if (e) b.end = e;
+  }
+  // A later band with no date for this member: they were in it at some point after the root began; place it no earlier
+  // than the root's end, and don't claim a year for them in the text.
+  for (const p of L.people) for (const e of [p.before, ...p.later].filter(Boolean)) if (!e.s) {
+    const bb = L.bands.get(e.id)?.begin || 0; if (!bb) continue;
+    e.undated = true; e.s = e === p.before ? bb : Math.max(bb, re);
+  }
+  for (const p of L.people) { p.later = p.later.filter(e => e.s).sort((a, b) => a.s - b.s); if (p.before && !p.before.s) p.before = null; }
+  for (const b of L.bands.values()) {
+    const starts = L.people.flatMap(p => [p.before, ...p.later].filter(e => e && e.id === b.id).map(e => e.s));
+    b.s = b.root ? rs : Math.min(...starts, 9999);
+    if (b.s === 9999) L.bands.delete(b.id);
+  }
+  // Outsiders who joined the best-known bands here, and the band they came from.
+  const top = [...L.bands.values()].filter(b => !b.root && !b.before).sort((a, b) => (b.fame || 0) - (a.fame || 0)).slice(0, 5);
+  const inFamily = new Set(L.people.map(p => p.id));
+  for (const b of top) {
+    if (stop()) return null;
+    msg(`Who else was in ${b.name}…`);
+    const band = await getArtist(b.id).catch(() => null);
+    for (const m of (band?.members || []).filter(m => !m.id.includes(':') && !inFamily.has(m.id)).slice(0, 5)) {
+      const ms = memSpan(m.periods);
+      if (ms.s && ms.s > b.s + 3) continue;   // later replacements aren't part of how it started
+      const p = await getArtist(m.id).catch(() => null);
+      const prior = (p?.bands || []).filter(x => x.id !== b.id && !x.id.includes(':')).map(x => ({ id: x.id, name: x.name, s: memSpan(x.periods).s }))
+        .filter(x => x.s && x.s < b.s + 1 && !L.bands.has(x.id)).sort((x, y) => y.s - x.s)[0];
+      if (prior) L.joins.push({ band: b.id, person: m.name, pid: m.id, from: prior });
+    }
+  }
+  return L;
+}
+async function renderLineage(rootId) {
+  closeTool(); gen++; const my = gen, run = ++connectRun; leaveHome(); trail = []; cur = -1; renderCrumbs();
+  const stop = () => my !== gen || run !== connectRun;
+  main.innerHTML = `<div class="lin"><div class="kicker">What came out of it</div><h1 id="linh">…</h1>
+    <div class="cprog"><i id="fprog" style="width:12%"></i></div><p class="muted" id="cmsg">Working out the family…</p></div>`;
+  const msg = m => { const el = document.getElementById('cmsg'); if (el) el.textContent = m; };
+  getArtist(rootId).then(a => { const h = document.getElementById('linh'); if (h && !stop()) h.textContent = a.name; }).catch(() => {});
+  let L;
+  try { L = await buildLineage(rootId, msg, stop); } catch (e) { if (!stop()) msg('Couldn’t work this one out just now.'); return; }
+  if (!L || stop()) return;
+  if (!L.people.some(p => p.later.length)) { msg(`None of ${L.root.name}'s members went on to other bands that we know of.`); return; }
+  drawLineage(L);
+}
+function linChapters(L) {
+  const bands = L.bands, byId = id => bands.get(id);
+  const said = (names, verb) => names.length === 1 ? `${names[0]} ${verb}s` : `${names.slice(0, -1).join(', ')} and ${names.at(-1)} ${verb}`;
+  const ch0 = { yr: String(L.rs || ''), title: `${L.root.name} forms`, bands: [L.rootId], befores: [] };
+  const befores = new Map();
+  L.people.forEach(p => { if (p.before) { if (!befores.has(p.before.id)) befores.set(p.before.id, []); befores.get(p.before.id).push(p.name); } });
+  ch0.befores = [...befores.keys()];
+  const founders = L.people.filter(p => p.joined <= L.rs + 1), joiners = L.people.filter(p => p.joined > L.rs + 1);
+  const pl = ps => ps.map(p => `<span class="p">${esc(p.name)}</span>`);
+  const and = xs => xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`;
+  ch0.text = `<b>${esc(L.root.name)}</b> forms${L.rs ? ` in ${L.rs}` : ''} with ${and(pl(founders.length ? founders : L.people))}.`
+    + (founders.length && joiners.length ? ` ${said(pl(joiners), 'join')} later.` : '')
+    + [...befores].map(([id, ps]) => ` ${said(ps.map(esc), 'come')} from <b>${esc(byId(id)?.name || '')}</b>.`).join('');
+  const later = [...bands.values()].filter(b => !b.root && !b.before).sort((a, b) => a.s - b.s);
+  const chs = [ch0];
+  for (const b of later) {
+    const c = chs.at(-1);
+    if (c === ch0 || b.s - c.from > 2 || c.bands.length >= 4) chs.push({ from: b.s, bands: [b.id] }); else c.bands.push(b.id);
+  }
+  for (const c of chs.slice(1)) {
+    const last = Math.max(...c.bands.map(id => byId(id).s));
+    c.yr = c.from === last ? String(c.from) : `${c.from}–${String(last).slice(2)}`;
+    const names = c.bands.map(id => byId(id).name);
+    c.title = names.length <= 2 ? names.join(' and ') : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+    c.text = c.bands.map(id => {
+      const b = byId(id), who = L.people.filter(p => p.later.some(e => e.id === id));
+      const step = p => p.later.find(e => e.id === id);
+      const founding = who.filter(p => !step(p).undated && step(p).s <= (b.begin || b.s));
+      const undated = who.every(p => step(p).undated);
+      const verb = founding.length === who.length && b.begin ? 'start' : 'join';
+      const js = L.joins.filter(j => j.band === id);
+      if (undated) return `${who.map(p => `<span class="p">${esc(p.name)}</span>`).join(' and ')} ${(b.begin || 0) >= L.re ? (who.length > 1 ? 'play' : 'plays') : 'also played'} in <b>${esc(b.name)}</b>.`;
+      return `${said(who.map(p => `<span class="p">${esc(p.name)}</span>`), verb)} <b>${esc(b.name)}</b>${b.begin && verb === 'start' ? '' : ` (${b.s})`}.`
+        + (js.length ? ` With them: ${js.map(j => `${esc(j.person)} <span class="from">from ${esc(j.from.name)}</span>`).join(', ')}.` : '');
+    }).join(' ');
+  }
+  return chs;
+}
+function drawLineage(L) {
+  const chs = linChapters(L), bands = L.bands;
+  const lanes = L.people.length, laneX = i => (i + .5) / lanes;
+  // Each chapter gets its own stretch of the map: one row per start year (the root chapter: bands before it, then it).
+  const pos = new Map();
+  chs.forEach((c, k) => {
+    const rows = c.rows = [];
+    if (k === 0) { if (c.befores.length) rows.push(c.befores); rows.push([L.rootId]); }
+    else { const ys = [...new Set(c.bands.map(id => bands.get(id).s))].sort(); ys.forEach(yr => rows.push(c.bands.filter(id => bands.get(id).s === yr))); }
+    c.need = 34 + rows.length * LIN_ROW + 20;
+  });
+  // The text column goes in first so each chapter's height can fit both its words and its part of the map.
+  main.innerHTML = `<div class="lin">
+    <div class="kicker">What came out of it</div><h1>${esc(L.root.name)}</h1>
+    <p class="lede">${[...bands.values()].filter(b => !b.root && !b.before).length} bands through ${L.people.length} members${L.joins.length ? `, with ${L.joins.length} people joining from outside` : ''}.</p>
+    <div class="lchips"><span class="muted">Follow:</span> ${L.people.map(p => `<a data-follow="${esc(p.id)}" style="--c:${p.color}"><i></i>${esc(p.name)}</a>`).join('')}</div>
+    <div class="lflow"><div class="ltext">${chs.map((c, k) => `<section class="lch" data-k="${k}"><div class="yr">${esc(c.yr)}</div><h2>${esc(c.title)}</h2><p>${c.text}</p>
+      <div class="acts"><button class="lbtn" data-play="${esc(bands.get(c.bands[0]).name)}">▶ Listen</button><button class="lbtn" data-go="${esc(c.bands[0])}">Open ${esc(bands.get(c.bands[0]).name)} ›</button></div></section>`).join('')}</div>
+    <div class="lmap" id="linmap"></div></div>
+  </div>`;
+  const secs = [...main.querySelectorAll('.lch')];
+  let y = 0;
+  chs.forEach((c, k) => {
+    c.h = Math.max(c.need, 230, secs[k].offsetHeight + 30);
+    if (innerWidth > 800) secs[k].style.height = c.h + 'px';
+    c.top = y;
+    c.rows.forEach((row, r) => {
+      const want = id => { const ps = L.people.filter(p => p.before?.id === id || p.later.some(e => e.id === id) || id === L.rootId); return ps.reduce((a, p) => a + laneX(p.lane), 0) / (ps.length || 1); };
+      const placed = row.map(id => ({ id, x: want(id) * (LIN_W - LIN_BW) })).sort((a, b) => a.x - b.x);
+      for (let i = 1; i < placed.length; i++) placed[i].x = Math.max(placed[i].x, placed[i - 1].x + LIN_BW + 14);
+      const over = placed.length ? placed.at(-1).x - (LIN_W - LIN_BW) : 0; if (over > 0) placed.forEach(p => p.x -= over);
+      placed.forEach(p => pos.set(p.id, { x: Math.max(0, p.x), y: y + 34 + r * LIN_ROW, ch: k }));
+    });
+    y += c.h;
+  });
+  const H = y;
+  // Lines: each member from the band before, through the root, through every band after.
+  const idxIn = (id, p) => { const ps = L.people.filter(q => id === L.rootId || q.before?.id === id || q.later.some(e => e.id === id)); return [ps.indexOf(p), ps.length]; };
+  const port = (id, p, side) => { const q = pos.get(id); if (!q) return null; const [i, n] = idxIn(id, p); return { x: q.x + LIN_BW / 2 + (i - (n - 1) / 2) * 7, y: side === 'top' ? q.y : q.y + LIN_BH }; };
+  let lines = '', names = '';
+  for (const p of L.people) {
+    const seq = [p.before?.id, L.rootId, ...p.later.map(e => e.id)].filter(id => id && pos.has(id));
+    let dd = '';
+    for (let i = 0; i + 1 < seq.length; i++) {
+      const a = port(seq[i], p, 'bottom'), b = port(seq[i + 1], p, 'top'), ym = (a.y + b.y) / 2;
+      dd += `M${a.x},${a.y} C${a.x},${ym} ${b.x},${ym} ${b.x},${b.y} `;
+    }
+    lines += `<path class="lline" data-pid="${esc(p.id)}" d="${dd}" stroke="${p.color}"/>`;
+    const r = pos.get(L.rootId), [i] = idxIn(L.rootId, p);
+    names += `<text class="lname" data-pid="${esc(p.id)}" x="${r.x + LIN_BW + 10}" y="${r.y + 12 + i * 14}" fill="${p.color}">${esc(p.name)}</text>`;
+  }
+  // People from outside the family: a small tag on the band ("+2 from outside"); the names are in the chapter text
+  // and in the tag's tooltip.
+  let side = '';
+  const byBand = new Map(); L.joins.forEach(j => { if (!byBand.has(j.band)) byBand.set(j.band, []); byBand.get(j.band).push(j); });
+  for (const [bid, js] of byBand) {
+    const q = pos.get(bid); if (!q) continue;
+    side += `<g class="ljoin" data-ch="${q.ch}"><title>${esc(js.map(j => `${j.person} (from ${j.from.name})`).join('\n'))}</title>
+      <rect x="${q.x + LIN_BW - 18}" y="${q.y - 9}" width="${js.length > 9 ? 60 : 54}" height="18" rx="9"/>
+      <text x="${q.x + LIN_BW - 18 + 8}" y="${q.y + 4}">+${js.length} joined</text></g>`;
+  }
+  let boxes = '';
+  for (const [id, q] of pos) {
+    const b = bands.get(id);
+    boxes += `<g class="lband${b.root ? ' root' : ''}${b.before ? ' before' : ''}" data-go="${esc(id)}" data-ch="${q.ch}"><rect x="${q.x}" y="${q.y}" width="${LIN_BW}" height="${LIN_BH}" rx="11"/>
+      <text x="${q.x + 12}" y="${q.y + 18}" class="n">${esc(b.name.length > 19 ? b.name.slice(0, 18) + '…' : b.name)}</text>
+      <text x="${q.x + 12}" y="${q.y + 32}" class="y">${b.begin && b.s > b.begin + 1 && !b.root ? `formed ${b.begin} · joined ${b.s}` : `${b.begin || b.s || ''}${b.end ? '–' + b.end : ''}`}</text></g>`;
+  }
+  const seps = chs.slice(1).map(c => `<line class="lsep" x1="0" x2="${LIN_W}" y1="${c.top}" y2="${c.top}"/>`).join('');
+  document.getElementById('linmap').innerHTML = `<svg id="linsvg" width="${LIN_W}" height="${H}" viewBox="0 0 ${LIN_W} ${H}">${seps}${lines}${side}${boxes}${names}</svg>`;
+  const svg = document.getElementById('linsvg'), root = main.querySelector('.lin');
+  let follow = null;
+  const light = k => {
+    if (follow) return;
+    svg.classList.toggle('dim', k > 0);
+    const c = chs[k];
+    svg.querySelectorAll('.lit').forEach(e => e.classList.remove('lit'));
+    if (!k) return;
+    c.bands.forEach(id => svg.querySelector(`.lband[data-go="${CSS.escape(id)}"]`)?.classList.add('lit'));
+    L.people.filter(p => p.later.some(e => c.bands.includes(e.id))).forEach(p => svg.querySelectorAll(`[data-pid="${CSS.escape(p.id)}"]`).forEach(e => e.classList.add('lit')));
+    svg.querySelectorAll(`.ljoin[data-ch="${k}"]`).forEach(e => e.classList.add('lit'));
+  };
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { const k = +e.target.dataset.k; root.querySelectorAll('.lch').forEach(x => x.classList.toggle('on', +x.dataset.k === k)); light(k); } }),
+    { rootMargin: '-40% 0px -55% 0px' });
+  root.querySelectorAll('.lch').forEach(x => io.observe(x));
+  root.addEventListener('click', e => {
+    const f = e.target.closest('[data-follow]'), g = e.target.closest('[data-go]'), pl = e.target.closest('[data-play]');
+    if (f) {
+      follow = follow === f.dataset.follow ? null : f.dataset.follow;
+      root.querySelectorAll('[data-follow]').forEach(x => x.classList.toggle('on', x.dataset.follow === follow));
+      svg.querySelectorAll('.lit').forEach(x => x.classList.remove('lit'));
+      svg.classList.toggle('dim', !!follow);
+      if (follow) {
+        const p = L.people.find(q => q.id === follow);
+        svg.querySelectorAll(`[data-pid="${CSS.escape(follow)}"]`).forEach(x => x.classList.add('lit'));
+        [p.before?.id, L.rootId, ...p.later.map(x => x.id)].filter(Boolean).forEach(id => svg.querySelector(`.lband[data-go="${CSS.escape(id)}"]`)?.classList.add('lit'));
+      }
+      return;
+    }
+    if (pl) { renderPlayer('Finding previews…'); return artistSongs(pl.dataset.play).then(s => playQueue(s, 0, pl.dataset.play)).catch(() => renderPlayer('Couldn’t load previews just now.')); }
+    if (g) { freshTrail = true; go(g.dataset.go); }
+  });
+}
+
 function drawFamily(fam) {
   const { t, path, names, kinds, bands, people } = fam;
   const seeds = path.filter(id => kinds.get(id) !== 'person'), L = seeds.length;
@@ -2082,6 +2343,7 @@ function route(h) {
     return Promise.all([getArtist(c[1]), getArtist(c[2])]).then(([a, b]) => openConnect({ id: c[1], name: a.name }, { id: c[2], name: b.name }, true)).catch(() => openConnect());
   }
   if (/^browse/.test(h)) return renderBrowse(h);
+  if (/^lineage:/.test(h)) return renderLineage(h.slice(8));
   if (/^story:(trail|line):/.test(h)) return renderFamily(h);
   if (/^story:/.test(h)) return renderStory(h.replace('story:steps:', 'story:trail:'));
   if (/^tree:/.test(h)) return routeTree(h.slice(5));
