@@ -3,3 +3,4 @@ hero.mov
 .wrangler/
 node_modules/
 .dev.vars
+.mock/

@@ -242,7 +242,7 @@
     .releases { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
   }
   /* ---------- Home: full-bleed video hero ---------- */
-  body.home header { position: fixed; left: 0; right: 0; background: linear-gradient(#0e0f13cc, transparent);
+  body.home header { position: fixed; left: 0; right: 0; z-index: 70; background: linear-gradient(#0e0f13cc, transparent);
     border-bottom-color: transparent; backdrop-filter: none; }
   body.home header.scrolled { background: rgba(14,15,19,.92); backdrop-filter: blur(8px); border-bottom-color: var(--line); }
   body.home main { max-width: none; padding: 0; }
@@ -534,6 +534,17 @@
   .tcard:hover { border-color: var(--accent); }
   .tcard b { display: block; font-size: 15px; } .tcard small { display: block; color: #aab0bf; font-size: 12.5px; margin: 2px 0 8px; }
   .tcard span { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+  /* Path cards: a photo, what it covers, who you follow */
+  .pcard { display: flex; flex-direction: column; border-radius: 14px; overflow: hidden; background: #171920; border: 1px solid #ffffff1a; text-decoration: none; color: var(--text); transition: border-color .15s, transform .15s; }
+  .pcard:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .pcard .pimg { position: relative; height: 150px; background: #000; }
+  .pcard .pimg img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; opacity: .8; filter: grayscale(.25); }
+  .pcard .pimg em { position: absolute; left: 12px; bottom: 10px; font-style: normal; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #fff; background: #0009; padding: 3px 8px; border-radius: 6px; }
+  .pcard .pbd { padding: 12px 14px 14px; }
+  .pcard b { display: block; font-size: 16px; letter-spacing: -.01em; }
+  .pcard small { display: block; color: #aab0bf; font-size: 12.5px; margin: 3px 0 10px; line-height: 1.45; }
+  .pcard .pwho { display: flex; gap: 4px; }
+  .pcard .pwho i { width: 22px; height: 22px; border-radius: 50%; font: 700 9.5px/22px inherit; text-align: center; font-style: normal; color: #0e0f13; }
   /* Rock family tree (paper, typewriter, ink) */
   .treemodal { background: #0008; }
   .treepage { position: relative; max-width: 1200px; margin: 3vh auto; padding: 36px 40px 28px; background: #f4eee2; color: #26221c;
@@ -675,7 +686,7 @@ function makeClient({ name, url, gap }) {
       last = Date.now();
       let r;
       // A rate-limit reply without CORS headers shows up as a network error: treat it like a 429 and back off.
-      try { r = await fetch(url(path)); } catch { await sleep(2500 * (attempt + 1)); continue; }
+      try { r = await fetch(url(path), { signal: AbortSignal.timeout(20000) }); } catch { await sleep(2500 * (attempt + 1)); continue; }
       if (r.status === 503 || r.status === 429) { await sleep(2000 * (attempt + 1)); continue; }
       if (!r.ok) throw new Error(`${name} returned ${r.status}`);
       if (/^hit/.test(r.headers.get('X-BT-Cache') || '')) last = 0;   // came from our shared copy: no need to wait
@@ -2120,6 +2131,7 @@ const PATHS = [
   { id: 'minor-threat', root: '09037f07-42bc-46ac-a1ee-37f834451fee', title: 'What came out of Minor Threat',
     blurb: 'Three years, a handful of records and a label run out of a group house. Then the band split over which way to go next, and its four members spent the next forty years answering that question in very different ways.',
     follow: ['Ian MacKaye', 'Jeff Nelson', 'Brian Baker', 'Lyle Preslar'],
+    image: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/Minor-threat-malcolm-riviera.jpg',
     dates: { 'Government Issue': 1981, 'Samhain': 1983, 'Doggy Style': 1987, 'Fake Names': 2016, 'Foxhall Stacks': 2016, 'Beach Rats': 2022 },
     chapters: [
       { yr: '1979–80', title: 'Six hundred dollars', bands: ['The Teen Idles'],
@@ -2170,8 +2182,12 @@ async function renderPath(h) {
   if (+k) setTimeout(() => main.querySelector(`.lch[data-k="${+k}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
 }
 function pathsHTML() {
-  return `<section class="trails"><h2>Paths</h2><div class="tgrid">${PATHS.map(p => `<a class="tcard" href="#path:${p.id}">
-    <b>${esc(p.title)}</b><small>${esc(p.blurb.split('. ')[0])}.</small><span>${p.chapters.map(c => esc(c.title)).join(' › ')}</span></a>`).join('')}</div></section>`;
+  const ini = n => n.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  return `<section class="trails"><h2>Paths</h2><div class="tgrid">${PATHS.map(p => {
+    const yrs = [p.chapters[0].yr.split('–')[0], p.chapters.at(-1).yr.split('–').at(-1)].join('–');
+    return `<a class="pcard" href="#path:${p.id}">${p.image ? `<div class="pimg"><img src="${esc(p.image)}" alt="" loading="lazy"><em>${p.chapters.length} chapters · ${esc(yrs)}</em></div>` : ''}
+      <div class="pbd"><b>${esc(p.title)}</b><small>${esc(p.blurb.split('. ')[0])}.</small>
+      <div class="pwho">${p.follow.map((n, i) => `<i title="${esc(n)}" style="background:${LIN_COLORS[i % LIN_COLORS.length]}">${esc(ini(n))}</i>`).join('')}</div></div></a>`; }).join('')}</div></section>`;
 }
 
 function drawFamily(fam) {
@@ -3701,7 +3717,12 @@ async function fillPersonGaps(st) {
   await fetchBandYears(st.rels).catch(() => false);
   for (const r of st.rels) {
     if (r.periods.some(p => p.begin || p.end)) continue;
-    const b = bandYears.get(r.id); if (!b) continue;
+    let b = bandYears.get(r.id);
+    if (!b) {   // not on Wikidata: fall back to MusicBrainz's own dates for the band
+      const a = await getArtist(r.id).catch(() => null); const ls = a?.['life-span'] || {};
+      if (!year(ls.begin)) continue;
+      b = { first: year(ls.begin), txt: `${year(ls.begin)}–${year(ls.end) || ''}` }; bandYears.set(r.id, b);
+    }
     let [s0, e0] = b.txt.split('–');
     // No end year on Wikidata: ask MusicBrainz for the band's own end; failing that, don't run the bar to today.
     if (!e0) { const a = await getArtist(r.id).catch(() => null); const ls = a?.['life-span'] || {}; e0 = year(ls.end) || (ls.ended || !a ? s0 : ''); }
@@ -4192,7 +4213,7 @@ const getJSON = async u => {
   if (hit !== undefined) return hit;
   pending++; batch++; setStatus();
   try {
-    const r = await fetch(u); if (!r.ok) throw new Error(r.status);
+    const r = await fetch(u, { signal: AbortSignal.timeout(25000) }); if (!r.ok) throw new Error(r.status);
     const d = await r.json(); diskCache.set(u, d); return d;
   } finally { pending--; setStatus(); }
 };
