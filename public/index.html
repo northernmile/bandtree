@@ -2395,7 +2395,7 @@ async function renderMilestones(id) {
     return '';
   };
   main.innerHTML = `<div class="ms">${bandTabs(id, m.name, 'ms')}
-    <div class="mhero${m.hero?.src ? '' : ' none'}">${m.hero?.src ? `<img src="${esc(m.hero.src)}" alt="">` : ''}<span class="mcr">${esc(m.hero?.by || '')}</span><div class="mov"><div class="kicker">Milestones${m.label ? ` · ${esc(m.label)}` : ''}</div><h1>${esc(m.name)}</h1><p class="lede">${esc(m.lede)}</p></div></div>
+    <div class="mhero${m.hero?.src ? '' : ' none'}">${m.hero?.src ? `<img src="${esc(m.hero.src)}" alt="" onerror="this.parentElement.classList.add('none'); this.remove()">` : ''}<span class="mcr">${esc(m.hero?.by || '')}</span><div class="mov"><div class="kicker">Milestones${m.label ? ` · ${esc(m.label)}` : ''}</div><h1>${esc(m.name)}</h1><p class="lede">${esc(m.lede)}</p></div></div>
     ${m.eras.map(e => e.gap ? `<div class="mgap"><span>${esc(e.gap)} · quiet years</span></div>` : `
     <section class="mera${e.later ? ' later' : ''}"><div class="mebox"><div class="myr">${esc(e.yr)}</div><h2>${esc(e.title)}</h2><p>${esc(e.text)}</p><div class="mcount">${e.years.reduce((n, [, v]) => n + v.length, 0)} moments</div></div>
       <div class="myears"><div class="mspine"></div>${e.years.map(([y, list]) => `<div class="myear"><span class="my">${esc(y)}</span>${list.map(x => `<div class="mev">${ev(x)}</div>`).join('')}</div>`).join('')}</div></section>`).join('')}
@@ -4134,7 +4134,7 @@ function rowMeta(r) {
    or played on 20%+ of the band's credited records (and at least 2). Core members are ranked by how much of the
    band's life they were part of; everyone else sits in a folded group. Bands under 5 members aren't split. */
 function memberTiers(st) {
-  if (st.kind !== 'band' || st.rels.length < 5) return null;
+  if (st.kind !== 'band' || !st.rels.length) return null;
   const bc = st.bandCredits?.state === 'done' && st.bandCredits.credited >= 2 ? st.bandCredits : null;
   const plays = id => bc ? bc.perRecord.filter(x => x.players.includes(id)).length : 0;
   const tenure = r => r.periods.reduce((n, p) => {
@@ -4149,9 +4149,12 @@ function memberTiers(st) {
     const n = plays(r.id), t = tenure(r), share = bc ? n / bc.credited : 0, f = founder(r);
     return { r, n, t, core: f || t >= 5 || (n >= 2 && share >= 0.2), w: share * 10 + (f ? 3 : 0) + Math.min(t, 30) / 3 + n };
   });
-  const core = scored.filter(x => x.core);
-  if (!core.length || core.length === scored.length) return null;
   const rank = (a, b) => b.w - a.w || a.r.name.localeCompare(b.r.name);
+  // Small bands and bands where everyone counts: no split, but still list the people who mattered most first
+  // (Fugazi: MacKaye, Lally, Canty, Picciotto ahead of a drummer who played a few months in 1987).
+  if (scored.length < 5 || scored.every(x => x.core)) return { core: scored.sort(rank).map(x => x.r), others: [] };
+  const core = scored.filter(x => x.core);
+  if (!core.length) return null;
   const why = x => x.n ? `on ${x.n} record${x.n === 1 ? '' : 's'}` : x.t ? `${Math.max(1, Math.round(x.t))} yr${Math.round(x.t) > 1 ? 's' : ''}` : 'not on a credited record';
   return { core: core.sort(rank).map(x => x.r), others: scored.filter(x => !x.core).sort(rank).map(x => ({ r: x.r, why: why(x) })) };
 }
@@ -4171,9 +4174,9 @@ function listCol(st, selId, nextId) {
   if (!tiers) rows = st.rels.map(r => row(r)).join('');
   else {
     const open = st.showOthers || tiers.others.some(o => o.r.id === selId);
-    rows = tiers.core.map(r => row(r)).join('') +
+    rows = tiers.core.map(r => row(r)).join('') + (!tiers.others.length ? '' :
       `<div class="subhead more" data-others>${open ? '▾' : '▸'} Also in the band · ${tiers.others.length} <span>short stints, touring, one record</span></div>` +
-      (open ? tiers.others.map(o => row(o.r, esc(o.why))).join('') : '');
+      (open ? tiers.others.map(o => row(o.r, esc(o.why))).join('') : ''));
   }
   const what = band ? 'members' : 'bands';
   const empty = st.enrich === 'running' ? `No ${what} on MusicBrainz — checking Wikidata and Discogs…`
