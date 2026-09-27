@@ -403,7 +403,7 @@
   .lch:first-child { border-top: 0; } .lch.on { opacity: 1; }
   .lch .yr { font-size: 13px; font-weight: 800; letter-spacing: .1em; color: var(--accent); }
   .lch h2 { font-size: 23px; letter-spacing: -.02em; margin: 4px 0 8px; line-height: 1.15; text-transform: none; color: var(--text); }
-  .lch p { color: #c9ccd5; font-size: 14.5px; margin: 0 0 12px; } .lch p b { color: var(--text); } .lch .p { color: var(--person); font-weight: 600; } .lch .from { color: var(--muted); }
+  .lch p { color: #c9ccd5; font-size: 14.5px; margin: 0 0 12px; } .lch p i { color: var(--text); } .lch p b { color: var(--text); } .lch .p { color: var(--person); font-weight: 600; } .lch .from { color: var(--muted); }
   .lch .acts { display: flex; gap: 6px; flex-wrap: wrap; }
   .lmap { overflow-x: auto; }
   .lmap svg { display: block; }
@@ -1874,7 +1874,7 @@ async function buildLineage(rootId, msg, stop) {
       if (ms.s && ms.s < (own.s || rs)) { if (!before || ms.s > before.s) before = e; continue; }   // the band just before, if any
       steps.push(e);
     }
-    const later = steps.slice(1).sort((a, b) => (a.s || 9999) - (b.s || 9999)).slice(0, 8);
+    const later = steps.slice(1).sort((a, b) => (a.s || 9999) - (b.s || 9999)).slice(0, 14);
     L.people.push({ id: m.id, name: m.name, before, later, color: LIN_COLORS[i % LIN_COLORS.length], lane: i, joined: own.s || rs });
     for (const e of [before, ...later].filter(Boolean)) if (!L.bands.has(e.id)) L.bands.set(e.id, { id: e.id, name: e.name, s: e.s || 0, before: e === before });
   }
@@ -1889,6 +1889,13 @@ async function buildLineage(rootId, msg, stop) {
     b.fame = Math.max(b.fame || 0, +r.n.value);
     const s = +r.s?.value.slice(0, 4); if (s && (!b.begin || s < b.begin)) b.begin = s;
     const e = +r.e?.value.slice(0, 4); if (e) b.end = e;
+  }
+  // Still no start year: MusicBrainz's own date for the band.
+  for (const b of L.bands.values()) if (!b.begin && !b.root) {
+    if (stop()) return null;
+    const a = await getArtist(b.id).catch(() => null);
+    const y = +year(a?.['life-span']?.begin); if (y) b.begin = y;
+    const e = +year(a?.['life-span']?.end); if (e && !b.end) b.end = e;
   }
   // A later band with no date for this member: they were in it at some point after the root began; place it no earlier
   // than the root's end, and don't claim a year for them in the text.
@@ -1982,7 +1989,8 @@ function drawLineage(L, path) {
     L = { ...L, people, joins: L.joins };
     chs = path.chapters.map((c, k) => {
       const ids = c.bands.map(n => byName.get(norm(n))).filter(Boolean);
-      return k === 0 ? { ...c, bands: [L.rootId, ...ids.filter(i => i !== L.rootId)], befores: ids.filter(i => i !== L.rootId) } : { ...c, bands: ids };
+      const own = ids.filter(i => i !== L.rootId);
+      return k === 0 ? { ...c, bands: [L.rootId, ...own], befores: own } : { ...c, bands: own, open: own[0] || L.rootId };
     });
   } else chs = linChapters(L);
   const lanes = L.people.length, laneX = i => (i + .5) / lanes;
@@ -2000,7 +2008,7 @@ function drawLineage(L, path) {
     <p class="lede">${path ? esc(path.blurb) : `${[...bands.values()].filter(b => !b.root && !b.before).length} bands through ${L.people.length} members${L.joins.length ? `, with ${L.joins.length} people joining from outside` : ''}.`}</p>
     <div class="lchips"><span class="muted">Follow:</span> ${L.people.map(p => `<a data-follow="${esc(p.id)}" style="--c:${p.color}"><i></i>${esc(p.name)}</a>`).join('')}</div>
     <div class="lflow"><div class="ltext">${chs.map((c, k) => `<section class="lch" data-k="${k}"><div class="yr">${esc(c.yr)}</div><h2>${esc(c.title)}</h2><p>${c.text}</p>
-      <div class="acts"><button class="lbtn" data-play="${esc(bands.get(c.bands[0]).name)}">▶ Listen</button><button class="lbtn" data-go="${esc(c.bands[0])}">Open ${esc(bands.get(c.bands[0]).name)} ›</button></div></section>`).join('')}</div>
+      <div class="acts"><button class="lbtn" data-play="${esc(bands.get(c.open || c.bands[0]).name)}">▶ Listen</button><button class="lbtn" data-go="${esc(c.open || c.bands[0])}">Open ${esc(bands.get(c.open || c.bands[0]).name)} ›</button></div></section>`).join('')}</div>
     <div class="lmap" id="linmap"></div></div>
   </div>`;
   const secs = [...main.querySelectorAll('.lch')];
@@ -2102,19 +2110,23 @@ function drawLineage(L, path) {
    reads comes from here. #path:<id>[:<chapter>]. Bands and people in a path link back to it ("In a path"). */
 const PATHS = [
   { id: 'minor-threat', root: '09037f07-42bc-46ac-a1ee-37f834451fee', title: 'What came out of Minor Threat',
-    blurb: 'Four teenagers, three years, one album, and a record label. Then the band splits, and its members spend the next two decades building D.C.’s music out of the pieces.',
+    blurb: 'Three years, a handful of records and a label run out of a group house. Then the band split over which way to go next, and its four members spent the next forty years answering that question in very different ways.',
     follow: ['Ian MacKaye', 'Jeff Nelson', 'Brian Baker', 'Lyle Preslar'],
     chapters: [
-      { yr: '1980', title: 'Four kids and a record label', bands: ['The Teen Idles', 'Minor Threat'],
-        text: '<span class="p">Ian MacKaye</span> and <span class="p">Jeff Nelson</span> come out of <b>The Teen Idles</b> and start <b>Minor Threat</b> with <span class="p">Brian Baker</span> and <span class="p">Lyle Preslar</span>. To put the records out themselves, they start Dischord.' },
-      { yr: '1983', title: 'Three years, then it’s over', bands: ['Government Issue', 'The Meatmen'],
-        text: 'Minor Threat ends after three years and one album. <span class="p">Baker</span> and <span class="p">Preslar</span> pass through <b>Government Issue</b> and <b>The Meatmen</b>. <span class="p">MacKaye</span> and <span class="p">Nelson</span> stay close to home.' },
-      { yr: '1985', title: 'Slowing down, opening up', bands: ['Dag Nasty', 'Embrace', 'Egg Hunt'],
-        text: '<span class="p">Baker</span> starts <b>Dag Nasty</b>. <span class="p">MacKaye</span> starts <b>Embrace</b>, then <b>Egg Hunt</b> with <span class="p">Nelson</span>. The speed gives way to something more personal, the same summer Rites of Spring is playing across town.' },
-      { yr: '1987', title: 'The paths meet', bands: ['Fugazi'],
-        text: '<span class="p">MacKaye</span>’s next band pulls in Brendan Canty and Guy Picciotto from Rites of Spring. <b>Fugazi</b> runs for sixteen years and becomes the best-known thing to come out of Minor Threat.' },
-      { yr: '1994–2001', title: 'Long tails', bands: ['Bad Religion', 'The Evens'],
-        text: '<span class="p">Baker</span> joins <b>Bad Religion</b> in 1994 and stays. <span class="p">MacKaye</span> starts <b>The Evens</b> in 2001, a duo, about as far from Minor Threat as he could get.' },
+      { yr: '1979–80', title: 'Six hundred dollars', bands: ['The Teen Idles'],
+        text: 'Before Minor Threat there were <b>The Teen Idles</b>, with <span class="p">Ian MacKaye</span> on bass and <span class="p">Jeff Nelson</span> on drums. After a year of shows they had $600 saved. Instead of splitting it, they pressed a record. <i>Minor Disturbance</i> came out in December 1980 as Dischord No. 1, and the label has never stopped.' },
+      { yr: '1980–83', title: 'Three years that wrote the rules', bands: [],
+        text: 'MacKaye moves from bass to the microphone, Nelson stays on drums, and they bring in <span class="p">Brian Baker</span> on bass and <span class="p">Lyle Preslar</span> on guitar. The first show is December 17, 1980, in a basement for about fifty people, opening for Bad Brains. A short song called “Straight Edge” gives a movement its name, one the band never set out to lead. By the time of <i>Out of Step</i> in 1983, Baker has moved to second guitar.' },
+      { yr: '1983', title: 'The U2 problem', bands: ['Samhain', 'The Meatmen', 'Government Issue'],
+        text: 'Baker and Preslar had fallen for U2 and wanted the band to go bigger and more melodic. MacKaye didn’t. The last show is September 23, 1983. Preslar plays guitar in the first line-up of Glenn Danzig’s <b>Samhain</b>, then he and Baker land in Tesco Vee’s <b>The Meatmen</b>. Baker also passes through <b>Government Issue</b>.' },
+      { yr: '1985', title: 'Revolution Summer', bands: ['Embrace', 'Dag Nasty'],
+        text: 'The summer D.C. hardcore turns inward, and the moment widely credited as the birth of emo. MacKaye fronts <b>Embrace</b> with three former members of The Faith. They play nine shows, and their only album comes out in 1987, after they’ve split. Across town, Rites of Spring are doing the same thing louder. Baker takes the melody he’d wanted in Minor Threat and starts <b>Dag Nasty</b>. <i>Can I Say</i> (1986) becomes a blueprint for melodic hardcore.' },
+      { yr: '1986–88', title: 'Detours', bands: ['Egg Hunt', 'Pailhead', '3'],
+        text: 'MacKaye and Nelson fly to London to talk distribution at Southern Studios and end up recording over Easter weekend. The result is <b>Egg Hunt</b>, one single and done. Nelson goes on to <b>Three</b>. MacKaye lends his voice to <b>Pailhead</b> with Ministry’s Al Jourgensen and Paul Barker for Wax Trax!, a band he never once played live with.' },
+      { yr: '1987', title: 'The one everyone knows', bands: ['Fugazi'],
+        text: 'MacKaye’s new band starts with Joe Lally, a roadie for Beefeater who turned out to play bass. Colin Sears of Dag Nasty drums at first, then Brendan Canty from Rites of Spring takes over. Guy Picciotto comes along as a second voice and ends up on guitar. <b>Fugazi</b> keep shows around $5 and all ages, make six albums without a manager or a major label, and go on indefinite hiatus in 2003.' },
+      { yr: '1989–now', title: 'Long lives', bands: ['Junkyard', 'Bad Religion', 'The Evens', 'Coriky'],
+        text: 'Baker takes a detour into L.A. hard rock with <b>Junkyard</b>. In 1994 he turns down a touring job with R.E.M. to replace Brett Gurewitz in <b>Bad Religion</b>, and he’s still there. MacKaye scales all the way down: <b>The Evens</b>, a duo with drummer Amy Farina, then <b>Coriky</b>, which reunites him with Lally. Preslar moves behind the desk, running Caroline Records, where he signs Ben Folds, before earning a law degree. Nelson still runs Dischord with MacKaye, more than four decades after that $600.' },
     ] },
 ];
 function pathsFor(st) {
