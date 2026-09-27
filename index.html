@@ -229,6 +229,7 @@
   /* ---------- Home: full-bleed video hero ---------- */
   body.home header { position: fixed; left: 0; right: 0; background: linear-gradient(#0e0f13cc, transparent);
     border-bottom-color: transparent; backdrop-filter: none; }
+  body.home header.scrolled { background: rgba(14,15,19,.92); backdrop-filter: blur(8px); border-bottom-color: var(--line); }
   body.home main { max-width: none; padding: 0; }
   .hero-bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; background: #000; }
   .hero-bg video, .hero-bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
@@ -350,6 +351,14 @@
   .bcard:hover { border-color: var(--accent); }
   .bcard b { display: block; font-size: 14.5px; } .bcard small { color: var(--muted); font-size: 12px; }
   @media (max-width: 640px) { .hlink { order: 3; } .bsearch { flex-wrap: wrap; } }
+  /* Guided trails */
+  .trails { margin-top: 40px; }
+  .home-hero .trails h2 { color: #9aa0b0; }
+  .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; max-width: 1150px; }
+  .tcard { display: block; padding: 14px 16px; border-radius: 12px; background: #171920cc; border: 1px solid #ffffff1a; cursor: pointer; text-decoration: none; backdrop-filter: blur(6px); }
+  .tcard:hover { border-color: var(--accent); }
+  .tcard b { display: block; font-size: 15px; } .tcard small { display: block; color: #aab0bf; font-size: 12.5px; margin: 2px 0 8px; }
+  .tcard span { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -847,6 +856,7 @@ function openPath(path, names, kinds) {
   cur = trail.length - 1; freshTrail = false;
   try { sessionStorage.setItem('trail', JSON.stringify({ trail, cur })); } catch {}
   const last = path.at(-1);
+  window.scrollTo(0, 0);
   if (location.hash.slice(1) === last) load(last); else location.hash = last;
 }
 
@@ -1049,6 +1059,65 @@ async function browseArtists(type, name) {
   return { sub, list: list.slice(0, 80) };
 }
 
+/* ---------- Guided trails ----------
+   Ready-made journeys through a scene. Each trail is a few waypoints (bands and the people who link them); on click we
+   look each one up, check every hop against the member data (filling any gap with the connection finder) and lay the
+   whole thing out as the breadcrumb trail. */
+const TRAILS = [
+  { title: 'The D.C. family', blurb: 'Hardcore to post-hardcore through two of its founders.', stops: ['Minor Threat', 'Ian MacKaye', 'Fugazi', 'Guy Picciotto', 'Rites of Spring'] },
+  { title: 'Louisville to Chicago', blurb: 'From teenage punk to the birth of post-rock.', stops: ['Squirrel Bait', 'Brian McMahan', 'Slint', 'David Pajo', 'Tortoise', 'John McEntire', 'The Sea and Cake'] },
+  { title: 'Big Black to Shellac', blurb: 'Chicago noise, via one engineer and one bassist.', stops: ['Big Black', 'Steve Albini', 'Shellac', 'Bob Weston', 'Volcano Suns'] },
+  { title: 'Byrds to Eagles', blurb: 'How folk rock turned into country rock.', stops: ['The Byrds', 'Chris Hillman', 'The Flying Burrito Brothers', 'Bernie Leadon', 'Eagles'] },
+  { title: 'San Diego, loud', blurb: 'Two friends, three bands, one sound.', stops: ['Pitchfork', 'John Reis', 'Drive Like Jehu', 'Rick Froberg', 'Hot Snakes'] },
+  { title: 'Black Flag’s revolving door', blurb: 'Two singers, two very different next bands.', stops: ['Circle Jerks', 'Keith Morris', 'Black Flag', 'Henry Rollins', 'Rollins Band'] },
+  { title: 'Mike Patton’s orbit', blurb: 'Funk metal to avant-garde to thrash.', stops: ['Faith No More', 'Mike Patton', 'Mr. Bungle', 'Dave Lombardo', 'Slayer'] },
+  { title: 'Talking Heads, off duty', blurb: 'The rhythm section’s own band.', stops: ['Talking Heads', 'Tina Weymouth', 'Tom Tom Club'] },
+];
+function trailsHTML() {
+  return `<section class="trails"><h2>Guided trails</h2><div class="tgrid">${TRAILS.map((t, i) => `<a class="tcard" data-trail="${i}">
+    <b>${esc(t.title)}</b><small>${esc(t.blurb)}</small><span>${t.stops.filter((s, k) => t.stops.indexOf(s) === k).map(esc).join(' › ')}</span></a>`).join('')}</div></section>`;
+}
+document.addEventListener('click', e => { const t = e.target.closest('[data-trail]'); if (t) { e.preventDefault(); startTrail(TRAILS[+t.dataset.trail]); } });
+async function pickArtist(name) {
+  const all = (await mb(`artist?query=${encodeURIComponent(name)}&limit=10`, { priority: true })).artists || [];
+  const exact = all.filter(a => norm(a.name) === norm(name) || (a.aliases || []).some(x => norm(x.name) === norm(name)));
+  const pool = exact.length ? exact : all.slice(0, 1);
+  return (pool.length > 1 ? await notable(pool, name).catch(() => pool) : pool)[0] || null;
+}
+async function startTrail(t) {
+  const my = ++connectRun;
+  openTool(`<h3>${esc(t.title)}</h3><p class="muted">${esc(t.blurb)}</p><div class="cprog"><i></i></div><p class="muted" id="cmsg">Looking up the first stop…</p>`);
+  const names = new Map(), kinds = new Map(), bar = () => toolEl.querySelector('.cprog i'), msg = m => { const el = document.getElementById('cmsg'); if (el) el.textContent = m; };
+  try {
+    const ids = [];
+    for (const [k, name] of t.stops.entries()) {
+      if (my !== connectRun) return;
+      msg(`Looking up ${name}…`);
+      const a = await pickArtist(name);
+      if (!a) throw new Error(`Couldn’t find ${name}`);
+      names.set(a.id, a.name); kinds.set(a.id, kindOf(a.type) === 'band' ? 'band' : 'person'); ids.push(a.id);
+      if (bar()) bar().style.width = ((k + 1) / t.stops.length * 60) + '%';
+    }
+    let path = [ids[0]];
+    for (let k = 1; k < ids.length; k++) {
+      if (my !== connectRun) return;
+      msg(`Checking ${names.get(ids[k - 1])} › ${names.get(ids[k])}…`);
+      const hop = await findPath(ids[k - 1], ids[k], () => my !== connectRun, names, kinds, 40);
+      if (!hop) throw new Error(`Couldn’t link ${names.get(ids[k - 1])} to ${names.get(ids[k])}`);
+      path = path.concat(hop.slice(1));
+      if (bar()) bar().style.width = (60 + k / (ids.length - 1) * 40) + '%';
+    }
+    // Never visit the same artist twice: cut out any loop.
+    for (let k = 0; k < path.length; k++) { const again = path.indexOf(path[k], k + 1); if (again > 0) path.splice(k + 1, again - k); }
+    if (my !== connectRun) return;
+    closeTool(); openPath(path, names, kinds);
+  } catch (err) {
+    if (my === connectRun) msg(`${err.message}. Our sources may be missing that link.`);
+  }
+}
+
+// Home page header: see-through over the video, solid once you scroll past it.
+window.addEventListener('scroll', () => headerEl.classList.toggle('scrolled', scrollY > 40), { passive: true });
 /* ---------- Routing ---------- */
 function go(id) { if (location.hash.slice(1) !== id) location.hash = id; else route(id); }
 function goHome() { history.pushState('', '', location.pathname); renderHome(); }
@@ -1116,6 +1185,7 @@ function renderHome() {
       <a class="herobrowse" href="#browse">or browse by label, city or scene ›</a>
       <div class="lineup"><h2>Try one</h2><div class="names">${picks.map(p =>
         `<a data-n="${esc(p)}">${esc(p)}</a>`).join('&nbsp;<span class="sl">/</span> ')}</div></div>
+      ${trailsHTML()}
     </div>`;
   document.getElementById('heroSearch').appendChild(searchBox);
   main.querySelectorAll('[data-n]').forEach(el => el.onclick = () => searchAndGo(el.dataset.n));
@@ -1469,7 +1539,7 @@ async function fillDates(st) {
 const albumSeeds = new Map();   // album id -> { rg, band, cover } from the discography card that was clicked
 const isAlbumId = id => id.startsWith('album:');
 const PRODUCTION = /produc|engineer|recorded|recording|mix|master|^audio|^sound/i;
-const SKIP_CREDIT = /written|lyrics|edited|editor|compos|songwriter|design|photo|artwork|art direction|cover|illustrat|paint|drawing|graphic|typograph|lettering|logo|sleeve|liner|layout|lacquer|manage|a&r|copyright|phonographic|booklet|booking|legal|translat|coordinat|executive|publish|licens|marketing|thanks/i;
+const SKIP_CREDIT = /written|lyrics|edited|editor|insert|inlay|poster|compos|songwriter|design|photo|artwork|art direction|cover|illustrat|paint|drawing|graphic|typograph|lettering|logo|sleeve|liner|layout|lacquer|manage|a&r|copyright|phonographic|booklet|booking|legal|translat|coordinat|executive|publish|licens|marketing|thanks/i;
 const MB_PLAY = ['instrument', 'vocal', 'performer', 'programming', 'conductor', 'performing orchestra'];
 const MB_PROD = ['producer', 'engineer', 'recording', 'mix', 'mastering', 'audio', 'sound'];
 
@@ -1946,7 +2016,7 @@ function finishBandCredits(st) {
     const c = counts.get(key) || { p, n: 0 }; c.n++; counts.set(key, c);
   }
   const need = Math.max(1, Math.ceil(bc.credited / 2));
-  const joined = [...counts.values()].filter(c => c.n >= need && !c.p.id.startsWith('n:'));
+  const joined = [...counts.values()].filter(c => c.n >= need && !c.p.id.startsWith('n:') && /\s/.test(c.p.name.trim()));   // a first name alone ("Tomas") isn't enough to add someone
   if (joined.length) {
     st.rels = finalizeRels([...st.rels, ...joined.map(({ p }) => ({ id: p.id, name: p.name, type: 'Person', disambiguation: '',
       periods: [], attrs: new Set(p.play), note: '' }))]);
