@@ -74,6 +74,7 @@ and JS, with D3 from cdnjs used for the timeline only.
   member's other bands). Stages sit side by side on one track that slides. The breadcrumb `trail`
   (sessionStorage) drives it, including the selected member (`sel`) per stage. On musician pages a band row opens
   that band directly (no third column).
+- **Record-derived years.** A member on the band's first record (while together) starts at the band's formation year, and one on its last runs to the band's end year, if within 3 years. Timeline markers show albums and EPs; the axis stretches to take in a record released up to 3 years after the last stint.
 - **Timeline gaps.** A member's break between stints is drawn as a faded continuation of their bar (tooltip "Break, 2006–2011"), so one run reads as one line.
 - **Below the navigator.** The lineup timeline (D3) and the discography for the current stage.
 - **Covers.** Cover Art Archive (release-group) first. If that 404s: iTunes, then Deezer (JSONP), then Wikipedia

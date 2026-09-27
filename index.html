@@ -127,6 +127,7 @@
   #timeline .grid line { stroke: var(--line); }
   #timeline .axis text { fill: var(--muted); font-size: 11px; }
   #timeline .album line.vis { stroke: #fff; stroke-opacity: .3; stroke-dasharray: 2 3; }
+  #timeline .album line.vis.ep { stroke-opacity: .22; stroke-dasharray: 1 5; }
   #timeline .album:hover line.vis { stroke-opacity: .9; stroke-dasharray: none; }
   #timeline .bar { cursor: pointer; }
   #timeline .bar:hover rect { filter: brightness(1.25); }
@@ -2788,6 +2789,14 @@ function finishBandCredits(st) {
     // One stint per run of records; a gap of more than 3 years starts a new one (a split, then a reunion).
     const yrs = [...new Set(ys.map(Number))].sort((a, b) => a - b), stints = [];
     for (const y of yrs) { const last = stints.at(-1); if (last && y - last[1] <= 3) last[1] = y; else stints.push([y, y]); }
+    // Records come out after a band forms and sometimes after it splits: someone on the band's first record was there
+    // from the start, someone on its last was there to the end (within 3 years either way).
+    const ls = st.artist?.['life-span'] || {}, bb = +year(ls.begin) || 0, be = ls.ended ? +year(ls.end) || 0 : 0;
+    // The band's records while it was together (a posthumous EP or compilation doesn't count as "the last one").
+    const all = bc.perRecord.filter(x => x.players.length).map(x => +year(x.rg['first-release-date'])).filter(y => y && (!be || y <= be)).sort((a, b) => a - b);
+    if (bb && stints[0][0] === all[0] && bb < stints[0][0] && stints[0][0] - bb <= 3) stints[0][0] = bb;
+    const lastS = stints.at(-1);
+    if (be && lastS[1] === all.at(-1) && be > lastS[1] && be - lastS[1] <= 3) lastS[1] = be;
     r.periods = stints.map(([b, e]) => ({ begin: String(b), end: String(e), ended: true, attrs: [...r.attrs], fromRecords: true }));
     fromRecords++;
   }
@@ -3426,8 +3435,8 @@ function renderTimeline() {
   }
   rows.sort((a, b) => a.first - b.first || a.r.name.localeCompare(b.r.name));
 
-  const albums = state.releases.filter(rg => relType(rg) === 'Album' && rg['first-release-date'])
-    .map(rg => ({ rg, at: toYear(rg['first-release-date']) + 1 / 24 }));
+  const albums = state.releases.filter(rg => ['Album', 'EP'].includes(relType(rg)) && rg['first-release-date'])
+    .map(rg => ({ rg, ep: relType(rg) === 'EP', at: toYear(rg['first-release-date']) + 1 / 24 }));
   // Undated members go underneath as their own rows.
   undated.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => rows.push({ r, bars: [], undated: true }));
   const all = rows.flatMap(r => r.bars);
@@ -3436,7 +3445,9 @@ function renderTimeline() {
   // Run the axis to today only if someone's still in the band (or the band itself is); otherwise stop at the last stint.
   // (MusicBrainz often just leaves a band's end date blank, so "not ended" alone doesn't mean still active.)
   const open = state.rels.some(r => r.periods.some(p => (p.begin || p.end) && !p.end && !p.ended));
-  const y1 = Math.ceil(Math.max(...all.map(b => b.end), open || (state.artist['life-span'] || {}).ended ? rootEnd : -Infinity));
+  const y1_ = Math.ceil(Math.max(...all.map(b => b.end), open || (state.artist['life-span'] || {}).ended ? rootEnd : -Infinity));
+  // Stretch to take in a record released up to 3 years after the last stint (the EP that came out after the split).
+  const y1 = Math.max(y1_, ...albums.filter(a => a.at > y1_ && a.at <= y1_ + 3).map(a => Math.ceil(a.at)));
   const hasAxis = isFinite(y0) && isFinite(y1) && y1 > y0;
   const W = el.clientWidth, labelW = Math.min(170, W * 0.32), rowH = 26, axisH = hasAxis ? 26 : 4;
   const H = rows.length * rowH + axisH;
@@ -3489,15 +3500,15 @@ function renderTimeline() {
     .attr('y', rowH / 2 - 2).attr('height', 4).attr('fill', b => b.roles[1].color);
 
   const alb = svg.append('g').selectAll('g').data(hasAxis ? albums.filter(a => a.at >= y0 && a.at <= y1) : []).join('g').attr('class', 'album')
-    .on('mousemove', (ev, a) => showTip(ev, `<b>${esc(a.rg.title)}</b><br><span class="muted">Album · ${esc(a.rg['first-release-date'])}</span>`))
+    .on('mousemove', (ev, a) => showTip(ev, `<b>${esc(a.rg.title)}</b><br><span class="muted">${a.ep ? 'EP' : 'Album'} · ${esc(a.rg['first-release-date'])}</span>`))
     .on('mouseleave', hideTip);
-  alb.append('line').attr('class', 'vis').attr('x1', a => x(a.at)).attr('x2', a => x(a.at)).attr('y1', 0).attr('y2', H - axisH + 4);
+  alb.append('line').attr('class', a => a.ep ? 'vis ep' : 'vis').attr('x1', a => x(a.at)).attr('x2', a => x(a.at)).attr('y1', 0).attr('y2', H - axisH + 4);
   alb.append('line').attr('x1', a => x(a.at)).attr('x2', a => x(a.at)).attr('y1', 0).attr('y2', H - axisH + 4)
     .attr('stroke', 'transparent').attr('stroke-width', 8);
 
   const used = ROLES.filter(R => rows.some(r => r.bars.some(b => b.roles.includes(R))));
   document.getElementById('tlegend').innerHTML = used.map(R => `<span><i style="background:${R.color}"></i>${R.name}</span>`).join('')
-    + (albums.length && hasAxis ? `<span><i style="background:none;border-left:1px dashed #fff8;border-radius:0;width:1px"></i>Studio album</span>` : '')
+    + (albums.length && hasAxis ? `<span><i style="background:none;border-left:1px dashed #fff8;border-radius:0;width:1px"></i>${albums.some(a => a.ep) ? 'Album / EP' : 'Studio album'}</span>` : '')
     + (used.length ? `<span>Center stripe = second role</span>` : '')
     + (rows.some(r => r.bars.some(b => b.p.fromRecords)) ? '<span>Faded = years from album credits</span>' : '');
 }
