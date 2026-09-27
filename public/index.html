@@ -2364,9 +2364,9 @@ const MILESTONES = {
   },
 };
 const MS_TAG = { rec: 'Record', fight: 'Friction', line: 'Line-up' };
-let MS_INDEX = {};
-fetch('data/milestones/index.json').then(r => r.ok ? r.json() : {}).then(d => {
-  MS_INDEX = d || {};
+let MS_INDEX = {}, msLoaded = false, keepMembers = false;
+const msReady = fetch('data/milestones/index.json').then(r => r.ok ? r.json() : {}).catch(() => ({})).then(d => {
+  MS_INDEX = d || {}; msLoaded = true;
   const id = trail[cur]?.id; if (id && MS_INDEX[id] && stages.has(id)) refreshStage(id);
   document.querySelectorAll('[data-mslist]').forEach(el => el.outerHTML = msListHTML());
 }).catch(() => {});
@@ -2409,7 +2409,7 @@ function bandHead(id, on, o = {}) {
   const tab = (label, attrs, key, cls = '') => `<a ${attrs} class="${[on === key ? 'on' : '', cls].join(' ').trim()}">${label}</a>`;
   const tabs = [
     ms ? tab(`Story <i>${ms.n} moments</i>`, `href="#milestones:${id}"`, 'story') : '',
-    tab(band ? 'Members' : 'Bands', `data-go="${esc(id)}"`, 'members'),
+    tab(band ? 'Members' : 'Bands', `href="#members:${id}"`, 'members'),
     tab(band ? 'Lineup' : 'Timeline', `data-bjump="lowerTimeline" data-id="${esc(id)}"`, 'lineup'),
     tab('Records', `data-bjump="lowerDisco" data-id="${esc(id)}"`, 'records'),
     band && (ms || (st && treeWorthy(st))) ? tab('Band tree', `href="#tree:${id}"`, 'tree') : '',
@@ -2423,7 +2423,7 @@ function bandHead(id, on, o = {}) {
 function bandJump(id, where) {
   const el = document.getElementById(where);
   if (el && trail[cur]?.id === id) return el.scrollIntoView({ behavior: 'smooth' });
-  freshTrail = true; go(id);
+  freshTrail = true; location.hash = 'members:' + id;
   let k = 0; const t = setInterval(() => { const e = document.getElementById(where); if (e || ++k > 40) { clearInterval(t); e?.scrollIntoView({ behavior: 'smooth' }); } }, 150);
 }
 // Band page: the header follows whichever band or musician is in front.
@@ -2891,7 +2891,7 @@ function renderCrumbs() {
   nav.innerHTML = trail.length < 2 ? '' : trail.map((t, i) =>
     `${i ? '<span class="sep">›</span>' + via(i) : ''}<a data-id="${t.id}" class="${i === cur ? 'cur' : i > cur ? 'fwd' : ''}">` +
     `<i class="${t.kind || 'band'}"></i>${esc(t.name || '…')}</a>`).join('');
-  nav.querySelectorAll('a').forEach(a => a.onclick = () => go(a.dataset.id));
+  nav.querySelectorAll('a').forEach(a => a.onclick = () => { keepMembers = true; go(a.dataset.id); });
   nav.querySelector('.cur')?.scrollIntoView({ block: 'nearest', inline: 'center' });
 }
 function route(h) {
@@ -2908,6 +2908,13 @@ function route(h) {
   if (/^story:(trail|line):/.test(h)) return renderFamily(h);
   if (/^story:/.test(h)) return renderStory(h.replace('story:steps:', 'story:trail:'));
   if (/^tree:/.test(h)) return routeTree(h.slice(5));
+  if (/^members:/.test(h)) { keepMembers = false; history.replaceState('', '', location.pathname + '#' + h.slice(8)); return load(h.slice(8)); }
+  // A band with milestones opens on its Story, except when you're clicking through the columns.
+  if (h && !keepMembers && !h.includes(':')) {
+    if (!msLoaded) return msReady.then(() => route(h));
+    if (msInfo(h)) { history.replaceState('', '', location.pathname + '#milestones:' + h); return renderMilestones(h); }
+  }
+  keepMembers = false;
   return h ? load(h) : renderHome();
 }
 window.addEventListener('hashchange', () => { if (!/^#connect:/.test(location.hash) || !toolEl.classList.contains('open')) route(location.hash.slice(1)); });
@@ -3955,8 +3962,8 @@ function shell() {
       <div class="filters" id="filters"></div><div class="releases" id="releases"></div></section></div>`;
   document.getElementById('bhead').addEventListener('click', e => {
     const bj = e.target.closest('[data-bjump]'); if (bj) return bandJump(bj.dataset.id, bj.dataset.bjump);
-    const g = e.target.closest('[data-go]');
-    if (g) { if (trail[cur]?.id === g.dataset.go) { mobileCol = 0; focusNav(); return window.scrollTo({ top: 0, behavior: 'smooth' }); } return go(g.dataset.go); }
+    const m = e.target.closest('a[href^="#members:"]');
+    if (m && trail[cur]?.id === m.getAttribute('href').slice(9)) { e.preventDefault(); mobileCol = 0; focusNav(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
   const track = document.getElementById('track');
   track.addEventListener('click', e => {
@@ -3974,7 +3981,7 @@ function shell() {
     if (e.target.closest('[data-more]')) { const s = stages.get(trail[i].id); s.aboutOpen = true; return refreshStage(s.id); }
     const alb = e.target.closest('[data-album]');
     if (alb) return openAlbumStage(state.releases.find(r => r.id === alb.dataset.album));
-    if (go_) { hideNavTip(); return go(go_.dataset.go); }
+    if (go_) { hideNavTip(); keepMembers = true; return go(go_.dataset.go); }
     if (sel_) return selectRow(i, sel_.dataset.sel);
   });
   track.addEventListener('mousemove', onNavHover);
@@ -3984,7 +3991,7 @@ function shell() {
 function selectRow(i, relId) {
   const t = trail[i], st = stages.get(t?.id), rel = st?.rels.find(r => r.id === relId);
   if (!rel) return;
-  if (st.kind === 'person') return go(relId);
+  if (st.kind === 'person') { keepMembers = true; return go(relId); }
   mobileCol = 2;
   if (t.sel?.id !== relId) {
     t.sel = { id: relId, name: rel.name };
