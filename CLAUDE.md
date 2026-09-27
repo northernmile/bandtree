@@ -74,6 +74,12 @@ No build step. Locally the page asks the data sources directly.
   Faint curves = branches, bold gold = the route with the linking person's name. Hover a tile or a person to light up
   shared-member bands; tap a tile for a side panel (photo, intro, people, Listen/Open, "Grow this branch", "Next stop").
   The old step-by-step page is `#story:steps:<n>`.
+- **Curated paths.** `PATHS` in index.html: `{ id, root, title, blurb, follow: [names], chapters: [{ yr, title, text,
+  bands: [names] }] }`, written and approved with Jonathan (headlines should tell the story, e.g. "Three years, then
+  it's over", not lists of band names). `#path:<id>[:<chapter>]` renders through `drawLineage(L, path)`: our chapters
+  and people, the lineage engine only places them. Initials badges on each line segment (hover shows the name). Band
+  and musician pages in a path show "In a path: …" (`pathsLine`). Paths list on home and Browse; the D.C. family trail
+  card is hidden (replaced by the Minor Threat path). Automatic lineage (#lineage:) stays unlinked, as a drafting tool.
 - **What came out of it (lineage).** `#lineage:<band MBID>` (`buildLineage` / `linChapters` / `drawLineage`). One band
   at the top; each member's line runs down through their later bands (max 10 members, 8 bands each), plus the band
   they came from (dashed box above). Undated later memberships are placed no earlier than the root's end and the text

@@ -389,6 +389,7 @@
   @media (max-width: 700px) { .lstats { grid-template-columns: repeat(2, 1fr); } .lane { grid-template-columns: 110px 1fr; } .wyear { grid-template-columns: 1fr; } .wcover { width: 80px; height: 80px; } }
 
 
+  .inpath { margin: 12px 0 2px; font-size: 13px; color: var(--muted); } .inpath a { color: var(--accent); text-decoration: none; } .inpath small { color: var(--muted); }
   /* Lineage stories */
   .lin { max-width: 1080px; margin: 0 auto; padding-bottom: 90px; }
   .lin > h1 { font-size: clamp(38px, 5vw, 58px); letter-spacing: -.04em; line-height: 1; margin: 8px 0 8px; }
@@ -398,7 +399,7 @@
   .lchips a i { width: 10px; height: 3px; border-radius: 2px; background: var(--c); }
   .lchips a.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
   .lflow { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 36px; }
-  .lch { box-sizing: border-box; padding: 22px 0 0; border-top: 1px solid var(--line); transition: opacity .3s; opacity: .55; }
+  .lch { box-sizing: border-box; margin: 0; padding: 22px 0 0; border-top: 1px solid var(--line); transition: opacity .3s; opacity: .55; }
   .lch:first-child { border-top: 0; } .lch.on { opacity: 1; }
   .lch .yr { font-size: 13px; font-weight: 800; letter-spacing: .1em; color: var(--accent); }
   .lch h2 { font-size: 23px; letter-spacing: -.02em; margin: 4px 0 8px; line-height: 1.15; text-transform: none; color: var(--text); }
@@ -409,6 +410,10 @@
   .lsep { stroke: var(--line); }
   .lline { fill: none; stroke-width: 3; stroke-linecap: round; opacity: .95; transition: opacity .3s; }
   .lname { font-size: 12px; font-weight: 700; }
+  .lini { cursor: default; transition: opacity .3s; } .lini .i { font-size: 9.5px; font-weight: 800; fill: #111; }
+  .lini .f { display: none; font-size: 12px; font-weight: 700; fill: var(--text); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; }
+  .lini:hover .f { display: block; } .lini:hover .bg { stroke: #fff; stroke-width: 1.5; }
+  #linsvg.dim .lini { opacity: .18; } #linsvg.dim .lini.lit { opacity: 1; }
   .lband { cursor: pointer; transition: opacity .3s; }
   .lband rect { fill: #243049; stroke: #ffffff30; } .lband.root rect { fill: #3a2e14; stroke: var(--accent); stroke-width: 2; }
   .lband.before rect { fill: #1b1e27; stroke-dasharray: 4 3; }
@@ -1224,7 +1229,7 @@ function renderBrowse(h) {
         <input id="bq" placeholder="Any label, city or style…" autocomplete="off"><button class="cgo">Go</button></form>
       ${Object.entries(BROWSE).map(([k, list]) => `<section><h2>${BROWSE_LABEL[k]}</h2><div class="bchips">${list.map(n =>
         `<a href="#browse:${k}:${encodeURIComponent(n)}">${esc(n)}</a>`).join('')}</div></section>`).join('')}
-      ${typeof trailsHTML === 'function' ? trailsHTML() : ''}</div>`;
+      ${typeof pathsHTML === 'function' ? pathsHTML() : ''}${typeof trailsHTML === 'function' ? trailsHTML() : ''}</div>`;
     document.getElementById('bsearch').onsubmit = e => {
       e.preventDefault();
       const q = document.getElementById('bq').value.trim();
@@ -1452,7 +1457,7 @@ const TRAILS = [
   { title: 'Talking Heads, off duty', blurb: 'The rhythm section’s own band.', stops: ['Talking Heads', 'Tina Weymouth', 'Tom Tom Club'] },
 ];
 function trailsHTML() {
-  return `<section class="trails"><h2>Guided trails</h2><div class="tgrid">${TRAILS.map((t, i) => `<a class="tcard" data-trail="${i}">
+  return `<section class="trails"><h2>Guided trails</h2><div class="tgrid">${TRAILS.map((t, i) => i === 0 ? '' : `<a class="tcard" data-trail="${i}">
     <b>${esc(t.title)}</b><small>${esc(t.blurb)}</small><span>${t.stops.filter((s, k) => t.stops.indexOf(s) === k).map(esc).join(' › ')}</span></a>`).join('')}</div></section>`;
 }
 document.addEventListener('click', e => { const t = e.target.closest('[data-trail]'); if (t) { e.preventDefault(); startTrail(TRAILS[+t.dataset.trail]); } });
@@ -1966,8 +1971,20 @@ function linChapters(L) {
   }
   return chs;
 }
-function drawLineage(L) {
-  const chs = linChapters(L), bands = L.bands;
+function drawLineage(L, path) {
+  const bands = L.bands;
+  let chs;
+  if (path) {
+    // A curated path: our chapters and our choice of people; the data only places them.
+    const byName = new Map([...bands.values()].map(b => [norm(b.name), b.id]));
+    const people = path.follow.map(n => L.people.find(p => norm(p.name) === norm(n))).filter(Boolean);
+    people.forEach((p, i) => { p.lane = i; p.color = LIN_COLORS[i % LIN_COLORS.length]; });
+    L = { ...L, people, joins: L.joins };
+    chs = path.chapters.map((c, k) => {
+      const ids = c.bands.map(n => byName.get(norm(n))).filter(Boolean);
+      return k === 0 ? { ...c, bands: [L.rootId, ...ids.filter(i => i !== L.rootId)], befores: ids.filter(i => i !== L.rootId) } : { ...c, bands: ids };
+    });
+  } else chs = linChapters(L);
   const lanes = L.people.length, laneX = i => (i + .5) / lanes;
   // Each chapter gets its own stretch of the map: one row per start year (the root chapter: bands before it, then it).
   const pos = new Map();
@@ -1979,8 +1996,8 @@ function drawLineage(L) {
   });
   // The text column goes in first so each chapter's height can fit both its words and its part of the map.
   main.innerHTML = `<div class="lin">
-    <div class="kicker">What came out of it</div><h1>${esc(L.root.name)}</h1>
-    <p class="lede">${[...bands.values()].filter(b => !b.root && !b.before).length} bands through ${L.people.length} members${L.joins.length ? `, with ${L.joins.length} people joining from outside` : ''}.</p>
+    <div class="kicker">${path ? 'Path' : 'What came out of it'}</div><h1>${esc(path ? path.title : L.root.name)}</h1>
+    <p class="lede">${path ? esc(path.blurb) : `${[...bands.values()].filter(b => !b.root && !b.before).length} bands through ${L.people.length} members${L.joins.length ? `, with ${L.joins.length} people joining from outside` : ''}.`}</p>
     <div class="lchips"><span class="muted">Follow:</span> ${L.people.map(p => `<a data-follow="${esc(p.id)}" style="--c:${p.color}"><i></i>${esc(p.name)}</a>`).join('')}</div>
     <div class="lflow"><div class="ltext">${chs.map((c, k) => `<section class="lch" data-k="${k}"><div class="yr">${esc(c.yr)}</div><h2>${esc(c.title)}</h2><p>${c.text}</p>
       <div class="acts"><button class="lbtn" data-play="${esc(bands.get(c.bands[0]).name)}">▶ Listen</button><button class="lbtn" data-go="${esc(c.bands[0])}">Open ${esc(bands.get(c.bands[0]).name)} ›</button></div></section>`).join('')}</div>
@@ -2005,7 +2022,7 @@ function drawLineage(L) {
   // Lines: each member from the band before, through the root, through every band after.
   const idxIn = (id, p) => { const ps = L.people.filter(q => id === L.rootId || q.before?.id === id || q.later.some(e => e.id === id)); return [ps.indexOf(p), ps.length]; };
   const port = (id, p, side) => { const q = pos.get(id); if (!q) return null; const [i, n] = idxIn(id, p); return { x: q.x + LIN_BW / 2 + (i - (n - 1) / 2) * 7, y: side === 'top' ? q.y : q.y + LIN_BH }; };
-  let lines = '', names = '';
+  let lines = '', names = '', badges = '';
   for (const p of L.people) {
     const seq = [p.before?.id, L.rootId, ...p.later.map(e => e.id)].filter(id => id && pos.has(id));
     let dd = '';
@@ -2014,6 +2031,15 @@ function drawLineage(L) {
       dd += `M${a.x},${a.y} C${a.x},${ym} ${b.x},${ym} ${b.x},${b.y} `;
     }
     lines += `<path class="lline" data-pid="${esc(p.id)}" d="${dd}" stroke="${p.color}"/>`;
+    // A small initials badge halfway along each stretch, so you can tell whose line it is far from the names up top.
+    const ini = p.name.split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+    for (let i = 0; i + 1 < seq.length; i++) {
+      const a = port(seq[i], p, 'bottom'), b = port(seq[i + 1], p, 'top');
+      if (b.y - a.y < 70) continue;
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      badges += `<g class="lini" data-pid="${esc(p.id)}" transform="translate(${mx},${my})"><rect class="bg" x="-11" y="-9" width="22" height="18" rx="9" fill="${p.color}"/>
+        <text class="i" text-anchor="middle" y="4">${esc(ini)}</text><text class="f" x="15" y="4">${esc(p.name)}</text></g>`;
+    }
     const r = pos.get(L.rootId), [i] = idxIn(L.rootId, p);
     names += `<text class="lname" data-pid="${esc(p.id)}" x="${r.x + LIN_BW + 10}" y="${r.y + 12 + i * 14}" fill="${p.color}">${esc(p.name)}</text>`;
   }
@@ -2022,7 +2048,7 @@ function drawLineage(L) {
   let side = '';
   const byBand = new Map(); L.joins.forEach(j => { if (!byBand.has(j.band)) byBand.set(j.band, []); byBand.get(j.band).push(j); });
   for (const [bid, js] of byBand) {
-    const q = pos.get(bid); if (!q) continue;
+    const q = pos.get(bid); if (!q || path) continue;   // curated paths say who joined in their own words
     side += `<g class="ljoin" data-ch="${q.ch}"><title>${esc(js.map(j => `${j.person} (from ${j.from.name})`).join('\n'))}</title>
       <rect x="${q.x + LIN_BW - 18}" y="${q.y - 9}" width="${js.length > 9 ? 60 : 54}" height="18" rx="9"/>
       <text x="${q.x + LIN_BW - 18 + 8}" y="${q.y + 4}">+${js.length} joined</text></g>`;
@@ -2035,7 +2061,7 @@ function drawLineage(L) {
       <text x="${q.x + 12}" y="${q.y + 32}" class="y">${b.begin && b.s > b.begin + 1 && !b.root ? `formed ${b.begin} · joined ${b.s}` : `${b.begin || b.s || ''}${b.end ? '–' + b.end : ''}`}</text></g>`;
   }
   const seps = chs.slice(1).map(c => `<line class="lsep" x1="0" x2="${LIN_W}" y1="${c.top}" y2="${c.top}"/>`).join('');
-  document.getElementById('linmap').innerHTML = `<svg id="linsvg" width="${LIN_W}" height="${H}" viewBox="0 0 ${LIN_W} ${H}">${seps}${lines}${side}${boxes}${names}</svg>`;
+  document.getElementById('linmap').innerHTML = `<svg id="linsvg" width="${LIN_W}" height="${H}" viewBox="0 0 ${LIN_W} ${H}">${seps}${lines}${side}${boxes}${badges}${names}</svg>`;
   const svg = document.getElementById('linsvg'), root = main.querySelector('.lin');
   let follow = null;
   const light = k => {
@@ -2068,6 +2094,59 @@ function drawLineage(L) {
     if (pl) { renderPlayer('Finding previews…'); return artistSongs(pl.dataset.play).then(s => playQueue(s, 0, pl.dataset.play)).catch(() => renderPlayer('Couldn’t load previews just now.')); }
     if (g) { freshTrail = true; go(g.dataset.go); }
   });
+}
+
+/* ---------- Curated paths ----------
+   Stories we write and approve by hand: a root band, the members we follow, and chapters (year, headline, text, and
+   the bands that chapter shows on the map). The lineage engine supplies the data and layout; everything a reader
+   reads comes from here. #path:<id>[:<chapter>]. Bands and people in a path link back to it ("In a path"). */
+const PATHS = [
+  { id: 'minor-threat', root: '09037f07-42bc-46ac-a1ee-37f834451fee', title: 'What came out of Minor Threat',
+    blurb: 'Four teenagers, three years, one album, and a record label. Then the band splits, and its members spend the next two decades building D.C.’s music out of the pieces.',
+    follow: ['Ian MacKaye', 'Jeff Nelson', 'Brian Baker', 'Lyle Preslar'],
+    chapters: [
+      { yr: '1980', title: 'Four kids and a record label', bands: ['The Teen Idles', 'Minor Threat'],
+        text: '<span class="p">Ian MacKaye</span> and <span class="p">Jeff Nelson</span> come out of <b>The Teen Idles</b> and start <b>Minor Threat</b> with <span class="p">Brian Baker</span> and <span class="p">Lyle Preslar</span>. To put the records out themselves, they start Dischord.' },
+      { yr: '1983', title: 'Three years, then it’s over', bands: ['Government Issue', 'The Meatmen'],
+        text: 'Minor Threat ends after three years and one album. <span class="p">Baker</span> and <span class="p">Preslar</span> pass through <b>Government Issue</b> and <b>The Meatmen</b>. <span class="p">MacKaye</span> and <span class="p">Nelson</span> stay close to home.' },
+      { yr: '1985', title: 'Slowing down, opening up', bands: ['Dag Nasty', 'Embrace', 'Egg Hunt'],
+        text: '<span class="p">Baker</span> starts <b>Dag Nasty</b>. <span class="p">MacKaye</span> starts <b>Embrace</b>, then <b>Egg Hunt</b> with <span class="p">Nelson</span>. The speed gives way to something more personal, the same summer Rites of Spring is playing across town.' },
+      { yr: '1987', title: 'The paths meet', bands: ['Fugazi'],
+        text: '<span class="p">MacKaye</span>’s next band pulls in Brendan Canty and Guy Picciotto from Rites of Spring. <b>Fugazi</b> runs for sixteen years and becomes the best-known thing to come out of Minor Threat.' },
+      { yr: '1994–2001', title: 'Long tails', bands: ['Bad Religion', 'The Evens'],
+        text: '<span class="p">Baker</span> joins <b>Bad Religion</b> in 1994 and stays. <span class="p">MacKaye</span> starts <b>The Evens</b> in 2001, a duo, about as far from Minor Threat as he could get.' },
+    ] },
+];
+function pathsFor(st) {
+  const name = norm(st.artist?.name || '');
+  const out = [];
+  for (const p of PATHS) {
+    if (st.id === p.root) { out.push({ p, k: 0 }); continue; }
+    const k = p.chapters.findIndex(c => c.bands.some(b => norm(b) === name));
+    if (k >= 0) out.push({ p, k });
+    else if (p.follow.some(f => norm(f) === name)) out.push({ p, k: 0 });
+  }
+  return out;
+}
+const pathsLine = st => { const ps = pathsFor(st); return ps.length ? `<div class="inpath">In a path: ${ps.map(({ p, k }) =>
+  `<a href="#path:${p.id}:${k}">${esc(p.title)}</a>${k ? ` <small>· chapter ${k + 1}</small>` : ''}`).join(', ')}</div>` : ''; };
+async function renderPath(h) {
+  const [id, k] = h.split(':'), path = PATHS.find(p => p.id === id);
+  if (!path) { main.innerHTML = '<div class="lin"><p class="muted">No such path.</p></div>'; return; }
+  closeTool(); gen++; const my = gen, run = ++connectRun; leaveHome(); trail = []; cur = -1; renderCrumbs();
+  const stop = () => my !== gen || run !== connectRun;
+  main.innerHTML = `<div class="lin"><div class="kicker">Path</div><h1>${esc(path.title)}</h1><p class="lede">${esc(path.blurb)}</p>
+    <div class="cprog"><i style="width:30%"></i></div><p class="muted" id="cmsg">Gathering the bands…</p></div>`;
+  const msg = m => { const el = document.getElementById('cmsg'); if (el) el.textContent = m; };
+  let L;
+  try { L = await buildLineage(path.root, msg, stop); } catch { if (!stop()) msg('Couldn’t load this path just now.'); return; }
+  if (!L || stop()) return;
+  drawLineage(L, path);
+  if (+k) setTimeout(() => main.querySelector(`.lch[data-k="${+k}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+}
+function pathsHTML() {
+  return `<section class="trails"><h2>Paths</h2><div class="tgrid">${PATHS.map(p => `<a class="tcard" href="#path:${p.id}">
+    <b>${esc(p.title)}</b><small>${esc(p.blurb.split('. ')[0])}.</small><span>${p.chapters.map(c => esc(c.title)).join(' › ')}</span></a>`).join('')}</div></section>`;
 }
 
 function drawFamily(fam) {
@@ -2344,6 +2423,7 @@ function route(h) {
   }
   if (/^browse/.test(h)) return renderBrowse(h);
   if (/^lineage:/.test(h)) return renderLineage(h.slice(8));
+  if (/^path:/.test(h)) return renderPath(h.slice(5));
   if (/^story:(trail|line):/.test(h)) return renderFamily(h);
   if (/^story:/.test(h)) return renderStory(h.replace('story:steps:', 'story:trail:'));
   if (/^tree:/.test(h)) return routeTree(h.slice(5));
@@ -2376,7 +2456,7 @@ function renderHome() {
       <a class="herobrowse" href="#browse">or browse by label, city or scene ›</a>
       <div class="lineup"><h2>Try one</h2><div class="names">${picks.map(p =>
         `<a data-n="${esc(p)}">${esc(p)}</a>`).join('&nbsp;<span class="sl">/</span> ')}</div></div>
-      ${trailsHTML()}
+      ${pathsHTML()}${trailsHTML()}
     </div>`;
   document.getElementById('heroSearch').appendChild(searchBox);
   main.querySelectorAll('[data-n]').forEach(el => el.onclick = () => searchAndGo(el.dataset.n));
@@ -3586,6 +3666,7 @@ function infoCol(st, i) {
     ${genres.length ? `<div>${genres.map(g => `<span class="tag">${esc(g.name)}</span>`).join('')}</div>` : ''}
     <button class="fwdcol" data-col="1">${band ? 'Members' : 'Bands'} · ${total} ›</button>
     <button class="lbtn" data-listen>▶ Listen</button>${treeWorthy(st) ? ' <button class="lbtn" data-tree>Family tree</button>' : ''}
+    ${pathsLine(st)}
     <div class="jumps"><a data-jump="lowerTimeline">Timeline ↓</a><a data-jump="lowerDisco">Discography ↓</a></div>
   </div>`;
 }
