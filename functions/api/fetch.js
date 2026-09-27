@@ -70,6 +70,7 @@ export async function onRequest({ request, env, waitUntil }) {
   for (let attempt = 0; attempt < 4; attempt++) {
     try { res = await fetch(go, { method, headers, body: body || undefined }); } catch { res = null; }
     if (res && res.status !== 503 && res.status !== 429) break;
+    if (res && url.hostname === 'api.discogs.com') break;   // Discogs: its limit is per minute, waiting a second won't help; let the page move on
     await sleep(1100 * (attempt + 1));   // MusicBrainz allows about one request a second from us
   }
   if (!res) return reply('{"error":"source unreachable"}', 502, null, 'miss');

@@ -751,11 +751,11 @@ const diskCache = (() => {
     },
   };
 })();
-function makeClient({ name, url, gap }) {
+function makeClient({ name, url, gap, tries = 5 }) {
   const cache = new Map(), tasks = [];
   let pumping = false, last = 0;
   async function fetchOne(path) {
-    for (let attempt = 0; attempt < 5; attempt++) {
+    for (let attempt = 0; attempt < tries; attempt++) {
       const wait = last + gap() - Date.now();
       if (wait > 0) await sleep(wait);
       last = Date.now();
@@ -806,7 +806,7 @@ function makeClient({ name, url, gap }) {
 }
 const mb = makeClient({ name: 'MusicBrainz', gap: () => 1100, url: p => API + p + (p.includes('?') ? '&' : '?') + 'fmt=json' });
 // Discogs allows ~25 requests a minute without a token, 60 with one.
-const dg = makeClient({ name: 'Discogs', gap: () => discogsToken() ? 1100 : 2500, url: p => {
+const dg = makeClient({ name: 'Discogs', tries: 2, gap: () => discogsToken() ? 1100 : 2500, url: p => {
   const t = discogsToken();
   return 'https://api.discogs.com/' + p + (t ? (p.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(t) : '');
 } });
