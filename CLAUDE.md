@@ -96,6 +96,15 @@ and JS, with D3 from cdnjs used for the timeline only.
   band / additional musicians / production groups, names linked to MusicBrainz IDs via Wikidata), then MusicBrainz,
   then Discogs. MusicBrainz/Discogs only add production people Wikipedia leaves out. The band-wide pass uses the
   same order.
+- **Album page player and description.** One description at the top: the record's own Wikipedia intro (a guessed
+  article is kept only if its first sentence is about a record, so self-titled albums don't show the band's page),
+  else a plain line. Label is a link to its browse page. The player is Apple Music's embed (album ID from Wikidata
+  P2281, else iTunes search, else the artist's iTunes album list) with a Spotify tab when Wikidata has P2205; full
+  songs when signed in to that service in the browser, previews otherwise. Embeds are parked and re-mounted with
+  `moveBefore` across re-renders (`parkEmbeds`/`mountEmbeds`) so playback survives. The Apple embed does not render
+  in the automation browser (incognito), so check it in normal Chrome.
+- **No source credits in the UI.** Per Jonathan, no "via MusicBrainz / Discogs / Wikipedia" lines, photo credits or
+  CC BY-SA lines anywhere on the site.
 - **Album pages.** Clicking a record opens it as a stop on the trail (`album:<release-group MBID>` or
   `album:dg-master-<id>`): cover, facts, Wikipedia notes · credits (who played on it, then production) · the selected
   person's other bands. Credits: MusicBrainz release + per-track credits, then Discogs credits, then the band's lineup

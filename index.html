@@ -172,6 +172,16 @@
   .about p { margin: 0 0 10px; color: #d4d7df; font-size: 14px; line-height: 1.6; }
   .about .src { font-size: 12px; color: var(--muted); }
   .about .more { font-size: 12.5px; }
+  .embedslot { margin: 14px 0 6px; }
+  .embed iframe { display: block; width: 100%; border: 0; border-radius: 12px; background: #16181f; }
+  .etabs { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .etabs button { font: inherit; font-size: 12.5px; padding: 5px 12px; border-radius: 99px; border: 1px solid var(--line); background: none; color: var(--muted); cursor: pointer; }
+  .etabs button.on { background: var(--text); color: #111; border-color: var(--text); }
+  .etabs .eprev { margin-right: auto; }
+  .etabs a { font-size: 12.5px; color: var(--muted); text-decoration: none; } .etabs a:hover { color: var(--accent); }
+  .enote { font-size: 11.5px; color: var(--muted); margin: 6px 0 0; }
+  .about.top { margin: 8px 0 14px; } .about.top p:first-child { font-size: 15.5px; color: var(--text); }
+
   .tracks { list-style: none; margin: 0; padding: 0; font-size: 13.5px; }
   .tracks li { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--line); }
   .tracks li span:first-child { color: var(--muted); width: 22px; text-align: right; flex: none; }
@@ -718,8 +728,8 @@ function drawHits() {
   const term = q.value.trim();
   results.innerHTML = (hits.length ? hits.map((a, i) =>
     `<div class="${i === sel && arrowed ? 'sel' : ''}" data-i="${i}"><b>${esc(a.name)}</b><small>${esc(mbDesc(a))}</small></div>`).join('')
-    : '<div class="muted">No matches on MusicBrainz</div>') +
-    `<div class="dgrow" data-dg>Search Discogs for “${esc(term)}” ›</div>`;
+    : '<div class="muted">No matches</div>') +
+    `<div class="dgrow" data-dg>Search further for “${esc(term)}” ›</div>`;
   results.style.display = 'block';
   results.querySelectorAll('[data-i]').forEach(el => el.onclick = () => pick(hits[+el.dataset.i]));
   results.querySelector('[data-dg]').onclick = () => { results.style.display = 'none'; discogsSearchPicker(term); };
@@ -786,7 +796,7 @@ async function resolveSearch(term) {
     if (known.length === 1) return goFresh(known[0].id);
     const opts = known.length ? known : exact;
     const id = await choose({ title: `Which ${exact[0].name}?`, sub: `There's more than one artist called ${exact[0].name}.`,
-      options: opts.map(mbOption), extra: { label: `Not here? Search Discogs for “${term}” ›`, run: () => discogsSearchPicker(term) } });
+      options: opts.map(mbOption), extra: { label: `Not here? Search further for “${term}” ›`, run: () => discogsSearchPicker(term) } });
     if (id) goFresh(id);
     return;
   }
@@ -796,14 +806,14 @@ async function resolveSearch(term) {
   const dgExact = dgHits.filter(r => norm(cleanDgName(r.title)) === n);
   if (!close.length && dgExact.length === 1) return goFresh('discogs:' + dgExact[0].id);
   const options = [...close.map(mbOption), ...(dgExact.length ? dgExact : dgHits.slice(0, 5)).map(dgOption)];
-  if (!options.length) { results.innerHTML = `<div class="muted">Nothing found for “${esc(term)}” on MusicBrainz or Discogs.</div>`; results.style.display = 'block'; return; }
-  const id = await choose({ title: 'Did you mean…', sub: `No exact match for “${term}” on MusicBrainz.`, options });
+  if (!options.length) { results.innerHTML = `<div class="muted">Nothing found for “${esc(term)}”.</div>`; results.style.display = 'block'; return; }
+  const id = await choose({ title: 'Did you mean…', sub: `No exact match for “${term}”.`, options });
   if (id) goFresh(id);
 }
 async function discogsSearchPicker(term) {
   const found = await dgSearch(term).catch(() => []);
-  if (!found.length) { results.innerHTML = `<div class="muted">Nothing found for “${esc(term)}” on Discogs.</div>`; results.style.display = 'block'; return; }
-  const id = await choose({ title: `“${term}” on Discogs`, options: found.slice(0, 8).map(dgOption) });
+  if (!found.length) { results.innerHTML = `<div class="muted">Nothing more found for “${esc(term)}”.</div>`; results.style.display = 'block'; return; }
+  const id = await choose({ title: `More results for “${term}”`, options: found.slice(0, 8).map(dgOption) });
   if (id) goFresh(id);
 }
 
@@ -819,7 +829,7 @@ function choose({ title, sub, options, extra, none }) {
       <div class="picklist">${options.map((o, i) => `<button class="pickopt" data-i="${i}">
         ${o.thumb ? `<img src="${esc(o.thumb)}" alt="">` : `<span class="ph">${esc(o.label[0] || '?')}</span>`}
         <span class="po"><b>${esc(o.label)}</b><small data-desc="${i}">${esc(o.desc || (o.describe ? 'Loading details…' : ''))}</small></span>
-        <span class="srcb">${esc(o.badge || '')}</span></button>`).join('')}</div>
+        </button>`).join('')}</div>
       ${extra ? `<button class="pickextra" data-extra>${esc(extra.label)}</button>` : ''}
       ${none ? `<button class="pickextra" data-none>${esc(none)}</button>` : ''}</div>`;
     el.classList.add('open'); el.scrollTop = 0; document.body.style.overflow = 'hidden';
@@ -1020,7 +1030,7 @@ function renderPlayer(msg) {
       <div class="pbar"><i id="pbar"></i></div></div>
     <button data-p="toggle" aria-label="${playing ? 'Pause' : 'Play'}">${playing ? '❚❚' : '▶'}</button>
     <button data-p="next" aria-label="Next"${player.i >= player.queue.length - 1 ? ' disabled' : ''}>⏭</button>
-    <a class="psrc" href="${esc(t.link || '#')}" target="_blank" rel="noopener">Preview · Apple Music</a>
+    <a class="psrc" href="${esc(t.link || '#')}" target="_blank" rel="noopener">Open in Apple Music</a>
     <button class="px" data-p="close" aria-label="Close">✕</button>`;
   bindPlayer(el);
 }
@@ -1095,7 +1105,7 @@ function renderBrowse(h) {
     document.getElementById('bgrid').innerHTML = list.length ? list.map(a => `<a class="bcard" data-go="${esc(a.id)}">
         <b>${esc(a.name)}</b><small>${esc(a.note)}</small></a>`).join('') : '<p class="muted">Nothing found.</p>';
     document.querySelectorAll('#bgrid [data-go]').forEach(el => el.onclick = () => { freshTrail = true; go(el.dataset.go); });
-  }).catch(() => { if (myGen === gen) document.getElementById('bsub').textContent = 'Couldn’t reach MusicBrainz just now. Try again in a moment.'; });
+  }).catch(() => { if (myGen === gen) document.getElementById('bsub').textContent = 'Couldn’t load this just now. Try again in a moment.'; });
 }
 async function fameOf(ids) {
   const fame = new Map();
@@ -1129,7 +1139,7 @@ async function browseArtists(type, name) {
   if (type === 'label') {
     const labels = (await mb(`label?query=${encodeURIComponent(`label:"${name}"`)}&limit=5`, { priority: true })).labels || [];
     const lab = labels.find(l => bare(l.name) === bare(name)) || labels.find(l => bare(l.name).startsWith(bare(name))) || labels[0];
-    if (!lab) return { sub: `No label called “${name}” on MusicBrainz.`, list: [] };
+    if (!lab) return { sub: `No label called “${name}” found.`, list: [] };
     const byArtist = new Map();
     for (let offset = 0; offset < 300; offset += 100) {
       const d = await mb(`release?label=${lab.id}&inc=artist-credits&limit=100&offset=${offset}`, { priority: true });
@@ -1157,7 +1167,7 @@ async function browseArtists(type, name) {
       a.note = [y && (e ? `${y}–${e}` : `${y}–`), type === 'city' ? (a.tags || []).sort((x, z) => z.count - x.count)[0]?.name : (a['begin-area'] || a.area)?.name].filter(Boolean).join(' · ') || a.disambiguation || '';
     });
     if (type === 'city') list = [...wd, ...list.filter(a => (a.tags || []).length && !wd.some(w => w.id === a.id))];   // untagged = not a band (Congress!)
-    sub = type === 'city' ? `Bands formed in ${wd.city || name}, best known first.` : `Bands tagged “${name}” on MusicBrainz, best known first.`;
+    sub = type === 'city' ? `Bands formed in ${wd.city || name}, best known first.` : `Bands tagged “${name}”, best known first.`;
   }
   const fame = await fameOf(list.map(a => a.id));
   // On a label, how much they released there counts too (one split single shouldn't put Nirvana first on Touch and Go).
@@ -1480,7 +1490,7 @@ function openTree(st) {
           <small>${esc(b.label)}</small>${b.members.map(m => `<span data-mid="${esc(m.id)}">${esc(m.name)}<em>${esc(m.instruments.slice(0, 2).join(', '))}</em></span>`).join('')}</div>`).join('')}
         ${undated.length ? `<div class="tb lineup undated"><small>dates unknown</small>${undated.map(m => `<span data-mid="${esc(m.id)}">${esc(m.name)}<em>${esc(m.instruments.slice(0, 2).join(', '))}</em></span>`).join('')}</div>` : ''}</div>
       <div class="tcol"><h4>After &amp; alongside</h4>${list.filter(e => !e.before).map(card).join('') || '<p class="tnone">—</p>'}</div>
-    </div><p class="tfoot">band/tree · from MusicBrainz, Discogs, Wikipedia and Wikidata</p></div>`;
+    </div><p class="tfoot">band/tree</p></div>`;
   el.classList.add('open'); document.body.style.overflow = 'hidden'; el.scrollTop = 0;
   el.onclick = e => {
     const t = e.target.closest('[data-t]'), b = e.target.closest('[data-band]');
@@ -1764,7 +1774,7 @@ async function findDiscogsTwin(st) {
   else {
     twinPickFor = st.id;
     const v = await choose({ title: `Which ${name} is this?`,
-      sub: `MusicBrainz doesn't list ${band ? 'members' : 'bands'} for ${name} (${mbDesc(st.artist) || 'no details'}). Discogs has ${found.length} artists with this name — pick the same one to fill in the gaps.`,
+      sub: `We don't have ${band ? 'members' : 'bands'} for ${name} (${mbDesc(st.artist) || 'no details'}) yet. There are ${found.length} other artists with this name — pick the same one to fill in the gaps.`,
       options: found.slice(0, 8).map(dgOption), none: 'None of these' });
     twinPickFor = null;
     if (v === undefined) return undefined;   // dismissed (or you moved on): don't remember, ask again next visit
@@ -1976,6 +1986,9 @@ function albumStage(id) {
     if (st.album.band) st.altIds.add(st.album.band.id);
     const q = encodeURIComponent(`${st.album.band?.name || ''} ${st.rg.title}`);
     st.listen = { am: `https://music.apple.com/us/search?term=${q}`, sp: `https://open.spotify.com/search/${q}` };
+    itunesAlbum(st.album.band?.name || '', st.rg.title).then(hit => {
+      if (hit?.collectionId) { st.amId = hit.collectionId; if (hit.collectionViewUrl) st.listen.am = hit.collectionViewUrl; }
+    }).catch(() => {}).then(() => { st.amDone = true; scheduleRefresh(st.id); });
     albumDetails(st);
     return st;
   });
@@ -2157,7 +2170,7 @@ async function albumMBCredits(st, opts = { priority: true }) {
   const total = all.reduce((n, t) => n + (t.length || 0), 0);
   if (all.length) st.facts.Length = `${total ? Math.round(total / 60000) + ' min · ' : ''}${all.length} tracks`;
   const labels = [...new Set((rel['label-info'] || []).map(l => l.label?.name).filter(Boolean))].join(', ');
-  if (labels) st.facts.Label = esc(labels);
+  if (labels) st.facts.Label = labelLinks(labels);
   const urls = [...(rel.relations || []), ...(st.info?.relations || [])].map(r => r.url?.resource || '');
   for (const u of urls) {
     if (u.includes('open.spotify.com/album')) st.listen.sp = u;
@@ -2191,7 +2204,7 @@ async function albumDiscogsCredits(st, type, did, opts = { priority: true }) {
     if (tracks.length) st.facts.Length = `${total ? Math.round(total / 60000) + ' min · ' : ''}${tracks.length} tracks`;
   }
   const labels = [...new Set((rel.labels || []).map(l => cleanDgName(l.name)))].join(', ');
-  if (labels && !st.facts.Label) st.facts.Label = esc(labels);
+  if (labels && !st.facts.Label) st.facts.Label = labelLinks(labels);
   const people = new Map();
   const credits = [...(rel.extraartists || []).map(x => ({ ...x, track: null })),
     ...(rel.tracklist || []).flatMap(t => (t.extraartists || []).map(x => ({ ...x, track: t.position })))];
@@ -2242,6 +2255,9 @@ async function albumNotes(st) {
     const qid = wdUrl.split('/').pop();
     const ent = (await getJSON(`${WD}action=wbgetentities&ids=${qid}&props=claims|sitelinks&sitefilter=enwiki`)).entities[qid];
     wikiTitle = ent.sitelinks?.enwiki?.title;
+    st.spotifyId = ent.claims?.P2205?.[0]?.mainsnak?.datavalue?.value || null;
+    const amWD = ent.claims?.P2281?.[0]?.mainsnak?.datavalue?.value;
+    if (amWD && !st.amId) { st.amId = amWD; scheduleRefresh(st.id); }
     const ids = p => (ent.claims?.[p] || []).map(c => c.mainsnak?.datavalue?.value?.id).filter(Boolean);
     const want = { Producer: ids('P162'), 'Recorded at': ids('P483'), 'Preceded by': ids('P155'), 'Followed by': ids('P156') };
     const all = [...new Set(Object.values(want).flat())].slice(0, 50);
@@ -2253,10 +2269,13 @@ async function albumNotes(st) {
       }
     }
   }
+  const guessed = !wikiTitle;
   if (!wikiTitle) wikiTitle = await guessWikiTitle(st.album.band?.name || '', st.rg.title);
   if (!wikiTitle) return;
   const page = Object.values((await getJSON(`${WIKI}action=query&prop=extracts&exintro=1&explaintext=1&redirects=1&titles=${encodeURIComponent(wikiTitle)}`)).query.pages)[0];
   const paras = (page.extract || '').split('\n').map(p => p.trim()).filter(p => p.length > 40);
+  // A self-titled record can land on the band's own article: only keep text that's about a record.
+  if (guessed && paras.length && !RECORD_WORDS.test(firstSentence(paras[0]))) return;
   if (paras.length) st.about = { paras, url: `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}` };
 }
 
@@ -2269,21 +2288,18 @@ function albumInfoCol(st, i) {
     const hit = disco.find(r => norm(r.title) === norm(n.replace(/&amp;/g, '&')));
     return hit ? `<span class="alink" data-album="${hit.id}">` : '<span>';
   })}</dd></div>`).join('');
-  const about = st.about ? `<div class="about">${st.about.paras.map((p, k) => k < 2 || st.aboutOpen ? `<p>${esc(p)}</p>` : '').join('')}
-      ${st.about.paras.length > 2 && !st.aboutOpen ? '<p><a class="more" data-more>Read more</a></p>' : ''}
-      <div class="src">From <a href="${esc(st.about.url)}" target="_blank" rel="noopener">Wikipedia</a>, CC BY-SA</div></div>`
-    : st.aboutState === 'loading' ? '<div class="skel">Looking for the story behind this record…</div>' : '';
+  // One description: the record's own story if there is one, else a plain line about it.
+  const about = st.about ? `<div class="about top">${st.about.paras.map((p, k) => k < 2 || st.aboutOpen ? `<p>${esc(p)}</p>` : '').join('')}
+      ${st.about.paras.length > 2 && !st.aboutOpen ? '<p><a class="more" data-more>Read more</a></p>' : ''}</div>`
+    : `<div class="blurb">${esc(`${year(rg['first-release-date']) ? year(rg['first-release-date']) + ' ' : ''}${relType(rg).toLowerCase()}${band ? ` by ${band.name}` : ''}.`.replace(/^./, c => c.toUpperCase()))}</div>`;
   return `<div class="col info album">
     ${i > 0 ? `<button class="back">‹ ${esc(trail[i - 1].name || 'Back')}</button>` : ''}
     <div class="acover">${esc(rg.title[0] || '')}${st.cover ? `<img src="${esc(st.cover)}" alt="" onerror="this.remove()">` : ''}</div>
     <div class="kicker">${esc(relType(rg))}${band ? ` · <a class="alink" data-go="${esc(band.id)}">${esc(band.name)}</a>` : ''}</div>
     <h1><span class="title">${esc(rg.title)}</span></h1>
-    <div class="blurb">${esc(st.about ? firstSentence(st.about.paras[0]) : `${year(rg['first-release-date']) ? year(rg['first-release-date']) + ' ' : ''}${relType(rg).toLowerCase()}${band ? ` by ${band.name}` : ''}.`.replace(/^./, c => c.toUpperCase()))}</div>
-    <dl class="stats">${html}</dl>
-    <div class="listen"><a class="am" target="_blank" rel="noopener" href="${esc(st.listen.am)}">Apple Music</a>
-      <a class="sp" target="_blank" rel="noopener" href="${esc(st.listen.sp)}">Spotify</a>
-      <button class="lbtn inline" data-listen>▶ Play previews</button></div>
     ${about}
+    <dl class="stats">${html}</dl>
+    <div class="embedslot" data-embed="${esc(st.id)}"></div>
     <button class="fwdcol" data-col="1">Credits · ${st.rels.length} ›</button>
     <div class="jumps"><a data-jump="lowerTimeline">Tracklist ↓</a><a data-jump="lowerDisco">Discography ↓</a></div>
   </div>`;
@@ -2305,9 +2321,9 @@ function creditsCol(st, selId) {
   const inBand = played.filter(r => r.member || r.group === 'band'), extra = played.filter(r => !inBand.includes(r));
   const section = (label, list) => list.length ? `<div class="subhead">${esc(label)}</div>${list.map(row).join('')}` : '';
   const body = st.credits === 'loading' ? '<div class="skel" style="padding:0 10px">Looking up who played on it…</div>'
-    : !st.rels.length ? '<div class="skel" style="padding:0 10px">No credits on Wikipedia, MusicBrainz or Discogs for this one.</div>'
+    : !st.rels.length ? '<div class="skel" style="padding:0 10px">No credits found for this one.</div>'
     : section(inBand.length ? st.album.band?.name || 'Band' : '', inBand) + section(inBand.length ? 'Additional musicians' : 'Played on it', extra) + section('Production', prod);
-  return `<div class="col list"><div class="colhead"><span><button class="back">‹</button>Credits · ${st.rels.length}${st.relSource ? ` · via ${st.relSource}` : ''}</span></div>
+  return `<div class="col list"><div class="colhead"><span><button class="back">‹</button>Credits · ${st.rels.length}</span></div>
     <div class="rows">${body}</div></div>`;
 }
 // Below the columns on an album page: the tracklist, then the band's discography with this record marked.
@@ -2585,7 +2601,7 @@ function shell() {
     <div class="lower"><section id="lowerTimeline" style="margin-top:0"><h2><span id="tlTitle"></span> <b id="tlCount"></b></h2>
       <div class="timewrap"><div id="timeline"></div><div class="tip" id="tip"></div><div class="tlegend" id="tlegend"></div></div></section>
     <section id="lowerDisco"><h2 style="display:flex;justify-content:space-between">
-      <span><span id="discoTitle">Discography</span> <b id="relCount">…</b></span><a id="discogsLink" href="#" onclick="setDiscogsToken();return false" style="text-transform:none;letter-spacing:0;text-decoration:none"></a></h2>
+      <span><span id="discoTitle">Discography</span> <b id="relCount">…</b></span></h2>
       <div class="filters" id="filters"></div><div class="releases" id="releases"></div></section></div>`;
   const track = document.getElementById('track');
   track.addEventListener('click', e => {
@@ -2633,6 +2649,45 @@ function mobileBack() {
   else if (cur > 0) { pendingMobileCol = 2; go(trail[cur - 1].id); }
 }
 
+/* Album player: Apple Music's embedded player (full songs when you're signed in to Apple Music in this browser,
+   previews otherwise), plus Spotify's when Wikidata knows the album's Spotify ID. The player element survives
+   re-renders (moveBefore keeps an iframe playing in Chrome), so credits filling in don't stop the music. */
+const embeds = new Map();
+function embedFor(st) {
+  let e = embeds.get(st.id);
+  if (!e) { e = { el: Object.assign(document.createElement('div'), { className: 'embed' }), svc: null, key: '' }; embeds.set(st.id, e); }
+  const key = `${st.amId}|${st.spotifyId}|${st.amDone}`;
+  if (e.key !== key) {
+    e.key = key;
+    if (!e.svc || (e.svc === 'am' && !st.amId) || (e.svc === 'sp' && !st.spotifyId)) e.svc = st.amId ? 'am' : st.spotifyId ? 'sp' : null;
+    drawEmbed(st, e);
+  }
+  return e.el;
+}
+function drawEmbed(st, e) {
+  if (!e.svc) { e.el.innerHTML = st.amDone ? '<button class="lbtn inline" data-listen>▶ Play previews</button>' : '<div class="skel">Loading the player…</div>'; return; }
+  const tabs = [st.amId && 'am', st.spotifyId && 'sp'].filter(Boolean), am = e.svc === 'am';
+  const src = am ? `https://embed.music.apple.com/us/album/${st.amId}?theme=dark` : `https://open.spotify.com/embed/album/${st.spotifyId}?theme=0`;
+  e.el.innerHTML = `<div class="etabs">${tabs.length < 2 ? '' : tabs.map(t => `<button data-svc="${t}" class="${t === e.svc ? 'on' : ''}">${t === 'am' ? 'Apple Music' : 'Spotify'}</button>`).join('')}
+      <button class="eprev" data-listen>▶ Previews here</button><a href="${esc(am ? st.listen.am : `https://open.spotify.com/album/${st.spotifyId}`)}" target="_blank" rel="noopener">Open in ${am ? 'Apple Music' : 'Spotify'} ›</a></div>
+    <iframe src="${src}" height="${am ? 450 : 352}" allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write"
+      ${am ? 'sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"' : ''}></iframe>
+    <p class="enote">Full songs when you're signed in to ${am ? 'Apple Music' : 'Spotify'} in this browser; otherwise previews.</p>`;
+  e.el.querySelectorAll('[data-svc]').forEach(b => b.onclick = ev => { ev.stopPropagation(); if (e.svc !== b.dataset.svc) { e.svc = b.dataset.svc; drawEmbed(st, e); } });
+}
+const embedPark = () => document.getElementById('embedpark') || document.body.appendChild(Object.assign(document.createElement('div'), { id: 'embedpark', hidden: true }));
+const moveTo = (parent, el) => { try { parent.moveBefore ? parent.moveBefore(el, null) : parent.appendChild(el); } catch { parent.appendChild(el); } };
+function parkEmbeds() { for (const e of embeds.values()) if (e.el.isConnected && e.el.parentElement?.id !== 'embedpark') moveTo(embedPark(), e.el); }
+function mountEmbeds() {
+  const live = new Set();
+  document.querySelectorAll('[data-embed]').forEach(slot => {
+    const st = stages.get(slot.dataset.embed); if (!st) return;
+    const el = embedFor(st); live.add(st.id);
+    if (el.parentElement !== slot) moveTo(slot, el);
+  });
+  for (const [id, e] of embeds) if (!live.has(id)) { e.el.remove(); embeds.delete(id); }   // left the album: stop its player
+}
+
 /* ----- rendering ----- */
 function renderNav() {
   const nav = document.getElementById('nav'), track = document.getElementById('track');
@@ -2640,7 +2695,9 @@ function renderNav() {
   const w = nav.clientWidth, mobile = w < 700;
   nav.classList.toggle('mobile', mobile);
   nav.style.setProperty('--colw', (mobile ? w : w / 3) + 'px');
+  parkEmbeds();
   track.innerHTML = trail.map((t, i) => stageHTML(i)).join('');
+  mountEmbeds();
   trail.forEach((t, i) => layoutStage(i));
   focusNav();
 }
@@ -2650,7 +2707,9 @@ function refreshStage(id) {
   const old = track?.children[i];
   if (!old) return;
   const oldImg = old.querySelector('.photo img');
+  parkEmbeds();
   old.outerHTML = stageHTML(i);
+  mountEmbeds();
   const fresh = track.children[i].querySelector('.photo img');
   if (oldImg && fresh && fresh.src === oldImg.src) fresh.replaceWith(oldImg);
   layoutStage(i);
@@ -2741,8 +2800,7 @@ function infoCol(st, i) {
   const genres = (a.genres || []).sort((x, y) => y.count - x.count).slice(0, 3);
   return `<div class="col info">
     ${i > 0 ? `<button class="back">‹ ${esc(trail[i - 1].name || 'Back')}</button>` : ''}
-    ${st.image ? `<div class="photo"><img src="${esc(st.image.src)}" alt="">
-      <a class="credit" href="${esc(st.image.credit)}" target="_blank" rel="noopener">Photo · ${esc(st.image.by || 'Wikimedia Commons')}</a></div>` : ''}
+    ${st.image ? `<div class="photo"><img src="${esc(st.image.src)}" alt=""></div>` : ''}
     <div class="kicker">${band ? a.type || 'Band' : 'Musician'}${a.src === 'discogs' ? ' · from Discogs' : ''}</div>
     <h1><span class="title">${esc(a.name)}</span></h1>
     ${st.realPerson ? `<div class="dis">Real name: ${st.realPerson.id ? `<a class="alink" data-go="${esc(st.realPerson.id)}">${esc(st.realPerson.name)}</a>` : esc(st.realPerson.name)}</div>` : ''}
@@ -2835,13 +2893,13 @@ function listCol(st, selId, nextId) {
   const empty = st.enrich === 'running' ? `No ${what} on MusicBrainz — checking Wikidata and Discogs…`
     : st.enrich === 'deferred' ? `No ${what} on MusicBrainz yet.`
     : st.artist.src === 'discogs' ? `No ${what} listed on Discogs.` : `No ${what} listed on MusicBrainz, Wikidata or Discogs.`;
-  return `<div class="col list"><div class="colhead"><span><button class="back">‹</button>${band ? 'Members' : 'Bands'} · ${st.rels.length}${st.relSource ? ` · via ${st.relSource}` : ''}${st.dateSource ? ` · dates via ${st.dateSource}` : ''}</span>${st.matchedByName ? '<a class="open" data-rematch title="Matched on Discogs by name">Wrong band?</a>' : ''}</div>
+  return `<div class="col list"><div class="colhead"><span><button class="back">‹</button>${band ? 'Members' : 'Bands'} · ${st.rels.length}</span>${st.matchedByName ? '<a class="open" data-rematch title="Matched by name">Wrong band?</a>' : ''}</div>
     <div class="rows">${rows || (st.names?.length ? '' : `<div class="skel" style="padding:0 10px">${empty}</div>`)}${namesRows(st, nextId)}${regularsRows(st)}</div></div>`;
 }
 function namesRows(st, nextId) {
   if (!st.names?.length) return '';
   return `<div class="subhead">${st.realPerson ? `${esc(st.realPerson.name)} also records as` : 'Also records as'}</div>` + st.names.map(n =>
-    `<div class="row${n.id === nextId ? ' sel' : ''}" data-go="${esc(n.id)}"><div class="txt"><div class="nm">${esc(n.name)}</div><div class="meta">${n.id.startsWith('discogs:') ? 'via Discogs' : 'stage name'}</div></div></div>`).join('');
+    `<div class="row${n.id === nextId ? ' sel' : ''}" data-go="${esc(n.id)}"><div class="txt"><div class="nm">${esc(n.name)}</div><div class="meta">${n.id.startsWith('discogs:') ? 'other name' : 'stage name'}</div></div></div>`).join('');
 }
 function subCol(st, sel) {
   const band = st.kind !== 'person';
@@ -3310,8 +3368,7 @@ async function renderAbout(wikiTitle, live) {
     if (!live() || !paras.length) { about.innerHTML = ''; return; }
     const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`;
     about.innerHTML = `<h4 style="margin-top:0">About</h4>${paras.map((p, i) => `<p${i > 1 ? ' hidden' : ''}>${esc(p)}</p>`).join('')}
-      ${paras.length > 2 ? '<p><a class="more" href="#" onclick="this.parentElement.parentElement.querySelectorAll(\'p[hidden]\').forEach(p=>p.hidden=false);this.parentElement.remove();return false">Read more</a></p>' : ''}
-      <div class="src">From <a href="${url}" target="_blank" rel="noopener">Wikipedia</a>, CC BY-SA</div>`;
+      ${paras.length > 2 ? '<p><a class="more" href="#" onclick="this.parentElement.parentElement.querySelectorAll(\'p[hidden]\').forEach(p=>p.hidden=false);this.parentElement.remove();return false">Read more</a></p>' : ''}`;
   }
 }
 
@@ -3337,12 +3394,15 @@ async function loadDiscogsAlbum(rg, seq, live, setFact) {
 }
 
 // When MusicBrainz has no Wikidata link, search Wikipedia but only accept a page that is clearly this album.
+const RECORD_WORDS = /\b(album|EP|extended play|LP|record|single|mixtape|compilation|soundtrack|live recording)\b/i;
 async function guessWikiTitle(artist, title) {
   const res = await getJSON(`${WIKI}action=query&list=search&srlimit=3&srsearch=${encodeURIComponent(`"${title}" ${artist} album`)}`);
-  const hit = res.query.search.find(h => norm(h.title).startsWith(norm(title)) && norm(h.snippet.replace(/<[^>]+>/g, '')).includes(norm(artist)));
+  const ok = res.query.search.filter(h => norm(h.title).startsWith(norm(title)) && norm(h.snippet.replace(/<[^>]+>/g, '')).includes(norm(artist)));
+  const hit = ok.find(h => /\((.*\b(album|EP)|record)\)/i.test(h.title)) || ok.find(h => norm(h.title) !== norm(artist)) || ok[0];
   return hit?.title || null;
 }
 
+const labelLinks = s => s.split(', ').map(n => `<a class="alink" href="#browse:label:${encodeURIComponent(n)}">${esc(n)}</a>`).join(', ');
 const FACT_ORDER = ['Released', 'Label', 'Length', 'Producer', 'Recorded at', 'Genre', 'Preceded by', 'Followed by'];
 function renderFacts(rg, facts) {
   const el = document.getElementById('facts');
@@ -3414,7 +3474,14 @@ function itunesAlbum(artist, title) {
   if (!itunesCache.has(k)) itunesCache.set(k, (async () => {
     const r = await throttled('itunes', () => fetch(`https://itunes.apple.com/search?entity=album&limit=25&term=${encodeURIComponent(artist + ' ' + title)}`), 1500);
     if (!r.ok) throw new Error('itunes ' + r.status);
-    return bestMatch((await r.json()).results, artist, title, x => x.artistName, x => x.collectionName) || null;
+    const hit = bestMatch((await r.json()).results, artist, title, x => x.artistName, x => x.collectionName);
+    if (hit || !artist) return hit || null;
+    // Self-titled records get buried under other matches: look through the artist's own albums instead.
+    const a = await throttled('itunes', () => fetch(`https://itunes.apple.com/search?entity=musicArtist&limit=5&term=${encodeURIComponent(artist)}`), 1500).then(r => r.json());
+    const who = a.results.find(x => bare(x.artistName) === bare(artist));
+    if (!who) return null;
+    const l = await throttled('itunes', () => fetch(`https://itunes.apple.com/lookup?id=${who.artistId}&entity=album&limit=200`), 1500).then(r => r.json());
+    return bestMatch(l.results.filter(x => x.wrapperType === 'collection'), artist, title, x => x.artistName, x => x.collectionName) || null;
   })());
   itunesCache.get(k).catch(() => itunesCache.delete(k));
   return itunesCache.get(k);
