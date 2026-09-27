@@ -36,8 +36,11 @@ and JS, with D3 from cdnjs used for the timeline only.
   second; Discogs gets about 1 per 2.5s, or 1 per 1.1s with the user's optional token in localStorage
   `discogsToken`. `priority: true` jumps the queue. Background requests carry `gen` and are dropped once the page
   changes.
-- **Same-name artists.** Search only asks "Which X?" when more than one exact match has an English Wikipedia article
-  (checked in one Wikidata query); otherwise it goes straight to the one that does.
+- **Same-name artists.** `notable()` ranks same-name matches by fame (number of Wikipedia language editions, one
+  Wikidata query). One 3x better known than the rest: go straight there; otherwise ask among comparable ones only.
+- **Descriptions.** `loadBlurb()`: Wikipedia's first 1–2 sentences, else Wikidata's description, MusicBrainz's
+  note, Discogs' profile (`shortBlurb` skips sentences broken by unresolved links), else one built from the data.
+  Albums use their Wikipedia intro or "1997 album by X".
 - **Column navigator.** Each breadcrumb stop is a "stage" with three columns: info, list, and sub (the selected
   member's other bands). Stages sit side by side on one track that slides. The breadcrumb `trail`
   (sessionStorage) drives it, including the selected member (`sel`) per stage. On musician pages a band row opens

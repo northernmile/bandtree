@@ -82,7 +82,10 @@
   .kicker { font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
   .col.info h1 { font-size: 34px; letter-spacing: -.03em; line-height: 1.08; margin: 6px 0 4px; word-break: break-word; }
   .dis { color: var(--muted); font-size: 13px; }
-  .stats { margin: 22px 0 18px; display: grid; gap: 12px; }
+  .stats { margin: 16px 0 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+  .stats > .wide { grid-column: 1 / -1; }
+  .blurb { color: #c4c8d3; font-size: 14px; line-height: 1.5; margin-top: 8px; }
+  .blurb:empty { display: none; }
   .stats dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
   .stats dd { margin: 1px 0 0; font-size: 14.5px; }
   .jumps { display: flex; gap: 14px; margin-top: 18px; font-size: 12.5px; }
@@ -267,7 +270,7 @@
   .col.info.album .acover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: fadein .6s; }
   .col.info.album .back + .acover { margin-top: 12px; }
   .col.info.album h1 { font-size: 30px; }
-  .col.info.album .stats { grid-template-columns: 1fr 1fr; gap: 12px 18px; }
+
   .col.info.album .listen { margin: 0 0 18px; }
   .col.info.album .about p { font-size: 13.5px; }
   .alink { color: var(--accent); cursor: pointer; text-decoration: none; }
@@ -345,7 +348,9 @@ function makeClient({ name, url, gap }) {
       const wait = last + gap() - Date.now();
       if (wait > 0) await sleep(wait);
       last = Date.now();
-      const r = await fetch(url(path));
+      let r;
+      // A rate-limit reply without CORS headers shows up as a network error: treat it like a 429 and back off.
+      try { r = await fetch(url(path)); } catch { await sleep(2500 * (attempt + 1)); continue; }
       if (r.status === 503 || r.status === 429) { await sleep(2000 * (attempt + 1)); continue; }
       if (!r.ok) throw new Error(`${name} returned ${r.status}`);
       return r.json();
@@ -462,12 +467,24 @@ const cleanDgName = n => (n || '').replace(/\s\(\d+\)$/, '');   // Discogs disam
 const cleanDgText = t => (t || '').replace(/\[(?:a|l|m|r)=([^\]]+)\]/g, '$1').replace(/\[(?:a|l|m|r)\d+\]/g, '')
   .replace(/\[url=[^\]]*\]([^\[]*)\[\/url\]/g, '$1').replace(/\[\/?[a-z]+\]/g, '').replace(/\s+/g, ' ').trim();
 const firstSentence = t => (t.match(/^.{20,240}?[.!?](\s|$)/)?.[0] || t.slice(0, 200)).trim();
+// Up to two clean sentences: skips ones broken by Discogs links we can't resolve ("co-founder of .").
+const shortBlurb = t => (t.match(/[^.!?]+[.!?]+/g) || [t]).map(x => x.trim()).filter(x => x.length > 15 && !/\s[.,;]|\s$/.test(x.slice(0, -1)))
+  .slice(0, 2).join(' ').slice(0, 280);
 async function discogsArtist(did, opts) {
   const a = await dg(`artists/${did}`, opts);
   if (a._norm) return a._norm;
   const rel = (m, type) => ({ id: 'discogs:' + m.id, name: cleanDgName(m.name), type, disambiguation: '', periods: [],
     attrs: new Set(), note: m.active === false ? 'former' : '' });
-  const members = finalizeRels((a.members || []).map(m => rel(m, 'Person')));
+  const memberList = (a.members || []).map(m => rel(m, 'Person'));
+  // "Mice Parade is an anagram of Adam Pierce… his solo project": Discogs files the person as an alias, not a member.
+  const prof = cleanDgText(a.profile);
+  for (const x of a.aliases || []) {
+    const n = cleanDgName(x.name);
+    if (n.includes(' ') && prof.includes(n) && !memberList.some(m => sameName(m.name, n))) {
+      const r = rel(x, 'Person'); r.attrs.add('founder'); memberList.unshift(r);
+    }
+  }
+  const members = finalizeRels(memberList);
   const bands = finalizeRels((a.groups || []).map(g => rel(g, 'Group')));
   const person = !members.length && (bands.length || a.realname);
   const img = (a.images || []).find(i => i.type === 'primary') || a.images?.[0];
@@ -527,7 +544,7 @@ function mbDesc(a) {
   const tags = (a.tags || []).sort((x, z) => z.count - x.count).slice(0, 2).map(t => t.name).join(', ');
   return [a.type, when, where, tags].filter(Boolean).join(' · ') + (a.disambiguation ? ` — ${a.disambiguation}` : '');
 }
-const mbOption = a => ({ value: a.id, label: a.name, badge: 'MusicBrainz', desc: mbDesc(a) });
+const mbOption = a => ({ value: a.id, label: a.name, badge: '', desc: mbDesc(a) });
 const dgOption = r => ({ value: 'discogs:' + r.id, label: cleanDgName(r.title), badge: 'Discogs', thumb: r.thumb, describe: () => discogsBlurb(r.id) });
 async function discogsBlurb(did) {
   const d = await discogsArtist(did, { priority: true });
@@ -537,19 +554,30 @@ async function discogsBlurb(did) {
 }
 const dgSearch = term => dg(`database/search?type=artist&per_page=10&q=${encodeURIComponent(term)}`, { priority: true }).then(r => r.results || []);
 
-/* Which of several same-name MusicBrainz artists are ones people actually mean: those with an English Wikipedia
-   article (via Wikidata, one request for all of them). If none has one, fall back to MusicBrainz tags. */
-async function notable(artists) {
+/* Which of several same-name MusicBrainz artists people actually mean. Fame = how many Wikipedia language editions
+   have an article (one Wikidata request for all of them). If one is far better known than the rest (3x), go straight
+   there (Cream the band, not a Romanian singer); otherwise offer only those of comparable fame. Exact-name matches beat
+   alias-only ones. No Wikidata at all: fall back to MusicBrainz tags. */
+async function notable(artists, term = '') {
   const ids = artists.map(a => a.id);
   const s = await getJSON(`${WD}action=query&list=search&srlimit=50&srsearch=${encodeURIComponent('haswbstatement:' + ids.map(id => 'P434=' + id).join('|'))}`);
   const qids = s.query.search.map(h => h.title);
-  let withWiki = new Set();
+  const fame = new Map();
   if (qids.length) {
-    const ents = (await getJSON(`${WD}action=wbgetentities&ids=${qids.join('|')}&props=claims|sitelinks&sitefilter=enwiki`)).entities;
-    for (const e of Object.values(ents)) if (e.sitelinks?.enwiki) (e.claims?.P434 || []).forEach(c => withWiki.add(c.mainsnak?.datavalue?.value));
+    const ents = (await getJSON(`${WD}action=wbgetentities&ids=${qids.join('|')}&props=claims|sitelinks`)).entities;
+    for (const e of Object.values(ents)) {
+      const n = Object.keys(e.sitelinks || {}).filter(k => k.endsWith('wiki') && k !== 'commonswiki').length;
+      (e.claims?.P434 || []).forEach(c => { const id = c.mainsnak?.datavalue?.value; fame.set(id, Math.max(fame.get(id) || 0, n)); });
+    }
   }
-  const hits = artists.filter(a => withWiki.has(a.id));
-  if (hits.length) return hits;
+  const exactName = a => !term || norm(a.name) === norm(term);
+  const score = a => (fame.get(a.id) || 0) * (exactName(a) ? 1 : .3);
+  const ranked = artists.filter(a => score(a) > 0).sort((x, y) => score(y) - score(x));
+  if (ranked.length) {
+    const top = score(ranked[0]);
+    if (ranked.length === 1 || top >= 3 * score(ranked[1])) return [ranked[0]];
+    return ranked.filter(a => score(a) * 3 >= top).slice(0, 4);
+  }
   const tagged = artists.filter(a => (a.tags || []).reduce((n, t) => n + t.count, 0) >= 2);
   return tagged.length ? tagged : artists;
 }
@@ -562,7 +590,7 @@ async function resolveSearch(term) {
   if (exact.length === 1) return goFresh(exact[0].id);
   if (exact.length > 1) {
     // Only ask when there's a real choice: most same-name entries are one-off uploads nobody means.
-    const known = await notable(exact).catch(() => exact);
+    const known = await notable(exact, term).catch(() => exact);
     if (known.length === 1) return goFresh(known[0].id);
     const opts = known.length ? known : exact;
     const id = await choose({ title: `Which ${exact[0].name}?`, sub: `There's more than one artist called ${exact[0].name}.`,
@@ -708,6 +736,7 @@ function stageFor(id) {
       // Listed: add anyone Discogs / Wikipedia knows that MusicBrainz doesn't, then fill in missing dates.
       else mergeMembers(st).catch(() => {}).then(() => fillDates(st)).catch(() => {}).finally(() => { st.datesChecked = true; maybeLineups(st); });
       loadNames(st).catch(() => {});
+      loadBlurb(st).catch(() => {});
       return st;
     });
     // Only needs the ID, so fetch the photo alongside the MusicBrainz lookup.
@@ -1146,6 +1175,7 @@ async function albumWikiTitle(rg, bandName, info) {
   }
   return guessWikiTitle(bandName, rg.title);
 }
+const INSTRUMENT = /drum|bass|guitar|voc|voice|sing|keyboard|synth|piano|organ|ebow|percussion|violin|viola|cello|horn|trumpet|trombone|sax|flute|clarinet|harmonica|banjo|mandolin|programming|sampl|turntable|vibraphone|marimba|glockenspiel|strings/i;
 const PERSONNEL = /^(personnel|credits|musicians|personnel and credits|credits and personnel|track listing and personnel)$/i;
 async function wikipediaPersonnel(title, bandName) {
   const secs = (await getJSON(`${WIKI}action=parse&prop=sections&redirects=1&page=${encodeURIComponent(title)}`)).parse?.sections || [];
@@ -1182,14 +1212,16 @@ async function wikipediaPersonnel(title, bandName) {
     if (!m) return;
     const name = m[1].replace(/\(.*?\)/g, '').trim();
     if (!name || name.length > 50 || /\d/.test(name) || sameName(name, bandName) || norm(name) === norm(bandName)) return;
-    const roles = m[2].replace(/\(.*?\)/g, '').split(/,|;|\band\b|\//).map(s => s.trim()).filter(s => s && s.length < 40 && !/^(on )?tracks?\b/i.test(s));
+    const roles = m[2].replace(/\(.*?\)/g, '').replace(/[“"][^”"]*[”"]/g, '').split(/,|;|\band\b|\//)
+      .map(s => s.replace(/\s+on\b.*$/i, '').trim()).filter(s => s && s.length < 40 && !/^(on )?tracks?\b/i.test(s));
     const a = [...own.querySelectorAll('a')].find(a => /^\/wiki\/[^:]+$/.test(a.getAttribute('href') || '') && name.includes(a.textContent.trim()));
     const title = a ? decodeURIComponent(a.getAttribute('href').slice(6)).replace(/_/g, ' ') : null;
     const key = norm(name);
     const p = people.get(key) || { id: null, title, name, type: 'Person', periods: [], attrs: new Set(), play: new Set(), prod: new Set(), tracks: new Set(), group };
     for (const r of roles) {
       if (SKIP_CREDIT.test(r)) continue;
-      (group === 'prod' || PRODUCTION.test(r) ? p.prod : p.play).add(r);
+      // An instrument is playing, even when Wikipedia lists it under production ("John McEntire – drums").
+      (!INSTRUMENT.test(r) && (group === 'prod' || PRODUCTION.test(r)) ? p.prod : p.play).add(r);
     }
     if (p.play.size || p.prod.size) people.set(key, p);
   };
@@ -1345,6 +1377,7 @@ function albumInfoCol(st, i) {
     <div class="acover">${esc(rg.title[0] || '')}${st.cover ? `<img src="${esc(st.cover)}" alt="" onerror="this.remove()">` : ''}</div>
     <div class="kicker">${esc(relType(rg))}${band ? ` · <a class="alink" data-go="${esc(band.id)}">${esc(band.name)}</a>` : ''}</div>
     <h1><span class="title">${esc(rg.title)}</span></h1>
+    <div class="blurb">${esc(st.about ? firstSentence(st.about.paras[0]) : `${year(rg['first-release-date']) ? year(rg['first-release-date']) + ' ' : ''}${relType(rg).toLowerCase()}${band ? ` by ${band.name}` : ''}.`.replace(/^./, c => c.toUpperCase()))}</div>
     <dl class="stats">${html}</dl>
     <div class="listen"><a class="am" target="_blank" rel="noopener" href="${esc(st.listen.am)}">Apple Music</a>
       <a class="sp" target="_blank" rel="noopener" href="${esc(st.listen.sp)}">Spotify</a></div>
@@ -1452,30 +1485,58 @@ async function loadBandCredits(st) {
   const show = () => { if (trail[cur]?.id === st.id && state.artist?.type !== 'Album' && st.lineups) renderTimeline(); };
   show();
   for (const rg of records) {
-    const list = await recordCredits(rg, {}, st.artist.name).catch(() => []);
-    const players = new Set();
-    for (const p of list) {
-      if (p.id === st.id || sameName(p.name, st.artist.name)) continue;   // "produced by the band" isn't a person
-      const key = creditKey(st, p), m = st.rels.find(r => r.id === key);
-      const e = bc.people.get(key) || { key, id: m ? m.id : p.id, name: m ? m.name : p.name, member: !!m, records: new Set(), play: new Map(), prod: new Map() };
-      e.records.add(rg.id);
-      p.play.forEach(x => e.play.set(x, (e.play.get(x) || 0) + 1));
-      p.prod.forEach(x => e.prod.set(x, (e.prod.get(x) || 0) + 1));
-      bc.people.set(key, e);
-      if (m && p.play.length) players.add(m.id);
-    }
-    const credited = list.some(p => p.play.length);
-    if (credited) bc.credited++;
-    bc.perRecord.push({ rg, players: [...players], credited });
+    const list = (await recordCredits(rg, {}, st.artist.name).catch(() => []))
+      .filter(p => p.id !== st.id && !sameName(p.name, st.artist.name));   // "produced by the band" isn't a person
+    bc.perRecord.push({ rg, list, players: [], credited: list.some(p => p.play.length) });
     bc.done++;
-    if (st.lineups) { st.lineups.done = bc.done; if (players.size) computeLineups(st); }
+    tallyBandCredits(st);
+    if (st.lineups) { st.lineups.done = bc.done; computeLineups(st); }
     show();
   }
   bc.state = 'done';
+  finishBandCredits(st);
+}
+// Who's who across the records, matched against the band's current member list (re-run if that list grows).
+function tallyBandCredits(st) {
+  const bc = st.bandCredits;
+  bc.people = new Map(); bc.credited = 0;
+  for (const x of bc.perRecord) {
+    const players = new Set();
+    for (const p of x.list) {
+      const key = creditKey(st, p), m = st.rels.find(r => r.id === key);
+      const e = bc.people.get(key) || { key, id: m ? m.id : p.id, name: m ? m.name : p.name, member: !!m, records: new Set(), play: new Map(), prod: new Map() };
+      e.records.add(x.rg.id);
+      p.play.forEach(r => e.play.set(r, (e.play.get(r) || 0) + 1));
+      p.prod.forEach(r => e.prod.set(r, (e.prod.get(r) || 0) + 1));
+      bc.people.set(key, e);
+      if (m && p.play.length) players.add(m.id);
+    }
+    x.players = [...players];
+    if (x.credited) bc.credited++;
+  }
+}
+function finishBandCredits(st) {
+  const bc = st.bandCredits;
+  tallyBandCredits(st);
   // Members with no instrument listed get their usual role across the records.
   for (const r of st.rels) { const e = bc.people.get(r.id); if (e && !r.instruments.length) r.instruments = topRoles(e.play, 2); }
+  // Members with no dates anywhere: take their years from the records they played on (first to last).
+  let fromRecords = 0;
+  for (const r of st.rels) {
+    if (r.periods.some(p => (p.begin || p.end) && !p.fromRecords)) continue;
+    const ys = bc.perRecord.filter(x => x.players.includes(r.id)).map(x => year(x.rg['first-release-date'])).filter(Boolean).sort();
+    if (!ys.length) continue;
+    r.instruments.forEach(x => r.attrs.add(x));
+    r.periods = [{ begin: ys[0], end: ys.at(-1), ended: true, attrs: [...r.attrs], fromRecords: true }];
+    fromRecords++;
+  }
+  if (fromRecords) {
+    st.rels = finalizeRels(st.rels);
+    if (!/album credits/.test(st.dateSource || '')) st.dateSource = [st.dateSource, 'album credits'].filter(Boolean).join(' + ');
+  }
   if (st.lineups) { computeLineups(st); st.lineups.state = 'done'; }
-  refreshStage(st.id); show();
+  refreshStage(st.id);
+  if (trail[cur]?.id === st.id && state.artist === st.artist) { state.rels = st.rels; renderTimeline(); }
   // Album pages for this band that are already open: same names, roles and order as everywhere else.
   for (const s of stages.values()) if (s.kind === 'album' && s.album.band?.id === st.id && s.credits === 'done') {
     if (!s.rels.some(p => p.play.length)) fillFromNearest(s, st);
@@ -1618,9 +1679,12 @@ async function mergeMembers(st) {
       from.add('Wikipedia');
     }
   }
+  // Discogs didn't answer (usually its rate limit): try once more a little later.
+  if (st.discogsId && !d && !st.mergeRetried) { st.mergeRetried = true; setTimeout(() => mergeMembers(st).catch(() => {}), 20000); }
   if (!added.length) return;
   st.rels = finalizeRels([...st.rels, ...added]);
   st.relSource = ['MusicBrainz', ...from].join(' + ');
+  if (st.bandCredits?.state === 'done') finishBandCredits(st);   // late arrivals: find them on the records too
   refreshStage(st.id);
   if (trail[cur]?.id === st.id) {
     state.rels = st.rels; renderTimeline();
@@ -1726,6 +1790,35 @@ function stageHTML(i) {
   if (st.kind === 'album') return `<div class="stage" data-i="${i}">${albumInfoCol(st, i)}${creditsCol(st, t.sel?.id)}${subCol(st, t.sel)}</div>`;
   return `<div class="stage" data-i="${i}">${infoCol(st, i)}${listCol(st, t.sel?.id, trail[i + 1]?.id)}${subCol(st, t.sel)}</div>`;
 }
+/* One or two sentences under the name. Wikipedia's opening lines first, then Wikidata's short description, then
+   MusicBrainz's note, then Discogs' profile; failing all of those, one written from what we know. */
+async function loadBlurb(st) {
+  if (st.artist.src !== 'mb') return;
+  const e = await wikidataEntity(st.id);
+  if (!e) return;
+  let text = '';
+  if (e.sitelinks?.enwiki) {
+    const pg = Object.values((await getJSON(`${WIKI}action=query&prop=extracts&exintro=1&explaintext=1&exsentences=2&redirects=1&titles=${encodeURIComponent(e.sitelinks.enwiki.title)}`)).query.pages)[0];
+    text = (pg?.extract || '').replace(/\s*\([^()]*\)/, '').replace(/\s+/g, ' ').trim();
+  }
+  if (!text) {
+    const d = (await getJSON(`${WD}action=wbgetentities&ids=${e.id}&props=descriptions&languages=en`)).entities?.[e.id];
+    const desc = d?.descriptions?.en?.value;
+    if (desc) text = desc[0].toUpperCase() + desc.slice(1) + '.';
+  }
+  if (text) { st.blurb = text.length > 260 ? firstSentence(text) : text; refreshStage(st.id); }
+}
+function artistBlurb(st) {
+  const a = st.artist;
+  if (st.blurb) return st.blurb;
+  if (a.disambiguation) return a.disambiguation[0].toUpperCase() + a.disambiguation.slice(1);
+  if (st.profile) return shortBlurb(st.profile);
+  const ls = a['life-span'] || {}, place = st.place || (a['begin-area'] || a.area)?.name || '';
+  const genre = (a.genres || []).sort((x, y) => y.count - x.count)[0]?.name;
+  if (st.kind !== 'band') return [genre && `${genre[0].toUpperCase() + genre.slice(1)} musician`, place && `from ${place}`].filter(Boolean).join(' ') + (genre || place ? '.' : '');
+  const what = `${genre ? genre[0].toUpperCase() + genre.slice(1) + ' band' : 'Band'}${place ? ` from ${place}` : ''}`;
+  return year(ls.begin) ? `${what}, formed in ${year(ls.begin)}.` : genre || place ? what + '.' : '';
+}
 function infoCol(st, i) {
   const tiers = memberTiers(st);
   const a = st.artist, ls = a['life-span'] || {}, band = st.kind === 'band';
@@ -1737,13 +1830,12 @@ function infoCol(st, i) {
   // "Current" only counts stints with a start date and no end; MusicBrainz marks unknown ends as not-ended.
   const current = st.rels.filter(r => r.periods.some(p => p.begin && !p.end && !p.ended)).length;
   let stats = band ? [
-    ['Formed', [year(ls.begin), place].filter(Boolean).join(' · ') || 'Unknown'],
-    ls.ended ? ['Disbanded', year(ls.end) || 'Yes'] : ['Status', ls.begin ? 'Active' : 'Unknown'],
+    ['Formed', [ls.ended && year(ls.end) && year(ls.begin) ? `${year(ls.begin)}–${year(ls.end)}` : year(ls.begin), place].filter(Boolean).join(' · ') || 'Unknown', 'wide'],
     ['Members', total ? (tiers ? `${tiers.core.length} core · ${tiers.others.length} others` : `${total}${current ? ` · ${current} current` : ''}`) : 'None listed'],
     ['Albums', albums],
     ['Connected bands', conn],
   ] : [
-    ['Born', [fmtDate(ls.begin), place].filter(Boolean).join(' · ') || 'Unknown'],
+    ['Born', [fmtDate(ls.begin), place].filter(Boolean).join(' · ') || 'Unknown', 'wide'],
     ls.ended && ['Died', fmtDate(ls.end) || 'Yes'],
     ['Bands', String(total)],
     ['Albums', albums],
@@ -1758,9 +1850,8 @@ function infoCol(st, i) {
     <div class="kicker">${band ? a.type || 'Band' : 'Musician'}${a.src === 'discogs' ? ' · from Discogs' : ''}</div>
     <h1><span class="title">${esc(a.name)}</span></h1>
     ${st.realPerson ? `<div class="dis">Real name: ${st.realPerson.id ? `<a class="alink" data-go="${esc(st.realPerson.id)}">${esc(st.realPerson.name)}</a>` : esc(st.realPerson.name)}</div>` : ''}
-    ${a.disambiguation ? `<div class="dis">${esc(a.disambiguation)}</div>` : ''}
-    ${st.profile ? `<div class="dis profile" title="${esc(st.profile)}">${esc(st.profile)}</div>` : ''}
-    <dl class="stats">${stats.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+    <div class="blurb">${esc(artistBlurb(st))}</div>
+    <dl class="stats">${stats.map(([k, v, w]) => `<div${w ? ' class="wide"' : ''}><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
     ${genres.length ? `<div>${genres.map(g => `<span class="tag">${esc(g.name)}</span>`).join('')}</div>` : ''}
     <button class="fwdcol" data-col="1">${band ? 'Members' : 'Bands'} · ${total} ›</button>
     <div class="jumps"><a data-jump="lowerTimeline">Timeline ↓</a><a data-jump="lowerDisco">Discography ↓</a></div>
@@ -2063,11 +2154,11 @@ function renderTimeline() {
     .attr('text-anchor', 'end').text(d => d.r.name.length > 24 ? d.r.name.slice(0, 23) + '…' : d.r.name)
     .on('click', (ev, d) => selectMember(d.r.id));
   const bar = row.selectAll('g.bar').data(d => d.bars.map(b => ({ ...b, r: d.r }))).join('g').attr('class', 'bar')
-    .on('mousemove', (ev, b) => showTip(ev, `<b>${esc(b.r.name)}</b><br>${esc(fmtPeriod(b.p))}<br>
+    .on('mousemove', (ev, b) => showTip(ev, `<b>${esc(b.r.name)}</b><br>${esc(fmtPeriod(b.p))}${b.p.fromRecords ? ' <span class="muted">(from album credits)</span>' : ''}<br>
         <span class="muted">${esc(b.p.attrs.filter(a => !['original'].includes(a)).join(', ') || [...b.r.attrs].join(', ') || 'role unknown')}</span>`))
     .on('mouseleave', hideTip).on('click', (ev, b) => selectMember(b.r.id));
   bar.append('rect').attr('x', b => x(b.start)).attr('width', b => Math.max(3, x(b.end) - x(b.start)))
-    .attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', b => b.roles[0].color);
+    .attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', b => b.roles[0].color).attr('fill-opacity', b => b.p.fromRecords ? .45 : 1);
   const und = row.filter(d => d.undated);
   und.append('line').attr('x1', labelW).attr('x2', W - 4).attr('y1', rowH / 2).attr('y2', rowH / 2)
     .attr('stroke', 'var(--muted)').attr('stroke-opacity', .5).attr('stroke-dasharray', '4 4');
@@ -2088,7 +2179,8 @@ function renderTimeline() {
   const used = ROLES.filter(R => rows.some(r => r.bars.some(b => b.roles.includes(R))));
   document.getElementById('tlegend').innerHTML = used.map(R => `<span><i style="background:${R.color}"></i>${R.name}</span>`).join('')
     + (albums.length && hasAxis ? `<span><i style="background:none;border-left:1px dashed #fff8;border-radius:0;width:1px"></i>Studio album</span>` : '')
-    + (used.length ? `<span>Center stripe = second role</span>` : '');
+    + (used.length ? `<span>Center stripe = second role</span>` : '')
+    + (rows.some(r => r.bars.some(b => b.p.fromRecords)) ? '<span>Faded = years from album credits</span>' : '');
 }
 function fmtPeriod(p) {
   const b = p.begin || '?', e = p.end || (p.ended ? '?' : 'present');
