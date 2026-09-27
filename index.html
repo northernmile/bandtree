@@ -267,6 +267,8 @@
   .kicker .alink { letter-spacing: .08em; }
   .subhead { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 14px 10px 4px 36px; }
   .subhead:first-child { margin-top: 0; }
+  .subhead.more { cursor: pointer; margin-top: 16px; } .subhead.more:hover { color: var(--accent); }
+  .subhead.more span { text-transform: none; letter-spacing: 0; opacity: .7; margin-left: 6px; }
   .rel > button.on .cover { outline: 2px solid var(--accent); outline-offset: 2px; }
   #crumbs a i.album { background: var(--accent); border-radius: 1px; transform: rotate(45deg); width: 6px; height: 6px; }
   /* Line-ups */
@@ -702,6 +704,9 @@ function stageFor(id) {
 function loadLinks(st, rel, opts = {}) {
   if (!st.linkP.has(rel.id)) {
     const p = getArtist(rel.id, opts).then(a => {
+      // "Clyde Battin" (MusicBrainz) and "Skip Battin" (Discogs) are one person when MusicBrainz links that Discogs entry.
+      const dup = a.discogsId && st.rels.find(r => r !== rel && r.id === 'discogs:' + a.discogsId);
+      if (dup) { st.rels = st.rels.filter(r => r !== dup); if (trail[cur]?.id === st.id) { state.rels = st.rels; renderTimeline(); } scheduleRefresh(st.id); }
       const list = (st.kind !== 'person' ? a.bands : a.members).filter(x => !st.altIds.has(x.id));
       st.links.set(rel.id, list);
       return list;
@@ -1000,7 +1005,7 @@ async function fillDates(st) {
 const albumSeeds = new Map();   // album id -> { rg, band, cover } from the discography card that was clicked
 const isAlbumId = id => id.startsWith('album:');
 const PRODUCTION = /produc|engineer|recorded|recording|mix|master|^audio|^sound/i;
-const SKIP_CREDIT = /written|lyrics|compos|songwriter|design|photo|artwork|art direction|cover|illustrat|paint|drawing|graphic|typograph|lettering|logo|sleeve|liner|layout|lacquer|manage|a&r|copyright|phonographic|booklet|booking|legal|translat|coordinat|executive|publish|licens|marketing|thanks/i;
+const SKIP_CREDIT = /written|lyrics|edited|editor|compos|songwriter|design|photo|artwork|art direction|cover|illustrat|paint|drawing|graphic|typograph|lettering|logo|sleeve|liner|layout|lacquer|manage|a&r|copyright|phonographic|booklet|booking|legal|translat|coordinat|executive|publish|licens|marketing|thanks/i;
 const MB_PLAY = ['instrument', 'vocal', 'performer', 'programming', 'conductor', 'performing orchestra'];
 const MB_PROD = ['producer', 'engineer', 'recording', 'mix', 'mastering', 'audio', 'sound'];
 
@@ -1326,7 +1331,13 @@ function recordCredits(rg, opts = {}) {
 }
 const topRoles = (counts, n) => [...counts].sort((a, b) => b[1] - a[1]).map(x => x[0]).filter(x => x !== 'performer').slice(0, n);
 const creditKey = (st, p) => {
-  const m = st.rels.find(r => r.id === p.id || sameName(r.name, p.name));
+  let m = st.rels.find(r => r.id === p.id || sameName(r.name, p.name));
+  // A first name only ("Dave"): that member, if exactly one member goes by it.
+  const one = norm(p.name).split(' ');
+  if (!m && one.length === 1) {
+    const hits = st.rels.filter(r => { const f = norm(r.name).split(' ')[0]; return f === one[0] || (NICK[f] && NICK[f] === NICK[one[0]]); });
+    if (hits.length === 1) m = hits[0];
+  }
   return m ? m.id : p.id.startsWith('wd:') ? 'n:' + norm(p.name) : p.id;
 };
 function maybeLineups(st) {   // (name kept: called once releases and dates are both in)
@@ -1397,7 +1408,7 @@ function fillFromNearest(s, bst) {
 function regularsRows(st) {
   const bc = st.bandCredits;
   if (st.kind !== 'band' || bc?.state !== 'done') return '';
-  const list = [...bc.people.values()].filter(e => !e.member && e.records.size >= 2 && !e.id.startsWith('wd:'))
+  const list = [...bc.people.values()].filter(e => !e.member && e.records.size >= 2 && !e.id.startsWith('wd:') && /\s/.test(e.name.trim()))
     .sort((a, b) => b.records.size - a.records.size || a.name.localeCompare(b.name)).slice(0, 12);
   if (!list.length) return '';
   return '<div class="subhead">Regular collaborators</div>' + list.map(e => `<div class="row" data-go="${esc(e.id)}"><div class="txt">
@@ -1477,7 +1488,7 @@ async function wikipediaInfoboxMembers(title) {
     const items = td.querySelectorAll('li').length ? [...td.querySelectorAll('li')]
       : td.innerHTML.split(/<br\s*\/?>/i).map(h => { const d = doc.createElement('div'); d.innerHTML = h; return d; });
     for (const it of items) {
-      const name = it.textContent.replace(/\s+/g, ' ').trim();
+      const name = it.textContent.replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim();   // "David Freel (deceased)"
       if (!name || name.length > 50 || /\d/.test(name)) continue;
       const a = [...it.querySelectorAll('a')].find(a => /^\/wiki\/[^:]+$/.test(a.getAttribute('href') || ''));
       out.push({ name, title: a ? decodeURIComponent(a.getAttribute('href').slice(6)).replace(/_/g, ' ') : null, former: /past|former/.test(th) });
@@ -1535,6 +1546,7 @@ function shell() {
     const fwd = e.target.closest('[data-col]');
     if (fwd) { mobileCol = +fwd.dataset.col; return focusNav(); }
     if (jump) return document.getElementById(jump.dataset.jump).scrollIntoView({ behavior: 'smooth' });
+    if (e.target.closest('[data-others]')) { const s = stages.get(trail[i].id); s.showOthers = !s.showOthers; return refreshStage(s.id); }
     if (e.target.closest('[data-more]')) { const s = stages.get(trail[i].id); s.aboutOpen = true; return refreshStage(s.id); }
     const alb = e.target.closest('[data-album]');
     if (alb) return openAlbumStage(state.releases.find(r => r.id === alb.dataset.album));
@@ -1614,6 +1626,7 @@ function stageHTML(i) {
   return `<div class="stage" data-i="${i}">${infoCol(st, i)}${listCol(st, t.sel?.id, trail[i + 1]?.id)}${subCol(st, t.sel)}</div>`;
 }
 function infoCol(st, i) {
+  const tiers = memberTiers(st);
   const a = st.artist, ls = a['life-span'] || {}, band = st.kind === 'band';
   const place = st.place || (a['begin-area'] || a.area)?.name || '';
   const loaded = st.links.size, total = st.rels.length;
@@ -1625,7 +1638,7 @@ function infoCol(st, i) {
   let stats = band ? [
     ['Formed', [year(ls.begin), place].filter(Boolean).join(' · ') || 'Unknown'],
     ls.ended ? ['Disbanded', year(ls.end) || 'Yes'] : ['Status', ls.begin ? 'Active' : 'Unknown'],
-    ['Members', total ? `${total}${current ? ` · ${current} current` : ''}` : 'None listed'],
+    ['Members', total ? (tiers ? `${tiers.core.length} core · ${tiers.others.length} others` : `${total}${current ? ` · ${current} current` : ''}`) : 'None listed'],
     ['Albums', albums],
     ['Connected bands', conn],
   ] : [
@@ -1656,16 +1669,51 @@ function rowMeta(r) {
   const span = r.span.endsWith('now') ? `${esc(r.span.slice(0, -3))}<span class="now">now</span>` : esc(r.span);
   return [esc(r.instruments.slice(0, 2).join(', ')), span || esc(r.note || '')].filter(Boolean).join(' · ');
 }
+/* Core members vs everyone else. Sources list every name equally (Swell: 12 people), but a person asking "who was in
+   Swell?" means the 3 or 4 who made the records. A member is core if they're a founder, were in the band 5+ years,
+   or played on 20%+ of the band's credited records (and at least 2). Core members are ranked by how much of the
+   band's life they were part of; everyone else sits in a folded group. Bands under 5 members aren't split. */
+function memberTiers(st) {
+  if (st.kind !== 'band' || st.rels.length < 5) return null;
+  const bc = st.bandCredits?.state === 'done' && st.bandCredits.credited >= 2 ? st.bandCredits : null;
+  const plays = id => bc ? bc.perRecord.filter(x => x.players.includes(id)).length : 0;
+  const tenure = r => r.periods.reduce((n, p) => {
+    const b = toYear(p.begin); if (b == null) return n;
+    const e = p.end ? toYear(p.end, true) : p.ended ? b + 1 : NOW;
+    return n + Math.max(0, e - b);
+  }, 0);
+  // Founder: marked as one, or joined the year the band formed.
+  const formed = year(st.artist['life-span']?.begin);
+  const founder = r => r.founder || (formed && r.periods.some(p => year(p.begin) === formed));
+  const scored = st.rels.map(r => {
+    const n = plays(r.id), t = tenure(r), share = bc ? n / bc.credited : 0, f = founder(r);
+    return { r, n, t, core: f || t >= 5 || (n >= 2 && share >= 0.2), w: share * 10 + (f ? 3 : 0) + Math.min(t, 30) / 3 + n };
+  });
+  const core = scored.filter(x => x.core);
+  if (!core.length || core.length === scored.length) return null;
+  const rank = (a, b) => b.w - a.w || a.r.name.localeCompare(b.r.name);
+  const why = x => x.n ? `on ${x.n} record${x.n === 1 ? '' : 's'}` : x.t ? `${Math.max(1, Math.round(x.t))} yr${Math.round(x.t) > 1 ? 's' : ''}` : 'not on a credited record';
+  return { core: core.sort(rank).map(x => x.r), others: scored.filter(x => !x.core).sort(rank).map(x => ({ r: x.r, why: why(x) })) };
+}
 function listCol(st, selId, nextId) {
   const band = st.kind === 'band';
-  const rows = st.rels.map(r => {
+  const row = (r, extra) => {
     const links = st.links.get(r.id), n = links?.length;
     const badge = links ? (n ? `<span class="badge">${band ? `${n} band${n === 1 ? '' : 's'}` : `${n + 1} members`}</span>` : '<span class="badge none">—</span>')
       : st.linkP.has(r.id) ? '<span class="badge"><i class="dot"></i></span>' : '';
     // Band page: a member row opens the third column. Musician page: a band row opens that band.
     return `<div class="row${(band ? r.id === selId : r.id === nextId) ? ' sel' : ''}" ${band ? 'data-sel' : 'data-go'}="${r.id}">
-      <div class="txt"><div class="nm">${esc(r.name)}</div><div class="meta">${rowMeta(r)}</div></div>${badge}</div>`;
-  }).join('');
+      <div class="txt"><div class="nm">${esc(r.name)}</div><div class="meta">${[rowMeta(r), extra].filter(Boolean).join(' · ')}</div></div>${badge}</div>`;
+  };
+  const tiers = memberTiers(st);
+  let rows;
+  if (!tiers) rows = st.rels.map(r => row(r)).join('');
+  else {
+    const open = st.showOthers || tiers.others.some(o => o.r.id === selId);
+    rows = tiers.core.map(r => row(r)).join('') +
+      `<div class="subhead more" data-others>${open ? '▾' : '▸'} Also in the band · ${tiers.others.length} <span>short stints, touring, one record</span></div>` +
+      (open ? tiers.others.map(o => row(o.r, esc(o.why))).join('') : '');
+  }
   const what = band ? 'members' : 'bands';
   const empty = st.enrich === 'running' ? `No ${what} on MusicBrainz — checking Wikidata and Discogs…`
     : st.enrich === 'deferred' ? `No ${what} on MusicBrainz yet.`

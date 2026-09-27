@@ -59,6 +59,9 @@ and JS, with D3 from cdnjs used for the timeline only.
   links to. From that: each member's usual role, "on N of M records" on album pages, "Regular collaborators" (2+
   records) on the band page, a stand-in line-up for records with no credits (nearest credited record), and — when
   most members have no dates — line-up cards (each distinct set of members = A, B, C…) in place of the timeline.
+- **Core members.** `memberTiers()` splits bands of 5+ members: core = founder (marked, or joined the year the band
+  formed), 5+ years in the band, or on 20%+ of the credited records (min 2). Core are ranked first; everyone else
+  folds under "Also in the band". Heuristic — someone who mostly played live can land in the fold.
 - **One name, one role.** `normRole()` folds source wording into a short set (bass, drums, vocals, producer…);
   `sameName()` matches "David Wm. Sims" = "David Sims" and nicknames ("Jim" = "James"). Album credits use the band
   page's names and order.
