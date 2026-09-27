@@ -711,7 +711,9 @@
 /* ---------- Hosted: lookups go through our own server ----------
    On the live site every request to a data source goes through /api/fetch, which keeps a shared copy so each lookup
    is made once for everyone (functions/api/fetch.js). Running locally (localhost), the page asks the sources directly. */
-const PROXY_HOSTS = ['musicbrainz.org', 'api.discogs.com', 'www.wikidata.org', 'query.wikidata.org', 'en.wikipedia.org', 'itunes.apple.com'];
+// Discogs is asked straight from the browser: it refuses requests from our host's shared addresses, but each visitor
+// gets their own allowance (about 25 a minute) and answers are still kept in this browser for three weeks.
+const PROXY_HOSTS = ['musicbrainz.org', 'www.wikidata.org', 'query.wikidata.org', 'en.wikipedia.org', 'itunes.apple.com'];
 const HOSTED = /^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
 if (HOSTED) {
   const direct = window.fetch.bind(window);
