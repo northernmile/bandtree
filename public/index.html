@@ -3833,6 +3833,13 @@ const creditKey = (st, p) => {
     const hits = st.rels.filter(r => { const f = norm(r.name).split(' ')[0]; return f === one[0] || (NICK[f] && NICK[f] === NICK[one[0]]); });
     if (hits.length === 1) m = hits[0];
   }
+  // A stage name built from the band's name ("Mike Judge" of Judge is Mike Ferraro): the member with that first name.
+  // MusicBrainz sometimes links these credits to someone else entirely (the Beavis and Butt-Head Mike Judge).
+  const bn = norm(st.artist?.name || '');
+  if (!m && bn && one.length >= 2 && one.slice(1).join(' ') === bn) {
+    const hits = st.rels.filter(r => { const f = norm(r.name).split(' ')[0]; return f === one[0] || (NICK[f] && NICK[f] === NICK[one[0]]); });
+    if (hits.length === 1) m = hits[0];
+  }
   return m ? m.id : p.id.startsWith('wd:') ? 'n:' + norm(p.name) : p.id;
 };
 function maybeBandCredits(st) {   // (name kept: called once releases and dates are both in)
