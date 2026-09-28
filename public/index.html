@@ -3897,6 +3897,7 @@ async function activeYears(st) {
   return ranges.sort((x, y) => x[0] - y[0]);
 }
 async function storyLineup(id) {
+  await msReady;   // on a fresh page load the milestones list may not be in yet
   const m = MILESTONES[id] || (msInfo(id) ? await fetch(`data/milestones/${id}.json`).then(r => r.ok ? r.json() : null).catch(() => null) : null);
   if (!m) return null;
   const ev = new Map();   // member id -> { in: [years], out: [years], stints? }
