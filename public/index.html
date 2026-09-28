@@ -212,6 +212,7 @@
   .srcb { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: none; }
   .pickextra { all: unset; display: block; margin-top: 14px; color: var(--accent); cursor: pointer; font-size: 13px; }
   #results .dgrow { color: var(--accent); font-size: 13px; }
+  .tlfix { float: right; color: var(--accent); cursor: pointer; font-size: 12px; text-decoration: none; }
   #results h6 { margin: 0; padding: 10px 14px 4px; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; border-top: 1px solid var(--line); }
   #results h6:first-child { border-top: 0; } #results .srch { font-size: 12px; cursor: default; }
   .dis.profile { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; margin-top: 6px; line-height: 1.45; }
@@ -2368,7 +2369,7 @@ const MILESTONES = {
     name: 'Minor Threat',
     lede: 'Three years on stage, about forty-seven minutes of music, and four decades of everybody from Slayer to Nike trying to get a piece of it.',
     hero: { src: WM + 'commons/c/c3/Minor-threat-malcolm-riviera.jpg', by: 'Photo: Malcolm Riviera' },
-    people: { IM: ['Ian MacKaye', MT.IM], JN: ['Jeff Nelson', MT.JN], BB: ['Brian Baker', MT.BB], LP: ['Lyle Preslar', MT.LP], SH: ['Steve Hansgen', MT.SH] },
+    people: { IM: ['Ian MacKaye', MT.IM, [[1980, 1983]]], JN: ['Jeff Nelson', MT.JN, [[1980, 1983]]], BB: ['Brian Baker', MT.BB, [[1980, 1983]]], LP: ['Lyle Preslar', MT.LP, [[1980, 1981], [1982, 1983]]], SH: ['Steve Hansgen', MT.SH, [[1982, 1983]]] },
     eras: [
       { yr: '1980', title: 'Out of the Teen Idles', text: 'Two teenagers lose their first band and start a faster, angrier one within a month. The small D.C. scene is about to get a rulebook.', years: [
         ['1980', [
@@ -2588,6 +2589,11 @@ async function renderMilestones(id) {
    A short form anyone can send from any page (the page they were on comes along). Comments land in our database;
    #review lists them for us, behind the admin key. */
 const FB_KINDS = ['Something’s wrong', 'Missing band or person', 'An idea', 'Other'];
+document.addEventListener('click', e => {
+  if (!e.target.closest('[data-tlfix]')) return;
+  openFeedback();
+  setTimeout(() => { const t = document.querySelector('#fbform textarea'); if (t && !t.value) { t.value = `Lineup for ${state.artist?.name || 'this band'}: `; t.focus(); } }, 50);
+});
 function openFeedback() {
   const where = document.querySelector('main h1')?.textContent?.trim() || document.title;
   openTool(`<h3>Help make it better</h3><p class="muted">Spot a wrong date, a missing band, or have an idea? Tell us. We read every one.</p>
@@ -3092,6 +3098,7 @@ async function load(id) {
   mobileCol = pendingMobileCol ?? 0; pendingMobileCol = null;
   const st = stageFor(id);
   renderNav();
+  st.ready.then(() => reconcileLineup(st)).catch(() => {});
   // Band page on a wide screen: open with the first member picked, so their other bands fill the right-hand column.
   st.ready.then(() => {
     const t = trail[cur], nav = document.getElementById('nav');
@@ -3861,6 +3868,120 @@ function tallyBandCredits(st) {
     if (x.credited) bc.credited++;
   }
 }
+/* ---------- Lineup corrections ----------
+   MusicBrainz stints are often incomplete: no end date (so a bar runs through a 20-year breakup) or cut short (John Porcell
+   "leaving" Judge in 1988 though he's on every record). Three checks, in order:
+   1. The band's years active (Wikipedia infobox, else Wikidata): stints stop when the band stops and restart at a reunion.
+   2. The records: a member credited on a record gets their stint stretched to cover it.
+   3. Our milestones, for bands we've written up: joins and departures we've researched win.
+   Anything we estimated (1 and 2) is drawn lighter, with a note. */
+async function activeYears(st) {
+  const ent = await wikidataEntity(st.id).catch(() => null);
+  const ranges = [], title = ent?.sitelinks?.enwiki?.title;
+  if (title) {
+    const w = await getJSON(`${WIKI}action=parse&prop=wikitext&section=0&page=${encodeURIComponent(title)}`).catch(() => null);
+    const m = (w?.parse?.wikitext?.['*'] || '').match(/\|\s*years_active\s*=\s*([^\n]*)/i);
+    if (m) {
+      const t = m[1].replace(/<ref[^>]*\/>/gi, '').replace(/<ref[\s\S]*?<\/ref>/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\{\{\s*(nowrap|flatlist|hlist|plainlist|ubl|unbulleted list)\s*\|?/gi, ' ').replace(/[{}|]/g, ' ');
+      for (const [, a, b] of t.matchAll(/(\d{4})\s*(?:[–—-]|to)?\s*(\d{4}|present)?/gi)) {
+        const y = +a; if (y < 1900 || y > NOW + 1) continue;
+        ranges.push([y, !b ? y : /present/i.test(b) ? null : +b]);
+      }
+    }
+  }
+  if (!ranges.length && ent) {
+    const yr = c => +String(c?.mainsnak?.datavalue?.value?.time || '').slice(1, 5) || null;
+    const a = yr(ent.claims?.P571?.[0]), b = yr(ent.claims?.P576?.[0]);
+    if (a) ranges.push([a, b]);
+  }
+  return ranges.sort((x, y) => x[0] - y[0]);
+}
+async function storyLineup(id) {
+  const m = MILESTONES[id] || (msInfo(id) ? await fetch(`data/milestones/${id}.json`).then(r => r.ok ? r.json() : null).catch(() => null) : null);
+  if (!m) return null;
+  const ev = new Map();   // member id -> { in: [years], out: [years], stints? }
+  // Keyed by MusicBrainz id, and by name for people we couldn't link.
+  for (const [, v] of Object.entries(m.people || {})) if (Array.isArray(v?.[2])) { const e = { in: [], out: [], stints: v[2] }; if (v[1]) ev.set(v[1], e); ev.set('n:' + norm(v[0]), e); }
+  for (const e of m.eras || []) for (const [y, list] of e.years || []) for (const x of list) for (const k of x.who || []) {
+    const out = k[0] === '-', pid = m.people?.[out ? k.slice(1) : k]?.[1];
+    if (!pid) continue;
+    const v = ev.get(pid) || { in: [], out: [] }; if (v.stints) continue; (out ? v.out : v.in).push(+y); ev.set(pid, v);
+  }
+  return ev;
+}
+const pYear = (v, end) => v ? +year(v) : null;
+async function reconcileLineup(st) {
+  if (st.kind !== 'band' || st.reconciling) return;
+  st.reconciling = true;
+  try {
+    if (!st.active) st.active = await activeYears(st).catch(() => []);
+    if (st.story === undefined) st.story = await storyLineup(st.id).catch(() => null);
+    const ranges = st.active || [], lastOpen = ranges.length && ranges.at(-1)[1] === null;
+    const inRange = y => !ranges.length || ranges.some(([a, b]) => y >= a - 1 && y <= (b ?? NOW) + 1);
+    let changed = false;
+    for (const r of st.rels) {
+      if (r.id.startsWith('wd:')) continue;
+      let ps = r.periods.filter(p => p.begin || p.end);
+      if (!ps.length) continue;
+      // 1. Years active: split stints across breakups; an open-ended stint ends when the band did.
+      if (ranges.length && !r.fixedYears) {
+        const out = [];
+        for (const p of ps) {
+          const s = pYear(p.begin) ?? ranges[0][0], open = !p.end && !p.ended, e = open ? null : pYear(p.end) ?? s;
+          const parts = ranges.map(([a, b]) => [Math.max(s, a), e === null ? b : b === null ? e : Math.min(e, b)])
+            .filter(([a, b]) => b === null || b >= a);
+          if (!parts.length) { out.push(p); continue; }
+          parts.forEach(([a, b]) => out.push({ ...p, begin: String(a), end: b === null ? '' : String(b), ended: b !== null,
+            est: p.est || a !== pYear(p.begin) || (b ?? null) !== (open ? null : e) }));
+        }
+        r.fixedYears = true;
+        if (JSON.stringify(out.map(p => [p.begin, p.end])) !== JSON.stringify(ps.map(p => [p.begin, p.end]))) { ps = out; changed = true; }
+      }
+      // 2. Records: stretch the nearest stint to cover any record they're credited on.
+      const recYears = (st.bandCredits?.perRecord || []).filter(x => x.players?.includes(r.id)).map(x => +year(x.rg['first-release-date'])).filter(y => y && inRange(y));
+      for (const y of recYears) {
+        if (ps.some(p => y >= (pYear(p.begin) ?? 0) - 1 && y <= (p.end ? pYear(p.end) : NOW) + 1)) continue;
+        const near = ps.map(p => ({ p, d: y < pYear(p.begin) ? pYear(p.begin) - y : y - (pYear(p.end) ?? y) })).sort((a, b) => a.d - b.d)[0];
+        if (!near || near.d > 4) continue;
+        if (y < pYear(near.p.begin)) near.p.begin = String(y); else { near.p.end = String(y); near.p.ended = true; }
+        near.p.est = true; changed = true;
+      }
+      // 3. Our milestones: a departure ends the stint; showing up again after a gap starts a new one.
+      const v = st.story?.get(r.id) || st.story?.get('n:' + norm(r.name));
+      if (v?.stints) {
+        ps = v.stints.map(([a, b]) => ({ begin: String(a), end: b ? String(b) : '', ended: !!b, attrs: [...(ps[0]?.attrs || [])] }));
+        changed = true;
+      } else if (v) {
+        for (const l of [...v.out].sort((a, b) => a - b)) {
+          const p = ps.find(p => (pYear(p.begin) ?? 0) <= l && (!p.end || pYear(p.end) > l));
+          if (p) { p.end = String(l); p.ended = true; p.est = false; changed = true; }
+        }
+        for (const y of [...v.in].sort((a, b) => a - b)) {
+          if (ps.some(p => y >= (pYear(p.begin) ?? 0) && y <= (p.end ? pYear(p.end) : NOW))) continue;
+          const left = v.out.filter(l => l < y).sort((a, b) => b - a)[0];
+          const prev = ps.filter(p => (pYear(p.end) ?? NOW) <= y).sort((a, b) => (pYear(b.end) ?? 0) - (pYear(a.end) ?? 0))[0];
+          if (prev && !left && y - pYear(prev.end) <= 3) { prev.end = String(y); prev.ended = true; }
+          else {
+            const later = v.out.filter(l => l >= y).sort((a, b) => a - b)[0];
+            const open = !later && lastOpen && y >= ranges.at(-1)[0];
+            ps.push({ begin: String(y), end: later ? String(later) : open ? '' : String(y), ended: !open, attrs: [...(ps[0]?.attrs || [])] });
+          }
+          changed = true;
+        }
+      }
+      const span = p => [pYear(p.begin) ?? 0, p.end ? pYear(p.end) : (p.ended ? pYear(p.begin) ?? 0 : 9999)];
+      const kept = ps.filter((p, i) => !ps.some((o, j) => j !== i && span(o)[0] <= span(p)[0] && span(o)[1] >= span(p)[1] && (span(o)[1] - span(o)[0] > span(p)[1] - span(p)[0] || j < i)));
+      if (kept.length !== ps.length) { ps = kept; changed = true; }
+      if (changed) r.periods = ps.sort((a, b) => (pYear(a.begin) ?? 0) - (pYear(b.begin) ?? 0));
+    }
+    if (changed) {
+      st.rels = finalizeRels(st.rels);
+      if (!/years active/.test(st.dateSource || '')) st.dateSource = [st.dateSource, ranges.length && 'years active', st.story && 'our milestones'].filter(Boolean).join(' + ');
+      refreshStage(st.id);
+      if (trail[cur]?.id === st.id && state.artist === st.artist) { state.rels = st.rels; renderTimeline(); }
+    }
+  } finally { st.reconciling = false; }
+}
 function finishBandCredits(st) {
   const bc = st.bandCredits;
   tallyBandCredits(st);
@@ -3910,6 +4031,7 @@ function finishBandCredits(st) {
   }
   refreshStage(st.id);
   if (trail[cur]?.id === st.id && state.artist === st.artist) { state.rels = st.rels; renderTimeline(); }
+  reconcileLineup(st).catch(() => {});
   // Album pages for this band that are already open: same names, roles and order as everywhere else.
   for (const s of stages.values()) if (s.kind === 'album' && s.album.band?.id === st.id && s.credits === 'done') {
     if (!s.rels.some(p => p.play.length)) fillFromNearest(s, st);
@@ -4622,20 +4744,20 @@ function renderTimeline() {
     .attr('text-anchor', 'end').text(d => d.r.name.length > 24 ? d.r.name.slice(0, 23) + '…' : d.r.name)
     .on('click', (ev, d) => selectMember(d.r.id));
   // Gaps between one person's stints: keep the line going (same colours, faded) so it reads as one run with a break.
-  const gaps = d => { const bs = [...d.bars].sort((a, b) => a.start - b.start); return bs.slice(1).map((b, k) => ({ from: bs[k].end, to: b.start, prev: bs[k], next: b, r: d.r })).filter(g => g.to > g.from); };
+  const gaps = d => { const bs = [...d.bars].sort((a, b) => a.start - b.start); return bs.slice(1).map((b, k) => ({ from: bs[k].end, to: b.start, prev: bs[k], next: b, r: d.r })).filter(g => g.to > g.from && g.to - g.from <= 3); };
   const gap = row.selectAll('g.gap').data(gaps).join('g').attr('class', 'gap')
     .on('mousemove', (ev, g) => showTip(ev, `<b>${esc(g.r.name)}</b><br>${esc(g.r.periods.filter(p => p.begin || p.end).map(fmtPeriod).join(', '))}<br><span class="muted">Between reunions or breaks, ${Math.floor(g.from)}–${Math.floor(g.to)}</span>`)).on('mouseleave', hideTip)
     .on('click', (ev, g) => selectMember(g.r.id));
   gap.append('rect').attr('x', g => x(g.prev.start) + 3).attr('width', g => Math.max(0, x(g.next.end) - x(g.prev.start) - 6)).attr('y', 5).attr('height', rowH - 10)
-    .attr('fill', g => g.prev.roles[0].color).attr('fill-opacity', g => g.prev.p.fromRecords || g.prev.p.fromBand ? .45 : 1);
+    .attr('fill', g => g.prev.roles[0].color).attr('fill-opacity', g => g.prev.p.fromRecords || g.prev.p.fromBand || g.prev.p.est ? .45 : 1);
   gap.filter(g => g.prev.roles[1]).append('rect').attr('x', g => x(g.from)).attr('width', g => Math.max(0, x(g.to) - x(g.from)))
     .attr('y', rowH / 2 - 2).attr('height', 4).attr('fill', g => g.prev.roles[1].color).attr('fill-opacity', 1);
   const bar = row.selectAll('g.bar').data(d => d.bars.map(b => ({ ...b, r: d.r }))).join('g').attr('class', 'bar')
-    .on('mousemove', (ev, b) => showTip(ev, `<b>${esc(b.r.name)}</b><br>${esc(fmtPeriod(b.p))}${b.p.fromRecords ? ' <span class="muted">(from album credits)</span>' : b.p.fromBand ? ' <span class="muted">(the band’s years)</span>' : ''}<br>
+    .on('mousemove', (ev, b) => showTip(ev, `<b>${esc(b.r.name)}</b><br>${esc(fmtPeriod(b.p))}${b.p.fromRecords ? ' <span class="muted">(from album credits)</span>' : b.p.fromBand ? ' <span class="muted">(the band’s years)</span>' : b.p.est ? ' <span class="muted">(dates estimated from the records and the band’s years)</span>' : ''}<br>
         <span class="muted">${esc(b.p.attrs.filter(a => !['original'].includes(a)).join(', ') || [...b.r.attrs].join(', ') || 'role unknown')}</span>`))
     .on('mouseleave', hideTip).on('click', (ev, b) => selectMember(b.r.id));
   bar.append('rect').attr('x', b => x(b.start)).attr('width', b => Math.max(3, x(b.end) - x(b.start)))
-    .attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', b => b.roles[0].color).attr('fill-opacity', b => b.p.fromRecords || b.p.fromBand ? .45 : 1);
+    .attr('y', 5).attr('height', rowH - 10).attr('rx', 3).attr('fill', b => b.roles[0].color).attr('fill-opacity', b => b.p.fromRecords || b.p.fromBand || b.p.est ? .45 : 1);
   const und = row.filter(d => d.undated);
   und.append('line').attr('x1', labelW).attr('x2', W - 4).attr('y1', rowH / 2).attr('y2', rowH / 2)
     .attr('stroke', 'var(--muted)').attr('stroke-opacity', .5).attr('stroke-dasharray', '4 4');
@@ -4654,7 +4776,7 @@ function renderTimeline() {
     .attr('stroke', 'transparent').attr('stroke-width', 8);
 
   const used = ROLES.filter(R => rows.some(r => r.bars.some(b => b.roles.includes(R))));
-  document.getElementById('tlegend').innerHTML = used.map(R => `<span><i style="background:${R.color}"></i>${R.name}</span>`).join('')
+  document.getElementById('tlegend').innerHTML = `<a class="tlfix" data-tlfix>Something wrong? Tell us ›</a>` + used.map(R => `<span><i style="background:${R.color}"></i>${R.name}</span>`).join('')
     + (albums.length && hasAxis ? `<span><i style="background:none;border-left:1px dashed #fff8;border-radius:0;width:1px"></i>${albums.some(a => a.ep) ? 'Album / EP' : 'Studio album'}</span>` : '')
     + (used.length ? `<span>Center stripe = second role</span>` : '')
     + (rows.some(r => r.bars.some(b => b.p.fromRecords || b.p.fromBand)) ? '<span>Faded = estimated years</span>' : '');
@@ -4680,7 +4802,7 @@ async function loadReleases(st, myGen) {
   let all = [];
   try {
     if (st.artist.src === 'mb') for (let offset = 0; offset < 1000; offset += 100) {
-      const d = await mb(`release-group?artist=${st.id}&limit=100&offset=${offset}`, { gen: myGen });
+      const d = await mb(`release-group?artist=${st.id}&inc=artist-credits&limit=100&offset=${offset}`, { gen: myGen });
       all.push(...d['release-groups']);
       if (all.length >= d['release-group-count'] || !d['release-groups'].length) break;
     }
@@ -4706,6 +4828,18 @@ async function loadReleases(st, myGen) {
     // Discogs last: it rate-limits hard, so it only stands in when MusicBrainz and the bands' records gave us nothing.
     if (!all.length && st.discogsId) all = await discogsReleases(st.discogsId, myGen).catch(e => { if (e.message === 'stale') throw e; return []; });
   } catch (e) { if (e.message === 'stale') return; }
+  // MusicBrainz sometimes credits a record to the wrong artist of the same name ("Moncrieff & Judge" is a UK producer,
+  // not the NY band). A band's record stays if the band is credited first, it's a split ("A / B"), or the other name
+  // on it shares a member with this band. Anything else is somebody else's.
+  if (st.kind === 'band') {
+    const members = new Set(st.rels.map(r => r.id)), linked = new Set([...st.links.values()].flat().map(l => l.id));
+    all = all.filter(rg => {
+      const ac = rg['artist-credit'] || [];
+      if (ac.length < 2 || ac[0].artist?.id === st.id) return true;
+      if (ac.some(c => c.artist?.id !== st.id && (members.has(c.artist?.id) || linked.has(c.artist?.id)))) return true;
+      return /\//.test(ac.map(c => c.joinphrase || '').join('')) || /split/i.test(rg.title || '');
+    });
+  }
   st.releases = all.sort((a, b) => (a['first-release-date'] || '9999').localeCompare(b['first-release-date'] || '9999'));
   refreshStage(st.id);  // album count in the info column
   maybeBandCredits(st);
