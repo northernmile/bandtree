@@ -564,6 +564,7 @@
   .bh .facts { font-size: 12px; color: #aab0bd; margin-top: 10px; display: flex; gap: 16px; flex-wrap: wrap; } .bh .facts:empty { display: none; } .bh .facts b { color: #fff; font-weight: 600; }
   .bht { display: flex; gap: 4px; margin: 0 0 20px; padding: 0 14px; background: #14161c; border-radius: 0 0 14px 14px; border-bottom: 1px solid #ffffff1c; overflow-x: auto; scrollbar-width: none; }
   .bht a { flex: none; padding: 13px 14px 11px; font-size: 14px; color: #aab0bd; text-decoration: none; cursor: pointer; border-bottom: 2px solid transparent; display: flex; gap: 7px; align-items: center; white-space: nowrap; }
+  .bht a.bfix { margin-left: auto; font-size: 12.5px; color: #7d8391; } .bht a.bfix:hover { color: var(--accent); }
   .bht a:hover { color: #fff; } .bht a.on { color: #fff; border-bottom-color: var(--accent); font-weight: 600; }
   .bht a i { font-style: normal; font-size: 11px; color: #7d8391; background: #ffffff10; border-radius: 99px; padding: 1px 7px; font-weight: 400; } .bht a.path { color: #f0b75a; }
   .ms .bht { margin-bottom: 28px; }
@@ -2497,7 +2498,7 @@ function bandHead(id, on, o = {}) {
   ].join('');
   return `<div class="bh${on === 'story' ? ' tall' : ''}${img ? '' : ' none'}">${img ? `<img ${isrc(img)} alt="" onerror="this.parentElement.classList.add('none'); this.remove()">` : ''}${by ? `<span class="mcr">${esc(by)}</span>` : ''}
     <div class="ov"><div class="kicker">${esc(kicker)}</div><h1>${esc(name)}</h1>${lede ? `<p class="lede">${esc(lede)}</p>` : ''}<div class="facts">${bandFacts(st)}</div></div></div>
-    <nav class="bht">${tabs}</nav>`;
+    <nav class="bht">${tabs}<a class="bfix" data-tlfix>Suggest a fix</a></nav>`;
 }
 // Lineup / Records from a page that doesn't have them (Story): open the band page, then scroll there.
 function bandJump(id, where) {
@@ -2598,7 +2599,7 @@ const FB_KINDS = ['Something’s wrong', 'Missing band or person', 'An idea', 'O
 document.addEventListener('click', e => {
   if (!e.target.closest('[data-tlfix]')) return;
   openFeedback();
-  setTimeout(() => { const t = document.querySelector('#fbform textarea'); if (t && !t.value) { t.value = `Lineup for ${state.artist?.name || 'this band'}: `; t.focus(); } }, 50);
+  setTimeout(() => { const t = document.querySelector('#fbform textarea'); if (t && !t.value) { t.value = `${state.artist?.name || document.querySelector('.bh h1')?.textContent || 'This band'}: `; t.focus(); } }, 50);
 });
 function openFeedback() {
   const where = document.querySelector('main h1')?.textContent?.trim() || document.title;
@@ -4563,8 +4564,15 @@ function layoutStage(i) {
     const rects = title.getClientRects(), t = box(rects[rects.length - 1]);
     d = bracket(t.r + 12, t.y, [...el.querySelectorAll('.col.list .row')]);
   }
-  if (selRow) hot = bracket(box(selRow.getBoundingClientRect()).r, box(selRow.getBoundingClientRect()).y, [...el.querySelectorAll('.col.sub .row')]);
-  el.insertAdjacentHTML('afterbegin', `<svg class="links" width="${S.width}" height="${S.height}"><path class="ln" d="${d}"/><path class="hot" d="${hot}"/></svg>`);
+  const subRows = [...el.querySelectorAll('.col.sub .row')];
+  if (selRow && el.classList.contains('band2') && subRows.length) {
+    // Band page: an elbow from the selected member across the gap to the list, and a bracket that stops at the last band.
+    const sr = box(selRow.getBoundingClientRect()), ys = subRows.map(r => box(r.getBoundingClientRect()).y);
+    const bx = box(subRows[0].getBoundingClientRect()).l + 10, gx = box(el.querySelector('.col.sub').getBoundingClientRect()).l;
+    const yc = Math.min(Math.max(sr.y, ys[0]), ys.at(-1));
+    hot = `M${sr.r},${sr.y}H${gx}V${yc}H${bx}M${bx},${ys[0]}V${ys.at(-1)}` + ys.map(y => `M${bx},${y}h14`).join('');
+  } else if (selRow) hot = bracket(box(selRow.getBoundingClientRect()).r, box(selRow.getBoundingClientRect()).y, subRows);
+  el.insertAdjacentHTML(el.classList.contains('band2') ? 'beforeend' : 'afterbegin', `<svg class="links" width="${S.width}" height="${S.height}"><path class="ln" d="${d}"/><path class="hot" d="${hot}"/></svg>`);
 }
 
 /* ----- hover preview for rows that lead to another band/person ----- */
@@ -4790,7 +4798,7 @@ function renderTimeline() {
     .attr('stroke', 'transparent').attr('stroke-width', 8);
 
   const used = ROLES.filter(R => rows.some(r => r.bars.some(b => b.roles.includes(R))));
-  document.getElementById('tlegend').innerHTML = `<a class="tlfix" data-tlfix>Something wrong? Tell us ›</a>` + used.map(R => `<span><i style="background:${R.color}"></i>${R.name}</span>`).join('')
+  document.getElementById('tlegend').innerHTML = used.map(R => `<span><i style="background:${R.color}"></i>${R.name}</span>`).join('')
     + (albums.length && hasAxis ? `<span><i style="background:none;border-left:1px dashed #fff8;border-radius:0;width:1px"></i>${albums.some(a => a.ep) ? 'Album / EP' : 'Studio album'}</span>` : '')
     + (used.length ? `<span>Center stripe = second role</span>` : '')
     + (rows.some(r => r.bars.some(b => b.p.fromRecords || b.p.fromBand)) ? '<span>Faded = estimated years</span>' : '');
