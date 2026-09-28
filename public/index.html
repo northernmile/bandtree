@@ -398,7 +398,7 @@
 
   .inpath { margin: 12px 0 2px; font-size: 13px; color: var(--muted); } .inpath a { color: var(--accent); text-decoration: none; } .inpath small { color: var(--muted); }
   /* Lineage stories */
-  .lin { max-width: 1080px; margin: 0 auto; padding-bottom: 90px; }
+  .lin { margin: 0 auto; padding-bottom: 90px; }
   .lin > h1 { font-size: clamp(38px, 5vw, 58px); letter-spacing: -.04em; line-height: 1; margin: 8px 0 8px; }
   .lin .lede { color: #c4c8d3; font-size: 17px; margin: 0 0 14px; }
   .lchips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; margin-bottom: 26px; position: sticky; top: 64px; z-index: 4; background: var(--bg); padding: 8px 0; }
@@ -547,7 +547,7 @@
   .pcard .pwho { display: flex; gap: 4px; }
   .pcard .pwho i { width: 22px; height: 22px; border-radius: 50%; font: 700 9.5px/22px inherit; text-align: center; font-style: normal; color: #0e0f13; }
   /* Milestones */
-  .ms { max-width: 1080px; margin: 0 auto; padding-bottom: 90px; }
+  .ms { margin: 0 auto; padding-bottom: 90px; }
   .btabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 16px; }
   .btabs a { font-size: 12.5px; padding: 6px 12px; border-radius: 99px; border: 1px solid #ffffff22; background: #ffffff0d; color: var(--text); text-decoration: none; cursor: pointer; }
   .btabs a:hover { border-color: var(--accent); color: var(--accent); } .btabs a.on { background: var(--text); color: var(--bg); border-color: var(--text); }
@@ -564,6 +564,10 @@
   .bht a:hover { color: #fff; } .bht a.on { color: #fff; border-bottom-color: var(--accent); font-weight: 600; }
   .bht a i { font-style: normal; font-size: 11px; color: #7d8391; background: #ffffff10; border-radius: 99px; padding: 1px 7px; font-weight: 400; } .bht a.path { color: #f0b75a; }
   .ms .bht { margin-bottom: 28px; }
+  .stage.band2 > .col.info { width: calc(var(--colw, 33.33vw) * 1.25); } .stage.band2 > .col.sub { width: calc(var(--colw, 33.33vw) * 1.75); }
+  .col.info > .col.list { position: static; width: auto; min-height: 0; padding: 0; margin: 22px -12px 0; border: 0; background: none; }
+  .stage.band2 .col.info .fwdcol { display: none; }
+  .nav.mobile .stage.band2 > .col { width: var(--colw); }
   .stage.headed .col.info > .photo, .stage.headed .col.info > .kicker, .stage.headed .col.info > h1, .stage.headed .col.info > .blurb,
   .stage.headed .col.info > .inpath, .stage.headed .col.info > .mscard, .stage.headed .col.info > .jumps, .stage.headed [data-tree] { display: none; }
   @media (max-width: 640px) { .bh { height: 200px; } .bh.tall { height: 270px; } .bh h1, .bh.tall h1 { font-size: 38px; } .bh .ov { padding: 18px; } .bh .lede { font-size: 14.5px; } .bht a { padding: 12px 10px 10px; font-size: 13.5px; } }
@@ -2410,7 +2414,7 @@ function bandHead(id, on, o = {}) {
   const tabs = [
     ms ? tab(`Story <i>${ms.n} moments</i>`, `href="#milestones:${id}"`, 'story') : '',
     tab(band ? 'Members' : 'Bands', `href="#members:${id}"`, 'members'),
-    tab(band ? 'Lineup' : 'Timeline', `data-bjump="lowerTimeline" data-id="${esc(id)}"`, 'lineup'),
+    band ? '' : tab('Timeline', `data-bjump="lowerTimeline" data-id="${esc(id)}"`, 'lineup'),
     tab('Records', `data-bjump="lowerDisco" data-id="${esc(id)}"`, 'records'),
     band && (ms || (st && treeWorthy(st))) ? tab('Band tree', `href="#tree:${id}"`, 'tree') : '',
     ...PATHS.filter(p => p.root === id).map(p => tab(`Path: ${esc(p.title)}`, `href="#path:${p.id}"`, p.id, 'path')),
@@ -3019,6 +3023,13 @@ async function load(id) {
   mobileCol = pendingMobileCol ?? 0; pendingMobileCol = null;
   const st = stageFor(id);
   renderNav();
+  // Band page on a wide screen: open with the first member picked, so their other bands fill the right-hand column.
+  st.ready.then(() => {
+    const t = trail[cur], nav = document.getElementById('nav');
+    if (t?.id !== id || t.sel || st.kind !== 'band' || !st.rels.length || nav?.classList.contains('mobile')) return;
+    const r = memberTiers(st).core[0] || st.rels[0];
+    selectRow(cur, r.id); mobileCol = 0;
+  }).catch(() => {});
   const lb = document.getElementById('loadbar'); if (lb) lb.pct = 0;   // new page: bar starts over
   setStatus();
   // Every other stop on the trail (e.g. after a refresh) loads too, so sliding back is instant.
@@ -4099,6 +4110,8 @@ function stageHTML(i) {
   if (!st?.artist) return `<div class="stage" data-i="${i}"><div class="col info"><div class="skel">Loading…</div></div>
     <div class="col list"></div><div class="col sub empty"></div></div>`;
   if (st.kind === 'album') return `<div class="stage" data-i="${i}">${albumInfoCol(st, i)}${creditsCol(st, t.sel?.id)}${subCol(st, t.sel)}</div>`;
+  // A band keeps its members under its own details (left), with the chosen member's other bands beside them.
+  if (st.kind === 'band') return `<div class="stage band2" data-i="${i}">${infoCol(st, i).replace(/<\/div>\s*$/, listCol(st, t.sel?.id, trail[i + 1]?.id) + '</div>')}${subCol(st, t.sel)}</div>`;
   return `<div class="stage" data-i="${i}">${infoCol(st, i)}${listCol(st, t.sel?.id, trail[i + 1]?.id)}${subCol(st, t.sel)}</div>`;
 }
 /* One or two sentences under the name. Wikipedia's opening lines first, then Wikidata's short description, then
@@ -4327,8 +4340,9 @@ function layoutStage(i) {
   const listRows = el.querySelector('.col.list .rows');
   if (sub && selRow && !document.getElementById('nav').classList.contains('mobile')) {
     sub.style.paddingTop = '0px';
-    const room = listRows.offsetTop + listRows.offsetHeight - (sub.offsetTop + sub.offsetHeight);
-    sub.style.paddingTop = Math.max(0, Math.min(selRow.offsetTop - sub.offsetTop, room)) + 'px';
+    const R = x => x.getBoundingClientRect();   // screen positions: the member list can sit inside the band's own column now
+    const room = R(listRows).bottom - R(sub).bottom;
+    sub.style.paddingTop = Math.max(0, Math.min(R(selRow).top - R(sub).top, room)) + 'px';
   }
   el.querySelector('svg.links')?.remove();
   const S = el.getBoundingClientRect();
@@ -4340,7 +4354,7 @@ function layoutStage(i) {
   };
   let d = '', hot = '';
   const title = el.querySelector('.info .title');
-  if (title) {
+  if (title && !el.classList.contains('band2') && title.getClientRects().length) {
     const rects = title.getClientRects(), t = box(rects[rects.length - 1]);
     d = bracket(t.r + 12, t.y, [...el.querySelectorAll('.col.list .row')]);
   }
@@ -4385,7 +4399,7 @@ function hideNavTip() { clearTimeout(hoverTimer); hoverRow = null; const t = doc
 function showLower(st, myGen) {
   state.artist = st.artist; state.rels = st.rels; state.filter = 'Album';
   state.releases = st.releases || [];
-  document.getElementById('tlTitle').textContent = `${st.kind === 'band' ? 'Lineup timeline' : 'Band timeline'} · ${st.artist.name}`;
+  document.getElementById('tlTitle').textContent = `${st.kind === 'band' ? 'Lineup' : 'Band timeline'} · ${st.artist.name}`;
   document.getElementById('tlCount').textContent = st.rels.length || '';
   document.getElementById('discoTitle').textContent = `Discography · ${st.artist.name}`;
   renderTimeline();
@@ -4483,7 +4497,7 @@ function renderTimeline() {
   const el = document.getElementById('timeline');
   if (!el || !state.artist || state.artist.type === 'Album') return;   // album pages show the tracklist here
   const here = stages.get(trail[cur]?.id);
-  document.getElementById('tlTitle').textContent = `${kindOf(state.artist.type) === 'band' ? 'Lineup timeline' : 'Band timeline'} · ${state.artist.name}`;
+  document.getElementById('tlTitle').textContent = `${kindOf(state.artist.type) === 'band' ? 'Lineup' : 'Band timeline'} · ${state.artist.name}`;
   if (!state.rels.length) {
     el.innerHTML = `<span class="muted">No ${kindOf(state.artist.type) === 'band' ? 'member' : 'band membership'} data for this artist yet.</span>`;
     document.getElementById('tlegend').innerHTML = '';
