@@ -2456,15 +2456,15 @@ const msInfo = id => MILESTONES[id] ? { name: MILESTONES[id].name, hero: MILESTO
 function msListHTML() {
   const all = [...Object.keys(MILESTONES), ...Object.keys(MS_INDEX).filter(k => !MILESTONES[k])].map(id => ({ id, ...msInfo(id) })).filter(x => x.name)
     .sort((a, b) => a.name.replace(/^the /i, '').localeCompare(b.name.replace(/^the /i, '')));
-  return `<section class="trails" data-mslist><h2>Milestones</h2><div class="msgrid">${all.map(x => `<a class="msmini" href="#milestones:${x.id}">
-    <img src="${esc(x.hero || '')}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span><b>${esc(x.name)}</b><small>${x.n} moments · ${esc(x.span)}</small></span></a>`).join('')}</div></section>`;
+  return `<section class="trails" data-mslist><h2>Band stories</h2><div class="msgrid">${all.map(x => `<a class="msmini" href="#milestones:${x.id}">
+    <img src="${esc(x.hero || '')}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span><b>${esc(x.name)}</b><small>${x.n} flashpoints · ${esc(x.span)}</small></span></a>`).join('')}</div></section>`;
 }
 const msLinks = s => String(s).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, (_, n, id) => `<a class="mlink" data-go="${esc(id)}">${esc(n)}</a>`);
 const msCount = m => m.eras.reduce((n, e) => n + (e.years || []).reduce((k, [, v]) => k + v.length, 0), 0);
 const msSpan = m => { const ys = m.eras.flatMap(e => (e.years || []).map(([y]) => +y)); return `${Math.min(...ys)}–${Math.max(...ys)}`; };
 // Band page: a card that opens the band's milestones.
 const milestonesLine = st => { const m = msInfo(st.id); return m ? `<a class="mscard" href="#milestones:${st.id}"><img src="${esc(m.hero || '')}" alt="" onerror="this.style.visibility='hidden'">
-  <span><b>Milestones</b><small>${m.n} moments · ${esc(m.span)}</small></span><i>›</i></a>` : ''; };
+  <span><b>Story</b><small>${m.n} flashpoints · ${esc(m.span)}</small></span><i>›</i></a>` : ''; };
 // The views one band can have, as tabs: its page, its milestones, the paths that start from it.
 const isrc = u => u && u.startsWith('dg:') ? `data-dg="${esc(u.slice(3))}"` : `src="${esc(u)}"`;
 /* ---------- Band header ----------
