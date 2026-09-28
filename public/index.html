@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Band Tree</title>
+<title>bandlines</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
@@ -555,10 +555,13 @@
   .btabs a { font-size: 12.5px; padding: 6px 12px; border-radius: 99px; border: 1px solid #ffffff22; background: #ffffff0d; color: var(--text); text-decoration: none; cursor: pointer; }
   .btabs a:hover { border-color: var(--accent); color: var(--accent); } .btabs a.on { background: var(--text); color: var(--bg); border-color: var(--text); }
   .ms > .btabs:last-child { margin-top: 40px; }
-  .bh { position: relative; height: 250px; border-radius: 18px 18px 0 0; overflow: hidden; background: #000; }
+  .bh { position: relative; height: 250px; border-radius: 18px 18px 0 0; overflow: hidden; background: var(--hbg, #121419); transition: background-color .6s; }
   .bh.tall { height: 380px; } .bh.none { height: 190px; background: linear-gradient(135deg, #2a1a22, #151820); }
-  .bh img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: grayscale(.2) contrast(1.05); opacity: .72; animation: fadein .6s; }
-  .bh .ov { position: absolute; inset: 0; background: linear-gradient(transparent 20%, #0e0f13f0 95%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px 28px 18px; }
+  .bh img { position: absolute; right: 0; top: 0; height: 100%; width: auto; max-width: min(66%, 860px); object-fit: cover; object-position: center 30%; opacity: .92; animation: fadein .6s;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 45%); mask-image: linear-gradient(90deg, transparent 0, #000 45%); }
+  .bh .ov { position: absolute; inset: 0; background: linear-gradient(0deg, var(--hbg, #121419) 0, transparent 34%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px 28px 18px; }
+  .bh .ov h1 { max-width: 78%; } .bh .ov .lede, .bh .ov .kicker, .bh .ov .facts { max-width: min(640px, 56%); }
+  .bh h1 { text-shadow: 0 2px 24px var(--hbg, #000); } .bh .lede { text-shadow: 0 1px 12px var(--hbg, #000); }
   .bh h1 { font-size: 56px; letter-spacing: -.045em; line-height: 1; margin: 6px 0 8px; } .bh.tall h1 { font-size: 68px; }
   .bh .lede { color: #d4d7df; font-size: 16.5px; max-width: 720px; margin: 0; }
   .bh .facts { font-size: 12px; color: #aab0bd; margin-top: 10px; display: flex; gap: 16px; flex-wrap: wrap; } .bh .facts:empty { display: none; } .bh .facts b { color: #fff; font-weight: 600; }
@@ -574,25 +577,30 @@
   .nav.mobile .stage.band2 > .col { width: var(--colw); }
   .stage.headed .col.info > .photo, .stage.headed .col.info > .kicker, .stage.headed .col.info > h1, .stage.headed .col.info > .blurb,
   .stage.headed .col.info > .inpath, .stage.headed .col.info > .mscard, .stage.headed .col.info > .jumps, .stage.headed [data-tree] { display: none; }
+  @media (max-width: 640px) { .bh img { width: 100%; max-width: 100%; -webkit-mask-image: linear-gradient(0deg, transparent 8%, #000 65%); mask-image: linear-gradient(0deg, transparent 8%, #000 65%); }
+    .bh .ov h1, .bh .ov .lede, .bh .ov .kicker, .bh .ov .facts { max-width: none; } }
   @media (max-width: 640px) { .bh { height: 200px; } .bh.tall { height: 270px; } .bh h1, .bh.tall h1 { font-size: 38px; } .bh .ov { padding: 18px; } .bh .lede { font-size: 14.5px; } .bht a { padding: 12px 10px 10px; font-size: 13.5px; } }
   .mhero { position: relative; height: 360px; margin: 0 0 28px; border-radius: 18px; overflow: hidden; background: #000; }
   .mhero img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: grayscale(.2) contrast(1.05); opacity: .75; }
   .mhero .mov { position: absolute; inset: 0; background: linear-gradient(transparent 30%, #0e0f13ee 92%); display: flex; flex-direction: column; justify-content: flex-end; padding: 28px 30px; }
   .mhero h1 { font-size: 64px; letter-spacing: -.045em; line-height: 1; margin: 6px 0 10px; } .mhero .lede { color: #d4d7df; font-size: 18px; max-width: 700px; margin: 0; }
-  .mcr { position: absolute; right: 14px; top: 12px; font-size: 10.5px; color: #ffffff99; }
-  .mera { display: grid; grid-template-columns: 290px 1fr; gap: 0 34px; position: relative; }
-  .mebox { position: sticky; z-index: 2; top: 76px; align-self: start; margin: 14px 0 24px; padding: 16px 18px; border-radius: 14px; background: #141720; border: 1px solid var(--line); }
-  .mebox .myr { font-size: 12px; font-weight: 800; letter-spacing: .1em; color: var(--accent); }
-  .mebox h2 { font-size: 22px; letter-spacing: -.02em; margin: 4px 0 8px; line-height: 1.12; text-transform: none; color: var(--text); font-weight: 700; } .mebox p { color: #b9bdc8; margin: 0; font-size: 13.5px; }
+  .mcr { display: none; }
+  body.msmode { background: var(--msbg, var(--bg)); transition: background-color .9s ease; }
+  .mera { display: grid; grid-template-columns: 300px 1fr; gap: 0 40px; position: relative; max-width: 1180px; margin: 0 auto; }
+  .mebox { position: sticky; z-index: 2; top: 76px; align-self: start; margin: 14px 0 24px; padding: 20px 0 0; }
+  .mebox::before { content: ''; display: block; width: 36px; height: 3px; border-radius: 2px; background: var(--accent); margin-bottom: 16px; }
+  .mera.later .mebox::before { background: var(--muted); }
+  .mebox .myr { font-size: 34px; line-height: 1; font-weight: 800; letter-spacing: -.02em; color: var(--accent); } .mera.later .mebox .myr { color: #aeb3bf; }
+  .mebox h2 { font-size: 26px; letter-spacing: -.02em; margin: 10px 0 10px; line-height: 1.1; text-transform: none; color: var(--text); font-weight: 700; } .mebox p { color: #aeb3bf; margin: 0; font-size: 14px; line-height: 1.55; }
   .mcount { margin-top: 10px; font-size: 11.5px; color: var(--muted); }
   .myears { position: relative; } .mspine { position: absolute; left: 36px; top: 0; bottom: 0; width: 2px; background: var(--band); opacity: .6; }
   .mera.later .mspine { background: #3a3f4c; opacity: 1; }
   .myear { position: relative; padding: 14px 0 4px 62px; }
-  .myear::before { content: ''; position: absolute; top: 0; left: -324px; right: 0; height: 1px; background: #1c1f28; }
+  .myear::before { content: ''; position: absolute; top: 0; left: -340px; right: 0; height: 1px; background: #1c1f28; }
   .myear > .my { position: absolute; left: 0; top: 12px; font-size: 13px; font-weight: 700; color: #5d6372; letter-spacing: .04em; }
   .mev { position: relative; margin: 0 0 10px; opacity: 0; transform: translateY(10px); transition: opacity .45s ease, transform .45s ease; }
   .mev.in { opacity: 1; transform: none; }
-  .mev::before { content: ''; position: absolute; left: -30px; top: 15px; width: 10px; height: 10px; border-radius: 50%; background: var(--band); box-shadow: 0 0 0 4px var(--bg); z-index: 1; }
+  .mev::before { content: ''; position: absolute; left: -30px; top: 15px; width: 10px; height: 10px; border-radius: 50%; background: var(--band); box-shadow: 0 0 0 4px var(--msbg, var(--bg)); z-index: 1; transition: box-shadow .9s; }
   .mera.later .mev::before { background: var(--muted); }
   .md { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
   .mrow { display: flex; gap: 10px; align-items: baseline; padding: 8px 12px; border-radius: 10px; border: 1px solid transparent; }
@@ -610,8 +618,8 @@
   .mbtn, .mplay { font-size: 12px; padding: 5px 11px; border-radius: 99px; border: 1px solid #ffffff22; background: #ffffff0d; color: var(--text); cursor: pointer; text-decoration: none; }
   .mplay { background: transparent; border-color: var(--band); color: var(--band); font-weight: 600; } .mplay:hover { background: color-mix(in srgb, var(--band) 14%, transparent); }
   .mfeat { padding: 0; overflow: hidden; flex-direction: column; gap: 0; }
-  .mimg { position: relative; height: 250px; background: #000; } .mimg img { width: 100%; height: 100%; object-fit: cover; opacity: .92; }
-  .mimg.fit { height: 380px; background: #1a1b1f; } .mimg.fit img { object-fit: contain; }
+  .mimg { position: relative; background: #000; } .mimg img { display: block; width: 100%; height: auto; }
+  .mimg.fit { background: #1a1b1f; } .mimg.fit img { object-fit: contain; }
   .mimg span { position: absolute; left: 12px; bottom: 10px; font-size: 10.5px; color: #ffffffcc; background: #0009; padding: 2px 8px; border-radius: 6px; }
   .mfeat .mbd { padding: 14px 16px 16px; }
   .mvid { flex-direction: row; } .mvid .mv { width: 300px; flex: none; } .mvid .mbd { align-self: center; }
@@ -626,7 +634,22 @@
   .mvchip:hover { background: #ffffff12; } .mvci { position: relative; flex: none; width: 88px; aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; background: #000; }
   .mvci img { width: 100%; height: 100%; object-fit: cover; display: block; } .mvci b { position: absolute; inset: 0; margin: auto; width: 26px; height: 26px; border-radius: 50%; background: #e62117; color: #fff; font-size: 11px; display: grid; place-items: center; }
   .mvcl { color: #c9ccd4; line-height: 1.3; } .mvf { margin-top: 10px; }
-  .mfeat.side { flex-direction: row; } .mfeat.side .mimg { width: 210px; height: auto; min-height: 160px; flex: none; }
+  .mfeat.side { flex-direction: row; align-items: flex-start; } .mfeat.side .mimg { width: 38%; flex: none; }
+  .mimg span:empty { display: none; }
+  .mev.k-row { max-width: 55%; } .mev.k-card, .mev.k-side, .mev.k-feat, .mev.k-vid { max-width: 80%; } .mev.k-quote { max-width: 66%; }
+  .mev.k-row .mrow { display: block; position: relative; padding: 10px 30px 10px 14px; background: #ffffff07; border-color: #ffffff10; }
+  .mev.k-row .mrow:hover { background: #ffffff0f; border-color: #ffffff26; }
+  .mev.k-row .mrow > .md { display: block; width: auto; margin-bottom: 3px; } .mev.k-row .mrow > .md.dupe { display: none; }
+  .mev.k-row .mplus { position: absolute; right: 12px; top: 10px; }
+  .mev.k-row .mxp, .mev.k-card .mxp, .mev.k-quote .mxp { grid-template-columns: 1fr; }
+  .mside:not(:has(a)) { display: none; } .mxp:not(:has(.mside a)) { grid-template-columns: 1fr; }
+  .mpop { position: fixed; inset: 0; z-index: 90; background: #05060acc; backdrop-filter: blur(6px); display: grid; place-items: center; padding: 24px; animation: fadein .2s; }
+  .mpop .mpc { position: relative; width: min(720px, 100%); max-height: 86vh; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 24px; box-shadow: 0 30px 80px #000c; box-sizing: border-box; }
+  .mpop .mpc .mxp { display: grid; grid-template-columns: 1fr 200px; } .mpop .mpc .mxp:not(:has(.mside a)) { grid-template-columns: 1fr; }
+  .mpop .mpc .mmore, .mpop .mpc .mplus, .mpop .mpc .md.dupe { display: none; }
+  .mpop .mpc h3 { font-size: 22px; margin: 4px 0 8px; } .mpop .mpc p { font-size: 15px; }
+  .mpop .mpx { position: absolute; right: 14px; top: 10px; z-index: 2; font-size: 22px; line-height: 1; color: #fff; cursor: pointer; background: #0008; border: 0; border-radius: 99px; width: 34px; height: 34px; }
+  .mpop .mpimg { margin: -22px -24px 16px; } .mpop .mpimg img { display: block; width: 100%; height: auto; max-height: 44vh; object-fit: contain; background: #000; border-radius: 18px 18px 0 0; }
   .mquote { background: linear-gradient(135deg, #231a22, #171920); border-color: #ff5d7344; }
   .mbig { font-size: 26px; line-height: 1.2; letter-spacing: -.02em; font-weight: 700; margin: 6px 0 8px; } .mbig span { color: var(--band); }
   .mtag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 99px; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; vertical-align: 1px; }
@@ -644,9 +667,9 @@
   .mside { font-size: 12.5px; color: #b9bdc8; } .mside b { display: block; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
   .mside a { display: block; padding: 7px 10px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: 9px; color: var(--text); text-decoration: none; background: #ffffff06; cursor: pointer; }
   .mside a em { color: var(--accent); font-style: normal; }
-  .mgap { position: relative; margin: 4px 0 4px 324px; padding: 10px 0 10px 62px; color: #5d6372; font-size: 12px; letter-spacing: .08em; }
-  .mgap::before { content: ''; position: absolute; left: -324px; right: 0; top: 50%; border-top: 1px dashed #2c303b; }
-  .mgap span { position: relative; background: var(--bg); padding: 0 10px; }
+  .mgap { position: relative; max-width: 1180px; box-sizing: border-box; margin: 4px auto; padding: 10px 0 10px 402px; color: #5d6372; font-size: 12px; letter-spacing: .08em; }
+  .mgap::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed #2c303b; }
+  .mgap span { position: relative; background: var(--msbg, var(--bg)); padding: 0 10px; transition: background-color .9s; }
   .mhero.none { height: 220px; background: linear-gradient(135deg, #2a1a22, #151820); }
   .msgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; max-width: 1150px; }
   .msmini { display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; border-radius: 10px; border: 1px solid #ffffff1a; background: #171920cc; text-decoration: none; color: var(--text); }
@@ -658,10 +681,11 @@
   .lin .btabs { margin-top: 0; }
   @media (max-width: 800px) {
     .mera { grid-template-columns: 1fr; } .mebox { position: static; margin-bottom: 8px; }
+    .mev { max-width: 100% !important; } .mgap { padding-left: 44px; } .mpop .mpc .mxp { grid-template-columns: 1fr; }
     .myear::before { left: 0; } .mgap { margin-left: 0; } .mgap::before { left: 0; } .myear { padding-left: 44px; } .mspine { left: 20px; } .mev::before { left: -30px; }
     .mhero { height: 300px; } .mhero h1 { font-size: 44px; } .mxp { grid-template-columns: 1fr; }
     .mvid { flex-direction: column; } .mvid .mv { width: auto; }
-    .mfeat.side { flex-direction: column; } .mfeat.side .mimg { width: auto; height: 180px; } .mcv { width: 84px; height: 84px; } .mrow > .md { width: 64px; }
+    .mfeat.side { flex-direction: column; } .mfeat.side .mimg { width: auto; } .mcv { width: 84px; height: 84px; } .mrow > .md { width: 64px; }
   }
   /* Feedback */
   .fbbtn { border-style: dashed; }
@@ -753,7 +777,7 @@
 </head>
 <body>
 <header>
-  <div class="logo" onclick="goHome()">band<span>/</span>tree</div>
+  <div class="logo" onclick="goHome()">band<span>/</span>lines</div>
   <div class="search">
     <input id="q" placeholder="Search any band or musician…" autocomplete="off">
     <div id="results"></div>
@@ -2457,7 +2481,7 @@ const msInfo = id => MILESTONES[id] ? { name: MILESTONES[id].name, hero: MILESTO
 function msListHTML() {
   const all = [...Object.keys(MILESTONES), ...Object.keys(MS_INDEX).filter(k => !MILESTONES[k])].map(id => ({ id, ...msInfo(id) })).filter(x => x.name)
     .sort((a, b) => a.name.replace(/^the /i, '').localeCompare(b.name.replace(/^the /i, '')));
-  return `<section class="trails" data-mslist><h2>Band stories</h2><div class="msgrid">${all.map(x => `<a class="msmini" href="#milestones:${x.id}">
+  return `<section class="trails" data-mslist><h2>Milestones</h2><div class="msgrid">${all.map(x => `<a class="msmini" href="#milestones:${x.id}">
     <img src="${esc(x.hero || '')}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span><b>${esc(x.name)}</b><small>${x.n} flashpoints · ${esc(x.span)}</small></span></a>`).join('')}</div></section>`;
 }
 const msLinks = s => String(s).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, (_, n, id) => `<a class="mlink" data-go="${esc(id)}">${esc(n)}</a>`);
@@ -2465,7 +2489,7 @@ const msCount = m => m.eras.reduce((n, e) => n + (e.years || []).reduce((k, [, v
 const msSpan = m => { const ys = m.eras.flatMap(e => (e.years || []).map(([y]) => +y)); return `${Math.min(...ys)}–${Math.max(...ys)}`; };
 // Band page: a card that opens the band's milestones.
 const milestonesLine = st => { const m = msInfo(st.id); return m ? `<a class="mscard" href="#milestones:${st.id}"><img src="${esc(m.hero || '')}" alt="" onerror="this.style.visibility='hidden'">
-  <span><b>Story</b><small>${m.n} flashpoints · ${esc(m.span)}</small></span><i>›</i></a>` : ''; };
+  <span><b>Milestones</b><small>${m.n} flashpoints · ${esc(m.span)}</small></span><i>›</i></a>` : ''; };
 // The views one band can have, as tabs: its page, its milestones, the paths that start from it.
 const isrc = u => u && u.startsWith('dg:') ? `data-dg="${esc(u.slice(3))}"` : `src="${esc(u)}"`;
 /* ---------- Band header ----------
@@ -2490,13 +2514,13 @@ function bandHead(id, on, o = {}) {
   const lede = o.lede ?? (a ? artistBlurb(st) : '');
   const tab = (label, attrs, key, cls = '') => `<a ${attrs} class="${[on === key ? 'on' : '', cls].join(' ').trim()}">${label}</a>`;
   const tabs = [
-    ms ? tab(`Story`, `href="#milestones:${id}"`, 'story') : '',
+    ms ? tab(`Milestones`, `href="#milestones:${id}"`, 'story') : '',
     tab(band ? 'Members' : 'Bands', `href="#members:${id}"`, 'members'),
     band ? '' : tab('Timeline', `data-bjump="lowerTimeline" data-id="${esc(id)}"`, 'lineup'),
     tab('Discography', `data-bjump="lowerDisco" data-id="${esc(id)}"`, 'records'),
     ...PATHS.filter(p => p.root === id).map(p => tab(`Path: ${esc(p.title)}`, `href="#path:${p.id}"`, p.id, 'path')),
   ].join('');
-  return `<div class="bh${on === 'story' ? ' tall' : ''}${img ? '' : ' none'}">${img ? `<img ${isrc(img)} alt="" onerror="this.parentElement.classList.add('none'); this.remove()">` : ''}${by ? `<span class="mcr">${esc(by)}</span>` : ''}
+  return `<div class="bh${on === 'story' ? ' tall' : ''}${img ? '' : ' none'}">${img ? `<img ${isrc(img)} alt="" onerror="this.parentElement.classList.add('none'); this.remove()">` : ''}
     <div class="ov"><div class="kicker">${esc(kicker)}</div><h1>${esc(name)}</h1>${lede ? `<p class="lede">${esc(lede)}</p>` : ''}<div class="facts">${bandFacts(st)}</div></div></div>
     <nav class="bht">${tabs}<a class="bfix" data-tlfix>Suggest a fix</a></nav>`;
 }
@@ -2514,15 +2538,74 @@ function renderBandHead() {
   document.querySelectorAll('#track .stage.headed').forEach(x => x.classList.remove('headed'));
   if (!st?.artist || st.kind === 'album') { el.innerHTML = ''; el.dataset.k = ''; return; }
   const html = bandHead(t.id, 'members'), key = html.replace(/<div class="facts">[\s\S]*?<\/div><\/div><\/div>/, '');
-  if (el.dataset.k !== key) { el.innerHTML = html; el.dataset.k = key; }
+  if (el.dataset.k !== key) { el.innerHTML = html; el.dataset.k = key; toneHead(el.querySelector('.bh')); }
   else { const f = el.querySelector('.facts'), nf = bandFacts(st); if (f && f.innerHTML !== nf) f.innerHTML = nf; }
   document.getElementById('track')?.children[cur]?.classList.add('headed');
 }
 function bandTabs(id, name, on) {
   const ps = PATHS.filter(p => p.root === id);
-  return `<nav class="btabs"><a data-go="${esc(id)}" class="${on === 'band' ? 'on' : ''}">‹ ${esc(name)}</a>${msInfo(id) ? `<a href="#milestones:${id}" class="${on === 'ms' ? 'on' : ''}">Story</a>` : ''}${ps.map(p =>
+  return `<nav class="btabs"><a data-go="${esc(id)}" class="${on === 'band' ? 'on' : ''}">‹ ${esc(name)}</a>${msInfo(id) ? `<a href="#milestones:${id}" class="${on === 'ms' ? 'on' : ''}">Milestones</a>` : ''}${ps.map(p =>
     `<a href="#path:${p.id}" class="${on === p.id ? 'on' : ''}">Path: ${esc(p.title)}</a>`).join('')}</nav>`;
 }
+/* ---------- Milestones look ----------
+   Header and chapter colors come from the band's photo: its main hue, muted to a near-neutral dark.
+   Moments sit in one column at four widths (msKind); photos keep their own shape (msFit);
+   "More" on a narrow card opens a pop-up (msPop). */
+const msKind = e => e.k === 'row' ? 'row' : e.k === 'vid' ? 'vid' : e.k === 'quote' ? 'quote' : (e.k === 'feat' || e.k === 'side') && e.img ? e.k : 'card';
+const msCap = c => String(c || '').replace(/\s*·\s*(via\s+)?(Discogs|Wikimedia|Dischord|Wikipedia|YouTube)\b.*$/i, '').trim();
+function msFit(img) {   // a photo tile is as wide as its photo allows: at most 80%, about 520px tall, never bigger than the file
+  const ev = img.closest('.mev.k-feat'), w = img.naturalWidth, h = img.naturalHeight; if (!ev || !w || !h) return;
+  ev.style.maxWidth = `min(80%, ${Math.round(Math.min(w, 520 * w / h))}px)`;
+}
+function msPop(mev) {
+  const body = (mev.querySelector('.mbd, .mrb') || mev).cloneNode(true), img = mev.querySelector('.mimg img, .mcv'), md = mev.querySelector('.mrow > .md');
+  const pop = document.createElement('div'); pop.className = 'mpop';
+  pop.innerHTML = `<div class="mpc">${img ? `<div class="mpimg"><img src="${esc(img.currentSrc || img.src)}" alt=""></div>` : ''}<button class="mpx" aria-label="Close">×</button></div>`;
+  const pc = pop.firstElementChild; if (md) pc.appendChild(md.cloneNode(true)); pc.appendChild(body);
+  const close = () => { pop.remove(); removeEventListener('keydown', esc2); }, esc2 = k => { if (k.key === 'Escape') close(); };
+  pop.addEventListener('click', k => { if (k.target === pop || k.target.closest('.mpx, [data-go], [data-mplay], a[href]')) setTimeout(close, 0); });
+  addEventListener('keydown', esc2); mev.closest('.ms').appendChild(pop);
+}
+const toneMemo = new Map();
+function msTone(src) {   // [hue, saturation 0-1] of a photo, or null
+  if (!src || src.startsWith('dg:')) return Promise.resolve(null);
+  if (!toneMemo.has(src)) toneMemo.set(src, (async () => {
+    try {
+      const fm = src.match(/Special:FilePath\/([^?]+)/);   // Wikipedia photos: read a 64px thumbnail from the image server, which allows it
+      if (fm) { const j = await fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=imageinfo&iiprop=url&iiurlwidth=64&titles=File:' + fm[1]).then(r => r.json());
+        src = Object.values(j.query.pages)[0].imageinfo[0].thumburl; }
+      const im = await new Promise((res, rej) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = rej; setTimeout(rej, 8000); i.src = src; });
+      const c = document.createElement('canvas'); c.width = c.height = 40; const x = c.getContext('2d', { willReadFrequently: true });
+      x.drawImage(im, 0, 0, 40, 40); const d = x.getImageData(0, 0, 40, 40).data;
+      let sx = 0, sy = 0, w = 0, ss = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, g, b), ch = mx - Math.min(r, g, b);
+        if (mx < .08) continue;
+        let hh = !ch ? 0 : mx === r ? ((g - b) / ch) % 6 : mx === g ? (b - r) / ch + 2 : (r - g) / ch + 4; hh *= 60;
+        const wt = ch * ch; sx += Math.cos(hh * Math.PI / 180) * wt; sy += Math.sin(hh * Math.PI / 180) * wt; w += wt; ss += ch; n++;
+      }
+      return w ? [Math.round((Math.atan2(sy, sx) * 180 / Math.PI + 360) % 360), n ? Math.min(1, ss / n * 1.6) : 0] : null;
+    } catch { return null; }
+  })());
+  return toneMemo.get(src);
+}
+const toneCss = (t, l) => { const [h, s] = t || [225, .15]; return `hsl(${h} ${Math.round(Math.min(30, 6 + s * 40))}% ${l}%)`; };
+async function toneHead(bh) {
+  if (!bh) return null;
+  const t = await msTone(bh.querySelector('img')?.getAttribute('src'));
+  if (bh.isConnected) bh.style.setProperty('--hbg', toneCss(t, 9));
+  return t;
+}
+// The page background moves through three shades as each chapter reaches the middle of the screen.
+let msShades = null, msQ = 0;
+function msTick() {
+  msQ = 0; if (!msShades || !document.body.classList.contains('msmode')) return;
+  const mid = innerHeight / 2, eras = [...document.querySelectorAll('.ms .mera')];
+  let i = eras.findIndex(e => { const r = e.getBoundingClientRect(); return r.top <= mid && r.bottom >= mid; });
+  if (i < 0) i = eras.findIndex(e => e.getBoundingClientRect().top > mid) - 1;
+  document.body.style.setProperty('--msbg', msShades[Math.max(0, i) % 3]);
+}
+addEventListener('scroll', () => { if (!msQ) msQ = requestAnimationFrame(msTick); }, { passive: true });
 async function renderMilestones(id) {
   closeTool(); gen++; const my = gen; leaveHome(); trail = []; cur = -1; renderCrumbs();
   let m = MILESTONES[id];
@@ -2543,20 +2626,20 @@ async function renderMilestones(id) {
   // A moment with a video shows its thumbnail; one click plays it right there (from the relevant minute, if we know it).
   const vthumb = e => e.yt && e.k !== 'vid' ? `<button class="mvchip" data-yt="${esc(e.yt[0])}" data-ys="${+e.yt[2] || 0}"><span class="mvci"><img src="https://i.ytimg.com/vi/${esc(e.yt[0])}/mqdefault.jpg" alt="" loading="lazy"><b>▶</b></span><span class="mvcl">${esc(e.yt[1] || 'Watch')}</span></button>` : '';
   const head = e => `<div class="md">${esc(e.d || '')}${tag(e.tag)}${who(e.who)}</div><h3>${msLinks(e.h)}</h3>`;
-  const ev = e => {
+  const ev = (e, y) => {
     const xa = e.xp ? ' data-xp' : '';
-    if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${esc(e.d || '')}</span><div class="mrb"><h3>${msLinks(e.h)}${tag(e.tag)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${vthumb(e)}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
+    if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md${!e.d || e.d === y ? ' dupe' : ''}">${esc(e.d || '')}</span><div class="mrb"><h3>${msLinks(e.h)}${tag(e.tag)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${vthumb(e)}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
     if ((e.k === 'feat' || e.k === 'side') && !e.img) e = { ...e, k: 'card' };
     if (e.k === 'card') return `<div class="mcard"${xa}>${e.img ? `<img class="mcv" ${isrc(e.img)} alt="" loading="lazy" onerror="this.remove()">` : ''}<div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${vthumb(e)}${acts(e)}${xp(e)}</div></div>`;
     if (e.k === 'vid' && e.yt) return `<div class="mcard mfeat mvid"${xa}><div class="mimg mv" data-yt="${esc(e.yt[0])}" data-ys="${+e.yt[2] || 0}"><img src="https://i.ytimg.com/vi/${esc(e.yt[0])}/hqdefault.jpg" alt="" loading="lazy"><b class="mvp">▶</b></div><div class="mbd"><div class="md"><span class="mtag vid">Video</span> ${esc(e.cap || 'YouTube')}</div><h3>${msLinks(e.h)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${acts(e)}${xp(e)}</div></div>`;
-    if (e.k === 'feat' || e.k === 'side') return `<div class="mcard mfeat ${e.k}"${xa}><div class="mimg${e.fit ? ' fit' : ''}"><img ${isrc(e.img)} alt="" loading="lazy" onerror="this.closest('.mfeat').classList.add('noimg'); this.parentElement.remove()"><span>${esc(e.cap || '')}</span></div><div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${vthumb(e)}${acts(e)}${xp(e)}</div></div>`;
+    if (e.k === 'feat' || e.k === 'side') return `<div class="mcard mfeat ${e.k}"${xa}><div class="mimg${e.fit ? ' fit' : ''}"><img ${isrc(e.img)} alt="" loading="lazy" onload="msFit(this)" onerror="this.closest('.mfeat').classList.add('noimg'); this.parentElement.remove()"><span>${esc(msCap(e.cap))}</span></div><div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${vthumb(e)}${acts(e)}${xp(e)}</div></div>`;
     if (e.k === 'quote') return `<div class="mcard mquote"${xa}><div class="mbd">${head(e)}<div class="mbig">${e.big}</div><p>${msLinks(e.p)}</p>${vthumb(e)}${acts(e)}${xp(e)}</div></div>`;
     return '';
   };
   main.innerHTML = `<div class="ms">${bandHead(id, 'story', { name: m.name, img: m.hero?.src, by: m.hero?.by, lede: m.lede })}
     ${m.eras.map(e => e.gap ? `<div class="mgap"><span>${esc(e.gap)} · quiet years</span></div>` : `
     <section class="mera${e.later ? ' later' : ''}"><div class="mebox"><div class="myr">${esc(e.yr)}</div><h2>${esc(e.title)}</h2><p>${esc(e.text)}</p></div>
-      <div class="myears"><div class="mspine"></div>${e.years.map(([y, list]) => `<div class="myear"><span class="my">${esc(y)}</span>${list.map(x => `<div class="mev">${ev(x)}</div>`).join('')}</div>`).join('')}</div></section>`).join('')}
+      <div class="myears"><div class="mspine"></div>${e.years.map(([y, list]) => `<div class="myear"><span class="my">${esc(y)}</span>${list.map(x => `<div class="mev k-${msKind(x)}">${ev(x, y)}</div>`).join('')}</div>`).join('')}</div></section>`).join('')}
     ${bandTabs(id, m.name, 'ms')}</div>`;
   const box = main.querySelector('.ms');
   box.onclick = async ev2 => {
@@ -2573,6 +2656,7 @@ async function renderMilestones(id) {
       return; }
     if (g && g.dataset.go) { freshTrail = true; return go(g.dataset.go); }
     if (ev2.target.closest('a[href]')) return;
+    if ((mx || (x && x.classList.contains('mrow'))) && !ev2.target.closest('.mpop')) { const mev = (mx || x).closest('.mev'); if (innerWidth >= 700 && mev && /\bk-(row|card|quote)\b/.test(mev.className)) return msPop(mev); }
     if (mx || (x && x.classList.contains('mrow'))) { const card = (mx || x).closest('[data-xp]'); card.classList.toggle('open'); const b = card.querySelector('.mmore'); if (b) b.textContent = card.classList.contains('open') ? 'Less ▴' : 'More ▾'; }
   };
   const dgs = box.querySelectorAll('img[data-dg]');
@@ -2588,6 +2672,8 @@ async function renderMilestones(id) {
   }
   const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { rootMargin: '0px 0px -8% 0px' });
   box.querySelectorAll('.mev').forEach(n => io.observe(n));
+  document.body.classList.add('msmode'); msShades = null; document.body.style.removeProperty('--msbg');
+  toneHead(box.querySelector('.bh')).then(t => { if (my !== gen) return; msShades = [7, 9.5, 12].map(l => toneCss(t, l)); msTick(); });
   window.scrollTo(0, 0);
   requestAnimationFrame(() => box.querySelectorAll('.mev').forEach(n => { if (n.getBoundingClientRect().top < innerHeight) n.classList.add('in'); }));   // what's on screen at the start shows at once
 }
@@ -2902,7 +2988,7 @@ function openTree(st) {
           <small>${esc(b.label)}</small>${b.members.map(m => `<span data-mid="${esc(m.id)}">${esc(m.name)}<em>${esc(m.instruments.slice(0, 2).join(', '))}</em></span>`).join('')}</div>`).join('')}
         ${undated.length ? `<div class="tb lineup undated"><small>dates unknown</small>${undated.map(m => `<span data-mid="${esc(m.id)}">${esc(m.name)}<em>${esc(m.instruments.slice(0, 2).join(', '))}</em></span>`).join('')}</div>` : ''}</div>
       <div class="tcol"><h4>After &amp; alongside</h4>${list.filter(e => !e.before).map(card).join('') || '<p class="tnone">—</p>'}</div>
-    </div><p class="tfoot">band/tree</p></div>`;
+    </div><p class="tfoot">band/lines</p></div>`;
   el.classList.add('open'); document.body.style.overflow = 'hidden'; el.scrollTop = 0;
   el.onclick = e => {
     const t = e.target.closest('[data-t]'), b = e.target.closest('[data-band]');
@@ -2982,6 +3068,7 @@ function renderCrumbs() {
   nav.querySelector('.cur')?.scrollIntoView({ block: 'nearest', inline: 'center' });
 }
 function route(h) {
+  if (!/^milestones:/.test(h)) { document.body.classList.remove('msmode'); document.body.style.removeProperty('--msbg'); }
   const c = h.match(/^connect:([^:]+):([^:]+)$/);
   if (c) {
     if (!document.getElementById('track') && !document.body.classList.contains('home')) renderHome();
