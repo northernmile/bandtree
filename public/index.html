@@ -2489,7 +2489,7 @@ function bandHead(id, on, o = {}) {
   const lede = o.lede ?? (a ? artistBlurb(st) : '');
   const tab = (label, attrs, key, cls = '') => `<a ${attrs} class="${[on === key ? 'on' : '', cls].join(' ').trim()}">${label}</a>`;
   const tabs = [
-    ms ? tab(`Story <i>${ms.n} moments</i>`, `href="#milestones:${id}"`, 'story') : '',
+    ms ? tab(`Story`, `href="#milestones:${id}"`, 'story') : '',
     tab(band ? 'Members' : 'Bands', `href="#members:${id}"`, 'members'),
     band ? '' : tab('Timeline', `data-bjump="lowerTimeline" data-id="${esc(id)}"`, 'lineup'),
     tab('Discography', `data-bjump="lowerDisco" data-id="${esc(id)}"`, 'records'),
