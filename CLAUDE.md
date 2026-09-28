@@ -1,5 +1,6 @@
-# band/tree
+# bandlines (repo: bandtree)
 
+Site name: **bandlines** (logo band/lines; renamed from band/tree Sept 28, 2026; the repo, domain and storage keys still say bandtree).
 Personal project: search any band → every member → every other band they've played in, plus lineup timeline,
 discography and album overviews. Owned by the **northernmile** GitHub account ("JH Projects").
 
@@ -45,15 +46,20 @@ No build step. Locally the page asks the data sources directly.
 ## How it works
 
 - **Band header and tabs.** Every band and musician view shares one header (`bandHead`): photo, kicker, name, lede,
-  facts row, then tabs: Story (only if the band has one) · Members · Discography · Path: <title> (when a curated path
-  starts there), plus "Suggest a fix". Musicians: Bands · Timeline · Discography. Bands with a Story open on Story,
+  facts row, then tabs: Milestones (only if the band has one) · Members · Discography · Path: <title> (when a curated path
+  starts there), plus "Suggest a fix". Musicians: Bands · Timeline · Discography. Bands with Milestones open on Milestones,
   others on Members; clicking band to band inside the columns stays on Members. The lineup timeline lives under
   Members (no separate Lineup or Band tree tab any more).
-- **Story pages (milestones).** `#milestones:<MBID>` (`renderMilestones`), data in `public/data/milestones/<MBID>.json`
+- **Milestones pages** (never called "Story" in the UI). `#milestones:<MBID>` (`renderMilestones`), data in `public/data/milestones/<MBID>.json`
   (about 240 bands: Dischord, Revelation, Touch and Go, Victory, Matador, Jade Tree, Equal Vision, Kranky, Thrill Jockey). Era boxes left, dated moments right: feature cards with photos or
-  pull quotes, one-line rows, Listen buttons, video thumbnail chips, expandable "More". Browse calls them "Band
-  stories" and counts moments as "flashpoints". Researched member years here override MusicBrainz on the lineup.
+  pull quotes, one-line rows, Listen buttons, video thumbnail chips, expandable "More". Tab and Browse call them
+  "Milestones" and count moments as "flashpoints". Researched member years here override MusicBrainz on the lineup.
   Editorial rules and product direction: see the Project doc `claude/background.md`.
+  Look (Sept 28): the header photo sits right at its own shape and fades left into a dark tone taken from the photo
+  (`msTone`/`toneHead`, via a 64px Wikipedia thumbnail); the page background moves through 3 shades of that tone per chapter
+  (`msTick`, body.msmode). Chapters are unboxed (gold rule, big year) in a centered 1180px block. Moments are one column at
+  four widths by kind (`msKind`: row 55%, quote 66%, card/photo/video 80%); photo tiles never crop or upscale (`msFit`);
+  "More" on a narrow card opens a pop-up (`msPop`). No caption credits a source (`msCap`), no photo credit on the header.
 
 - **Data sources.** MusicBrainz is primary. When it lists no members, it falls back to Wikidata (exact, via the
   MusicBrainz ID; P527/P463 with start/end qualifiers), then Discogs: MusicBrainz's own `discogs` url-rel first,
