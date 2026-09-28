@@ -2492,7 +2492,7 @@ function bandHead(id, on, o = {}) {
     ms ? tab(`Story <i>${ms.n} moments</i>`, `href="#milestones:${id}"`, 'story') : '',
     tab(band ? 'Members' : 'Bands', `href="#members:${id}"`, 'members'),
     band ? '' : tab('Timeline', `data-bjump="lowerTimeline" data-id="${esc(id)}"`, 'lineup'),
-    tab('Records', `data-bjump="lowerDisco" data-id="${esc(id)}"`, 'records'),
+    tab('Discography', `data-bjump="lowerDisco" data-id="${esc(id)}"`, 'records'),
     ...PATHS.filter(p => p.root === id).map(p => tab(`Path: ${esc(p.title)}`, `href="#path:${p.id}"`, p.id, 'path')),
   ].join('');
   return `<div class="bh${on === 'story' ? ' tall' : ''}${img ? '' : ' none'}">${img ? `<img ${isrc(img)} alt="" onerror="this.parentElement.classList.add('none'); this.remove()">` : ''}${by ? `<span class="mcr">${esc(by)}</span>` : ''}
