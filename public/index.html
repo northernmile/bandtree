@@ -2529,7 +2529,7 @@ async function renderMilestones(id) {
     const a = [];
     if (e.play) a.push(`<button class="mplay" data-mplay="${esc(e.play.join('|'))}">▶ ${esc(e.play[1])}</button>`);
     if (e.album) a.push(`<a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a>`);
-    if (e.yt && e.k !== 'vid') a.push(`<button class="mplay" data-yt="${esc(e.yt[0])}">▶ Watch</button>`);
+    if (e.yt && e.k !== 'vid') a.push(`<button class="mplay" data-yt="${esc(e.yt[0])}" data-ys="${+e.yt[2] || 0}">▶ Watch${+e.yt[2] ? ` · from ${Math.floor(e.yt[2] / 60)}:${String(e.yt[2] % 60).padStart(2, '0')}` : ''}</button>`);
     if (e.xp) a.push(`<button class="mbtn mmore" data-mx>More ▾</button>`);
     return a.length ? `<div class="macts">${a.join('')}</div>` : '';
   };
@@ -2541,7 +2541,7 @@ async function renderMilestones(id) {
     if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${esc(e.d || '')}</span><div class="mrb"><h3>${msLinks(e.h)}${tag(e.tag)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${e.album && !e.play ? `<div class="macts"><a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a></div>` : ''}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
     if ((e.k === 'feat' || e.k === 'side') && !e.img) e = { ...e, k: 'card' };
     if (e.k === 'card') return `<div class="mcard"${xa}>${e.img ? `<img class="mcv" ${isrc(e.img)} alt="" loading="lazy" onerror="this.remove()">` : ''}<div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
-    if (e.k === 'vid' && e.yt) return `<div class="mcard mfeat mvid"${xa}><div class="mimg mv" data-yt="${esc(e.yt[0])}"><img src="https://i.ytimg.com/vi/${esc(e.yt[0])}/hqdefault.jpg" alt="" loading="lazy"><b class="mvp">▶</b></div><div class="mbd"><div class="md"><span class="mtag vid">Video</span> ${esc(e.cap || 'YouTube')}</div><h3>${msLinks(e.h)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${acts(e)}${xp(e)}</div></div>`;
+    if (e.k === 'vid' && e.yt) return `<div class="mcard mfeat mvid"${xa}><div class="mimg mv" data-yt="${esc(e.yt[0])}" data-ys="${+e.yt[2] || 0}"><img src="https://i.ytimg.com/vi/${esc(e.yt[0])}/hqdefault.jpg" alt="" loading="lazy"><b class="mvp">▶</b></div><div class="mbd"><div class="md"><span class="mtag vid">Video</span> ${esc(e.cap || 'YouTube')}</div><h3>${msLinks(e.h)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${acts(e)}${xp(e)}</div></div>`;
     if (e.k === 'feat' || e.k === 'side') return `<div class="mcard mfeat ${e.k}"${xa}><div class="mimg${e.fit ? ' fit' : ''}"><img ${isrc(e.img)} alt="" loading="lazy" onerror="this.closest('.mfeat').classList.add('noimg'); this.parentElement.remove()"><span>${esc(e.cap || '')}</span></div><div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
     if (e.k === 'quote') return `<div class="mcard mquote"${xa}><div class="mbd">${head(e)}<div class="mbig">${e.big}</div><p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
     return '';
@@ -2559,7 +2559,7 @@ async function renderMilestones(id) {
       try { const songs = await albumSongs(m.name, album); const k = songs.findIndex(s => norm(s.title) === norm(song) || norm(s.title).startsWith(norm(song))); playQueue(songs, Math.max(0, k), album); }
       catch { renderPlayer('Couldn’t reach Apple Music for previews just now.'); } return; }
     const yt = ev2.target.closest('[data-yt]');
-    if (yt) { const src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(yt.dataset.yt)}?autoplay=1&rel=0`;
+    if (yt) { const src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(yt.dataset.yt)}?autoplay=1&rel=0${+yt.dataset.ys ? '&start=' + (+yt.dataset.ys) : ''}`;
       const f = `<iframe src="${src}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Video"></iframe>`;
       if (yt.classList.contains('mv')) { yt.innerHTML = f; yt.classList.add('on'); yt.removeAttribute('data-yt'); }
       else { const bd = yt.closest('.mbd'); if (!bd.querySelector('.mvf')) bd.insertAdjacentHTML('afterbegin', `<div class="mimg mv on mvf">${f}</div>`); yt.remove(); }
