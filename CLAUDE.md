@@ -33,11 +33,27 @@ No build step. Locally the page asks the data sources directly.
   (hit-edge / hit-db / miss); the page skips its rate-limit wait after a hit.
 - The page switches to the pass-through automatically when it isn't on localhost (`HOSTED`, a small `fetch` wrapper
   at the top of the script).
-- Secrets in the dashboard: `DISCOGS_TOKEN` (optional), `CONTACT` (optional, for the MusicBrainz User-Agent).
+- Discogs is NOT in `PROXY_HOSTS`: the visitor's browser calls it directly, because Discogs rate-limits Cloudflare's
+  shared IPs.
+- `functions/api/feedback.js`: comments from "Help make it better" / "Suggest a fix", stored in D1, reviewed at
+  `#review` (needs `ADMIN_KEY`). `functions/api/snap.js`: saved copies of slow curated pages (`path:` / `ms:` keys) so
+  later visitors load them instantly.
+- Secrets in the dashboard: `ADMIN_KEY` (review page), `DISCOGS_TOKEN` (optional), `CONTACT` (optional, for the MusicBrainz User-Agent).
   `DEV_UPSTREAM` is for local tests only (points the function at a stand-in server); never set it in production.
 - northernmile.com DNS is at DreamHost: `bandtree` is a CNAME to the Pages project.
 
 ## How it works
+
+- **Band header and tabs.** Every band and musician view shares one header (`bandHead`): photo, kicker, name, lede,
+  facts row, then tabs: Story (only if the band has one) · Members · Discography · Path: <title> (when a curated path
+  starts there), plus "Suggest a fix". Musicians: Bands · Timeline · Discography. Bands with a Story open on Story,
+  others on Members; clicking band to band inside the columns stays on Members. The lineup timeline lives under
+  Members (no separate Lineup or Band tree tab any more).
+- **Story pages (milestones).** `#milestones:<MBID>` (`renderMilestones`), data in `public/data/milestones/<MBID>.json`
+  (about 160 bands, Dischord and Revelation waves). Era boxes left, dated moments right: feature cards with photos or
+  pull quotes, one-line rows, Listen buttons, video thumbnail chips, expandable "More". Browse calls them "Band
+  stories" and counts moments as "flashpoints". Researched member years here override MusicBrainz on the lineup.
+  Editorial rules and product direction: see the Project doc `claude/background.md`.
 
 - **Data sources.** MusicBrainz is primary. When it lists no members, it falls back to Wikidata (exact, via the
   MusicBrainz ID; P527/P463 with start/end qualifiers), then Discogs: MusicBrainz's own `discogs` url-rel first,
@@ -170,4 +186,4 @@ No build step. Locally the page asks the data sources directly.
 - Discogs members have no dates or instruments, so they show as "dates unknown". Discogs release types are
   guessed from the format.
 - Bandcamp-only releases get no cover (Bandcamp has no API).
-- The single file is about 1,500 lines. Consider splitting it into modules: api, navigator, timeline, overlay.
+- The single file is about 5,300 lines. Consider splitting it into modules: api, navigator, timeline, overlay.
