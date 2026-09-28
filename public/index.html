@@ -3491,6 +3491,12 @@ function albumDetails(st) {
     st.relSource = source; st.credits = 'done';
     const bst = stages.get(st.album.band?.id);
     if (!st.rels.some(p => p.play.length) && bst?.bandCredits?.state === 'done') fillFromNearest(st, bst);
+    // Opened straight from search: fetch the band's member list so nicknames and stage names still match.
+    if (!bst && /^[0-9a-f-]{36}$/.test(st.album.band?.id || '')) {
+      const a = await mb(`artist/${st.album.band.id}?inc=artist-rels`).catch(() => null);
+      if (a) st.bandLite = { artist: { name: a.name }, rels: (a.relations || []).filter(r => r.type === 'member of band' && r.direction === 'backward' && r.artist)
+        .filter((r, i, all) => all.findIndex(q => q.artist.id === r.artist.id) === i).map(r => ({ id: r.artist.id, name: r.artist.name, instruments: (r.attributes || []).filter(x => !/original|founder|additional/.test(x)) })) };
+    }
     st.rels = sortCredits(st, st.rels);
     done();
     if (trail[cur]?.id === st.id) prefetchLinks(st, gen);
@@ -3676,7 +3682,7 @@ async function lineupWhenReleased(st) {
 // Band members first, in the band page's order, with the band page's name and their usual role; then guests by how
 // many tracks they're on; production last.
 function sortCredits(st, list) {
-  const bst = stages.get(st.album.band?.id), bandRels = bst?.rels || [], bc = bst?.bandCredits;
+  const bst = stages.get(st.album.band?.id) || st.bandLite, bandRels = bst?.rels || [], bc = bst?.bandCredits;
   for (const p of list) {
     // Records often credit members by nickname or stage name ("Porcell", "Sam", "Mike Judge"), sometimes linked to
     // the wrong person on MusicBrainz: match them to the band page's members the same way the band's credits do.
