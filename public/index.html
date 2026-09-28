@@ -630,6 +630,7 @@
   .mbig { font-size: 26px; line-height: 1.2; letter-spacing: -.02em; font-weight: 700; margin: 6px 0 8px; } .mbig span { color: var(--band); }
   .mtag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 99px; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; vertical-align: 1px; }
   .mtag.rec { background: #ffcf5c1f; color: var(--accent); } .mtag.fight { background: #ff5d7322; color: #ff8a9a; } .mtag.line { background: #5cc8ff1f; color: var(--person); }
+  .mplay { display: inline-flex; align-items: center; gap: 7px; } .mspk { width: 16px; height: 16px; flex: none; vertical-align: -3px; }
   .mwho { display: inline-flex; gap: 4px; vertical-align: middle; margin-left: 6px; }
   .mwho i { width: 22px; height: 22px; border-radius: 50%; font: 700 9.5px/22px inherit; text-align: center; font-style: normal; color: #0e0f13; cursor: pointer; letter-spacing: 0; }
   .mwho i.out { opacity: .35; text-decoration: line-through; }
@@ -2526,24 +2527,24 @@ async function renderMilestones(id) {
   let m = MILESTONES[id];
   if (!m) { main.innerHTML = '<div class="ms"><p class="muted">Loading…</p></div>'; m = await fetch(`data/milestones/${id}.json`).then(r => r.ok ? r.json() : null).catch(() => null); if (my !== gen) return; }
   if (!m) { main.innerHTML = '<div class="ms"><p class="muted">No milestones for this band yet.</p></div>'; return; }
-  const who = list => list?.length ? `<span class="mwho">${list.map(k => { const out = k[0] === '-', key = out ? k.slice(1) : k, [n, pid] = m.people[key] || [key];
+  const who = () => ''; // initials circles removed from moments
+  const whoOld = list => list?.length ? `<span class="mwho">${list.map(k => { const out = k[0] === '-', key = out ? k.slice(1) : k, [n, pid] = m.people[key] || [key];
     return `<i class="${out ? 'out' : ''}" style="background:${LIN_COLORS[Object.keys(m.people).indexOf(key) % LIN_COLORS.length]}" title="${esc(n)}${out ? ' leaves' : ''}" data-go="${esc(pid || '')}">${esc(key)}</i>`; }).join('')}</span>` : '';
   const tag = t => t ? `<span class="mtag ${t}">${MS_TAG[t]}</span>` : '';
   const acts = e => {
     const a = [];
-    if (e.play) a.push(`<button class="mplay" data-mplay="${esc(e.play.join('|'))}">▶ ${esc(e.play[1])}</button>`);
-    if (e.album) a.push(`<a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a>`);
+    if (e.play) a.push(`<button class="mplay" data-mplay="${esc(e.play.join('|'))}"><svg class="mspk" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Listen: ${esc(e.play[1])}</span></button>`);
     if (e.xp) a.push(`<button class="mbtn mmore" data-mx>More ▾</button>`);
     return a.length ? `<div class="macts">${a.join('')}</div>` : '';
   };
   const xp = e => e.xp ? `<div class="mxp"><div>${msLinks(e.xp)}${e.q ? `<blockquote>${esc(e.q[0])}<cite>${esc(e.q[1])}</cite></blockquote>` : ''}${e.src ? `<div class="msrc">Sources: ${esc(e.src)}</div>` : ''}</div>
-    <div class="mside"><b>Go deeper</b>${e.playX ? `<a data-mplay="${esc(e.playX.join('|'))}">▶ Hear “${esc(e.playX[1])}”</a>` : ''}${(e.go || []).map(k => `<a data-go="${esc(m.people[k][1])}"><span class="p">${esc(m.people[k][0])}</span> ›</a>`).join('')}${PATHS.filter(p => p.root === id).map(p => `<a href="#path:${p.id}"><em>Path</em> · ${esc(p.title)} ›</a>`).join('')}</div></div>` : '';
+    <div class="mside"><b>Go deeper</b>${e.playX ? `<a data-mplay="${esc(e.playX.join('|'))}"><svg class="mspk" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Hear “${esc(e.playX[1])}”</a>` : ''}${e.album ? `<a data-go="album:${esc(e.album)}">The record ›</a>` : ''}${(e.go || []).map(k => `<a data-go="${esc(m.people[k][1])}"><span class="p">${esc(m.people[k][0])}</span> ›</a>`).join('')}${PATHS.filter(p => p.root === id).map(p => `<a href="#path:${p.id}"><em>Path</em> · ${esc(p.title)} ›</a>`).join('')}</div></div>` : '';
   // A moment with a video shows its thumbnail; one click plays it right there (from the relevant minute, if we know it).
   const vthumb = e => e.yt && e.k !== 'vid' ? `<button class="mvchip" data-yt="${esc(e.yt[0])}" data-ys="${+e.yt[2] || 0}"><span class="mvci"><img src="https://i.ytimg.com/vi/${esc(e.yt[0])}/mqdefault.jpg" alt="" loading="lazy"><b>▶</b></span><span class="mvcl">${esc(e.yt[1] || 'Watch')}</span></button>` : '';
   const head = e => `<div class="md">${esc(e.d || '')}${tag(e.tag)}${who(e.who)}</div><h3>${msLinks(e.h)}</h3>`;
   const ev = e => {
     const xa = e.xp ? ' data-xp' : '';
-    if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${esc(e.d || '')}</span><div class="mrb"><h3>${msLinks(e.h)}${tag(e.tag)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${vthumb(e)}${e.album && !e.play ? `<div class="macts"><a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a></div>` : ''}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
+    if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${esc(e.d || '')}</span><div class="mrb"><h3>${msLinks(e.h)}${tag(e.tag)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${vthumb(e)}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
     if ((e.k === 'feat' || e.k === 'side') && !e.img) e = { ...e, k: 'card' };
     if (e.k === 'card') return `<div class="mcard"${xa}>${e.img ? `<img class="mcv" ${isrc(e.img)} alt="" loading="lazy" onerror="this.remove()">` : ''}<div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${vthumb(e)}${acts(e)}${xp(e)}</div></div>`;
     if (e.k === 'vid' && e.yt) return `<div class="mcard mfeat mvid"${xa}><div class="mimg mv" data-yt="${esc(e.yt[0])}" data-ys="${+e.yt[2] || 0}"><img src="https://i.ytimg.com/vi/${esc(e.yt[0])}/hqdefault.jpg" alt="" loading="lazy"><b class="mvp">▶</b></div><div class="mbd"><div class="md"><span class="mtag vid">Video</span> ${esc(e.cap || 'YouTube')}</div><h3>${msLinks(e.h)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${acts(e)}${xp(e)}</div></div>`;
