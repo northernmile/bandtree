@@ -555,19 +555,19 @@
   .btabs a { font-size: 12.5px; padding: 6px 12px; border-radius: 99px; border: 1px solid #ffffff22; background: #ffffff0d; color: var(--text); text-decoration: none; cursor: pointer; }
   .btabs a:hover { border-color: var(--accent); color: var(--accent); } .btabs a.on { background: var(--text); color: var(--bg); border-color: var(--text); }
   .ms > .btabs:last-child { margin-top: 40px; }
-  .bh { position: relative; height: 250px; margin: 0 -20px; border-radius: 18px 18px 0 0; overflow: hidden; background: var(--hbg, #121419); transition: background-color .6s; }
+  .bh { position: relative; height: 250px; margin: 0 -20px; border-radius: 18px; overflow: hidden; background: #08090b; }
   .bh.tall { height: 380px; } .bh.none { height: 190px; background: linear-gradient(135deg, #2a1a22, #151820); }
-  .bh img { position: absolute; right: 0; top: 0; height: 100%; width: auto; aspect-ratio: 16 / 10; max-width: 62%; object-fit: cover; object-position: center 30%; opacity: .92; animation: fadein .6s;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 30%); mask-image: linear-gradient(90deg, transparent 0, #000 30%); }
+  .bh img { position: absolute; right: 0; top: 0; height: 100%; width: auto; max-width: 78%; object-fit: cover; object-position: center 35%; opacity: .88; animation: fadein .6s;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,.25) 18%, rgba(0,0,0,.7) 42%, #000 68%); mask-image: linear-gradient(90deg, transparent 0, rgba(0,0,0,.25) 18%, rgba(0,0,0,.7) 42%, #000 68%); }
   .bh .ov { position: absolute; inset: 0; background: none; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px 20px 20px; }
   .bh .ov h1 { max-width: 64%; } .bh .ov .lede, .bh .ov .kicker, .bh .ov .facts { max-width: min(620px, 52%); }
-  .bh h1 { text-shadow: 0 2px 24px var(--hbg, #000); } .bh .lede { text-shadow: 0 1px 12px var(--hbg, #000); }
+  .bh h1 { text-shadow: 0 2px 24px #000; } .bh .lede { text-shadow: 0 1px 12px #000; }
   .bh h1 { font-size: 56px; letter-spacing: -.045em; line-height: 1; margin: 6px 0 8px; } .bh.tall h1 { font-size: 68px; }
   .bh .lede { color: #d4d7df; font-size: 16.5px; max-width: 720px; margin: 0; }
   .bh .facts { font-size: 12px; color: #aab0bd; margin-top: 10px; display: flex; gap: 16px; flex-wrap: wrap; } .bh .facts:empty { display: none; } .bh .facts b { color: #fff; font-weight: 600; }
-  .bht { display: flex; gap: 4px; margin: 0 -20px 20px; padding: 0 6px; background: #14161c; border-radius: 0 0 14px 14px; border-bottom: 1px solid #ffffff1c; overflow-x: auto; scrollbar-width: none; }
+  .bht { display: flex; align-items: center; gap: 4px; margin: 6px -20px 20px; padding: 0 6px; background: none; border-bottom: 1px solid #ffffff12; overflow-x: auto; scrollbar-width: none; }
   .bht a { flex: none; padding: 13px 14px 11px; font-size: 14px; color: #aab0bd; text-decoration: none; cursor: pointer; border-bottom: 2px solid transparent; display: flex; gap: 7px; align-items: center; white-space: nowrap; }
-  .bht a.bfix { margin-left: auto; font-size: 12.5px; color: #7d8391; } .bht a.bfix:hover { color: var(--accent); }
+  .bht a.bfix { margin: 0 14px 0 auto; padding: 5px 12px; font-size: 12px; color: #8b91a1; border: 1px solid #ffffff1f; border-radius: 99px; } .bht a.bfix:hover { color: var(--accent); border-color: var(--accent); }
   .bht a:hover { color: #fff; } .bht a.on { color: #fff; border-bottom-color: var(--accent); font-weight: 600; }
   .bht a i { font-style: normal; font-size: 11px; color: #7d8391; background: #ffffff10; border-radius: 99px; padding: 1px 7px; font-weight: 400; } .bht a.path { color: #f0b75a; }
   .ms .bht { margin-bottom: 28px; }
@@ -578,7 +578,7 @@
   .stage.headed .col.info > .photo, .stage.headed .col.info > .kicker, .stage.headed .col.info > h1, .stage.headed .col.info > .blurb,
   .stage.headed .col.info > .inpath, .stage.headed .col.info > .mscard, .stage.headed .col.info > .jumps, .stage.headed [data-tree] { display: none; }
   @media (max-width: 640px) { .bh { margin: 0 -16px; } .bht { margin: 0 -16px 20px; } .bh .ov { padding: 18px 16px; } .bh img { width: 100%; max-width: 100%; aspect-ratio: auto; -webkit-mask-image: linear-gradient(0deg, transparent 8%, #000 65%); mask-image: linear-gradient(0deg, transparent 8%, #000 65%); }
-    .bh .ov h1, .bh .ov .lede, .bh .ov .kicker, .bh .ov .facts { max-width: none; } .bh .ov { background: linear-gradient(0deg, var(--hbg, #121419) 0, transparent 60%); } }
+    .bh .ov h1, .bh .ov .lede, .bh .ov .kicker, .bh .ov .facts { max-width: none; } .bh .ov { background: linear-gradient(0deg, #08090b 0, transparent 60%); } }
   @media (max-width: 640px) { .bh { height: 200px; } .bh.tall { height: 270px; } .bh h1, .bh.tall h1 { font-size: 38px; } .bh .ov { padding: 18px 16px; } .bh .lede { font-size: 14.5px; } .bht a { padding: 12px 10px 10px; font-size: 13.5px; } }
   .mhero { position: relative; height: 360px; margin: 0 0 28px; border-radius: 18px; overflow: hidden; background: #000; }
   .mhero img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: grayscale(.2) contrast(1.05); opacity: .75; }
@@ -586,9 +586,11 @@
   .mhero h1 { font-size: 64px; letter-spacing: -.045em; line-height: 1; margin: 6px 0 10px; } .mhero .lede { color: #d4d7df; font-size: 18px; max-width: 700px; margin: 0; }
   .mcr { display: none; }
   body.msmode { overflow-x: clip; }
-  .mera { display: grid; grid-template-columns: minmax(290px, 32%) 1fr; gap: 0 48px; position: relative; padding: 36px 0 30px; isolation: isolate; }
+  .mera { display: grid; grid-template-columns: 1fr 1fr; gap: 0; position: relative; margin: 0; padding: 40px 0 34px; isolation: isolate; }
+  .mera > .myears { margin-left: -37px; }   /* the red line sits on the page's center line */
+  .mera .myear > .my { left: auto; right: calc(100% - 28px); }
   .mera::before { content: ''; position: absolute; top: 0; bottom: 0; left: calc(50% - 50vw); width: 100vw; background: var(--erabg, var(--bg)); z-index: -1; }
-  .mebox { max-width: 380px; }
+  .mebox { max-width: 420px; }
   .mebox { position: sticky; z-index: 2; top: 76px; align-self: start; margin: 14px 0 24px; padding: 20px 0 0; }
   .mebox::before { content: ''; display: block; width: 36px; height: 3px; border-radius: 2px; background: var(--accent); margin-bottom: 16px; }
   .mera.later .mebox::before { background: var(--muted); }
@@ -600,7 +602,7 @@
   .myear { position: relative; padding: 14px 0 4px 62px; }
   .myear::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: #ffffff0a; }
   .myear > .my { position: absolute; left: 0; top: 12px; font-size: 13px; font-weight: 700; color: #5d6372; letter-spacing: .04em; }
-  .mev { position: relative; margin: 0 0 10px; opacity: 0; transform: translateY(10px); transition: opacity .45s ease, transform .45s ease; }
+  .mev { position: relative; margin: 0 0 18px; opacity: 0; transform: translateY(10px); transition: opacity .45s ease, transform .45s ease; }
   .mev.in { opacity: 1; transform: none; }
   .mev::before { content: ''; position: absolute; left: -30px; top: 15px; width: 10px; height: 10px; border-radius: 50%; background: var(--band); box-shadow: 0 0 0 4px var(--erabg, var(--bg)); z-index: 1; }
   .mera.later .mev::before { background: var(--muted); }
@@ -638,10 +640,10 @@
   .mvcl { color: #c9ccd4; line-height: 1.3; } .mvf { margin-top: 10px; }
   .mfeat.side { flex-direction: row; align-items: flex-start; } .mfeat.side .mimg { width: 38%; flex: none; }
   .mimg span:empty { display: none; }
-  .mev.k-row { max-width: 55%; transition: max-width .25s; } .mev.k-row:has(.open) { max-width: 80%; } .mev.k-card, .mev.k-side, .mev.k-feat, .mev.k-vid { max-width: 80%; } .mev.k-quote { max-width: 66%; }
+  .mev.k-row { max-width: 74%; transition: max-width .25s; } .mev.k-row:has(.open) { max-width: 100%; } .mev.k-card, .mev.k-side, .mev.k-feat, .mev.k-vid { max-width: 100%; } .mev.k-quote { max-width: 86%; }
   .mev.k-row .mrow { display: block; position: relative; padding: 10px 30px 10px 14px; background: #ffffff07; border-color: #ffffff10; }
   .mev.k-row .mrow:hover { background: #ffffff0f; border-color: #ffffff26; }
-  .mev.k-row .mrow > .md { display: block; width: auto; margin-bottom: 3px; } .mev.k-row .mrow > .md.dupe { display: none; }
+  .mev.k-row .mrow > .md { display: block; width: auto; margin-bottom: 3px; } .mev.k-row .mrow > .md:empty { display: none; } .md > .mtag:first-child { margin-left: 0; }
   .mev.k-row .mplus { position: absolute; right: 12px; top: 10px; }
   .mev.k-row .mxp, .mev.k-card .mxp, .mev.k-quote .mxp { grid-template-columns: 1fr; }
   .mside:not(:has(a)) { display: none; } .mxp:not(:has(.mside a)) { grid-template-columns: 1fr; }
@@ -672,7 +674,7 @@
   .mside { font-size: 12.5px; color: #b9bdc8; } .mside b { display: block; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
   .mside a { display: block; padding: 7px 10px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: 9px; color: var(--text); text-decoration: none; background: #ffffff06; cursor: pointer; }
   .mside a em { color: var(--accent); font-style: normal; }
-  .mgap { position: relative; box-sizing: border-box; margin: 4px 0; padding: 10px 0 10px calc(max(290px, 32%) + 110px); color: #5d6372; font-size: 12px; letter-spacing: .08em; }
+  .mgap { position: relative; box-sizing: border-box; margin: 0; padding: 12px 0 12px calc(50% + 25px); color: #5d6372; font-size: 12px; letter-spacing: .08em; }
   .mgap::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed #2c303b; }
   .mgap span { position: relative; background: var(--bg); padding: 0 10px; }
   .mhero.none { height: 220px; background: linear-gradient(135deg, #2a1a22, #151820); }
@@ -685,7 +687,7 @@
   .mscard span { flex: 1; } .mscard b { display: block; font-size: 14px; } .mscard small { color: var(--muted); font-size: 12px; } .mscard i { font-style: normal; color: var(--muted); font-size: 18px; }
   .lin .btabs { margin-top: 0; }
   @media (max-width: 800px) {
-    .mera { grid-template-columns: 1fr; } .mebox { position: static; margin-bottom: 8px; max-width: none; }
+    .mera { grid-template-columns: 1fr; } .mera > .myears { margin-left: 0; } .mera .myear > .my { right: auto; left: 0; } .mebox { position: static; margin-bottom: 8px; max-width: none; }
     .mev { max-width: 100% !important; } .mgap { padding-left: 44px; } .mpop .mpc .mxp { grid-template-columns: 1fr; }
     .myear::before { left: 0; } .mgap { margin-left: 0; } .mgap::before { left: 0; } .myear { padding-left: 44px; } .mspine { left: 20px; } .mev::before { left: -30px; }
     .mhero { height: 300px; } .mhero h1 { font-size: 44px; } .mxp { grid-template-columns: 1fr; }
@@ -2561,7 +2563,7 @@ const msKind = e => e.k === 'row' ? 'row' : e.k === 'vid' ? 'vid' : e.k === 'quo
 const msCap = c => String(c || '').replace(/\s*·\s*(via\s+)?(Discogs|Wikimedia|Dischord|Wikipedia|YouTube)\b.*$/i, '').trim();
 function msFit(img) {   // a photo tile is as wide as its photo allows: at most 80%, about 520px tall, never bigger than the file
   const ev = img.closest('.mev.k-feat'), w = img.naturalWidth, h = img.naturalHeight; if (!ev || !w || !h) return;
-  ev.style.maxWidth = `min(80%, ${Math.round(Math.min(w, 520 * w / h))}px)`;
+  ev.style.maxWidth = `min(100%, ${Math.round(Math.min(w, 520 * w / h))}px)`;
 }
 function msRead(src, list) {   // "Read more" links for a moment's sources, matched by name to the band's source list
   const names = String(src).split(/\s*·\s*/).filter(Boolean), seen = new Set(), links = [];
@@ -2639,7 +2641,7 @@ async function renderMilestones(id) {
   const head = e => `<div class="md">${esc(e.d || '')}${tag(e.tag)}${who(e.who)}</div><h3>${msLinks(e.h)}</h3>`;
   const ev = (e, y) => {
     const xa = e.xp ? ' data-xp' : '';
-    if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md${!e.d || e.d === y ? ' dupe' : ''}">${esc(e.d || '')}</span><div class="mrb"><h3>${msLinks(e.h)}${tag(e.tag)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${vthumb(e)}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
+    if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${e.d && e.d !== y ? esc(e.d) : ''}${tag(e.tag)}</span><div class="mrb"><h3>${msLinks(e.h)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${vthumb(e)}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
     if ((e.k === 'feat' || e.k === 'side') && !e.img) e = { ...e, k: 'card' };
     if (e.k === 'card') return `<div class="mcard"${xa}>${e.img ? `<img class="mcv" ${isrc(e.img)} alt="" loading="lazy" onerror="this.remove()">` : ''}<div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${vthumb(e)}${acts(e)}${xp(e)}</div></div>`;
     if (e.k === 'vid' && e.yt) return `<div class="mcard mfeat mvid"${xa}><div class="mimg mv" data-yt="${esc(e.yt[0])}" data-ys="${+e.yt[2] || 0}"><img src="https://i.ytimg.com/vi/${esc(e.yt[0])}/hqdefault.jpg" alt="" loading="lazy"><b class="mvp">▶</b></div><div class="mbd"><div class="md"><span class="mtag vid">Video</span> ${esc(e.cap || 'YouTube')}</div><h3>${msLinks(e.h)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${acts(e)}${xp(e)}</div></div>`;
