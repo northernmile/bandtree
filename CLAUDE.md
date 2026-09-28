@@ -50,7 +50,7 @@ No build step. Locally the page asks the data sources directly.
   others on Members; clicking band to band inside the columns stays on Members. The lineup timeline lives under
   Members (no separate Lineup or Band tree tab any more).
 - **Story pages (milestones).** `#milestones:<MBID>` (`renderMilestones`), data in `public/data/milestones/<MBID>.json`
-  (about 160 bands, Dischord and Revelation waves). Era boxes left, dated moments right: feature cards with photos or
+  (about 240 bands: Dischord, Revelation, Touch and Go, Victory, Matador, Jade Tree, Equal Vision, Kranky, Thrill Jockey). Era boxes left, dated moments right: feature cards with photos or
   pull quotes, one-line rows, Listen buttons, video thumbnail chips, expandable "More". Browse calls them "Band
   stories" and counts moments as "flashpoints". Researched member years here override MusicBrainz on the lineup.
   Editorial rules and product direction: see the Project doc `claude/background.md`.
