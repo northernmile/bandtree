@@ -212,6 +212,8 @@
   .srcb { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: none; }
   .pickextra { all: unset; display: block; margin-top: 14px; color: var(--accent); cursor: pointer; font-size: 13px; }
   #results .dgrow { color: var(--accent); font-size: 13px; }
+  #results h6 { margin: 0; padding: 10px 14px 4px; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; border-top: 1px solid var(--line); }
+  #results h6:first-child { border-top: 0; } #results .srch { font-size: 12px; cursor: default; }
   .dis.profile { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; margin-top: 6px; line-height: 1.45; }
   @media (max-width: 760px) { .sheet { grid-template-columns: 1fr; padding: 20px; gap: 20px; } .modal { padding: 16px 10px; } .sheet h3 { font-size: 24px; } }
   .cover { aspect-ratio: 1; border-radius: 8px; background: var(--panel2); overflow: hidden; position: relative;
@@ -1000,29 +1002,98 @@ q.addEventListener('keydown', e => {
 });
 document.addEventListener('click', e => { if (!e.target.closest('.search')) results.style.display = 'none'; });
 
-async function runSearch() {
-  const seq = ++searchSeq, term = q.value.trim();
-  const data = await mb(`artist?query=${encodeURIComponent(term)}&limit=8`, { priority: true });
-  if (seq !== searchSeq) return;
-  // Drop the long tail MusicBrainz pads results with (typing "ian" shouldn't offer J.S. Bach): keep close scores only.
-  const all = data.artists || [], top = all[0]?.score || 0;
-  const words = norm(term).split(' ').filter(Boolean), named = a => words.every(w => norm(a.name).includes(w));
-  hits = all.filter(a => (a.score || 0) >= Math.min(80, top * .85))
-    .sort((x, y) => named(y) - named(x));   // names that actually contain what you typed first (an alias match can outscore them)
-  sel = 0;
-  drawHits();
+/* Suggestions, grouped: styles, bands, people, albums, labels and places. Styles, places and labels we know come from
+   local lists (instant); bands, people, albums and more labels from MusicBrainz, filtered hard so the list stays useful. */
+const GENRES = ['dub', 'reggae', 'dancehall', 'ska', 'rocksteady', 'roots reggae', 'punk', 'hardcore punk', 'post-punk', 'post-hardcore',
+  'emo', 'screamo', 'math rock', 'post-rock', 'noise rock', 'indie rock', 'indie pop', 'alternative rock', 'grunge', 'shoegaze', 'dream pop',
+  'slowcore', 'sadcore', 'lo-fi', 'garage rock', 'garage punk', 'psychedelic rock', 'krautrock', 'progressive rock', 'art rock', 'glam rock',
+  'hard rock', 'heavy metal', 'thrash metal', 'death metal', 'black metal', 'doom metal', 'sludge metal', 'stoner rock', 'metalcore', 'grindcore',
+  'crust punk', 'd-beat', 'oi!', 'street punk', 'pop punk', 'skate punk', 'riot grrrl', 'straight edge', 'youth crew', 'no wave', 'new wave',
+  'synth-pop', 'darkwave', 'goth rock', 'industrial', 'ebm', 'electronic', 'techno', 'house', 'deep house', 'acid house', 'drum and bass', 'jungle',
+  'dubstep', 'uk garage', 'grime', 'trip hop', 'idm', 'ambient', 'downtempo', 'breakbeat', 'big beat', 'electro', 'disco', 'funk', 'soul',
+  'northern soul', 'r&b', 'neo soul', 'gospel', 'blues', 'delta blues', 'chicago blues', 'jazz', 'free jazz', 'bebop', 'hard bop',
+  'cool jazz', 'modal jazz', 'jazz fusion', 'spiritual jazz', 'afrobeat', 'highlife', 'afro-cuban', 'salsa', 'bossa nova', 'tropicália', 'samba',
+  'cumbia', 'hip hop', 'boom bap', 'conscious hip hop', 'jazz rap', 'gangsta rap', 'trap', 'g-funk', 'turntablism', 'folk', 'folk rock',
+  'freak folk', 'americana', 'alt-country', 'country', 'bluegrass', 'singer-songwriter', 'chamber pop', 'baroque pop', 'power pop', 'britpop',
+  'madchester', 'jangle pop', 'twee pop', 'surf rock', 'rockabilly', 'rock and roll', 'soft rock', 'city pop', 'j-pop', 'k-pop',
+  'minimalism', 'modern classical', 'drone', 'noise', 'experimental', 'avant-garde', 'musique concrète', 'space rock', 'midwest emo',
+  'dc hardcore', 'nyhc', 'crossover thrash', 'ska punk', '2 tone', 'post-metal', 'blackgaze', 'hyperpop', 'vaporwave', 'chillwave'];
+const CITIES = ['Washington, D.C.', 'New York', 'Los Angeles', 'Chicago', 'Boston', 'Seattle', 'Olympia', 'Portland', 'San Francisco', 'Oakland',
+  'San Diego', 'Austin', 'Houston', 'Detroit', 'Minneapolis', 'Louisville', 'Chapel Hill', 'Athens, Georgia', 'Atlanta', 'Memphis', 'Nashville',
+  'New Orleans', 'Philadelphia', 'Baltimore', 'Richmond', 'Pittsburgh', 'Cleveland', 'Omaha', 'Denver', 'Phoenix', 'Toronto', 'Montreal',
+  'Vancouver', 'London', 'Manchester', 'Liverpool', 'Bristol', 'Sheffield', 'Birmingham', 'Leeds', 'Glasgow', 'Edinburgh', 'Dublin', 'Belfast',
+  'Berlin', 'Hamburg', 'Düsseldorf', 'Cologne', 'Paris', 'Amsterdam', 'Brussels', 'Stockholm', 'Gothenburg', 'Oslo', 'Copenhagen', 'Helsinki',
+  'Reykjavík', 'Tokyo', 'Osaka', 'Seoul', 'Melbourne', 'Sydney', 'Auckland', 'Christchurch', 'Kingston', 'Lagos', 'Accra', 'Rio de Janeiro',
+  'São Paulo', 'Havana', 'Mexico City', 'Buenos Aires'];
+const KNOWN_LABELS = ['Touch and Go', 'Dischord', 'Revelation', 'SST', 'Sub Pop', 'Drag City', 'Thrill Jockey', 'Kranky', 'Matador', 'Merge', 'K Records',
+  'Kill Rock Stars', 'Amphetamine Reptile', 'Quarterstick', 'Constellation', 'Jade Tree', 'Equal Vision', 'Victory', 'Epitaph', 'Fat Wreck Chords',
+  'Lookout!', 'Alternative Tentacles', 'Deathwish', 'Relapse', 'Hydra Head', 'Southern Lord', 'Load', 'Skin Graft', 'Homestead',
+  'Twin/Tone', 'Slash', 'Factory', '4AD', 'Rough Trade', 'Creation', 'Mute', 'Warp', 'Ninja Tune', 'XL', 'Domino', 'Beggars Banquet', 'Stiff',
+  'Island', 'Trojan', 'Studio One', 'Blood and Fire', 'On-U Sound', 'Blue Note', 'Impulse!', 'ECM', 'Verve', 'Prestige', 'Stax', 'Motown',
+  'Chess', 'Def Jam', 'Rawkus', 'Stones Throw', 'Rhymesayers', 'Big Dada', 'Sacred Bones', 'Captured Tracks', 'Secretly Canadian', 'Jagjaguwar',
+  'Dead Oceans', 'Polyvinyl', 'Saddle Creek', 'Barsuk', 'Fueled by Ramen', 'Vagrant', 'Deep Elm', 'Tooth & Nail', 'Hellcat', 'Trust'];
+const inLatin = t => /[a-z]/i.test(t);
+const mostlyLatin = t => { const all = t.replace(/[\s\d\W_]/gu, '').length, l = (t.match(/[a-zÀ-ɏ]/gi) || []).length; return l >= Math.max(1, all * .6); };
+function localMatch(list, term, n) {
+  const qn = norm(term), words = qn.split(' ').filter(Boolean);
+  const fit = x => { const nx = norm(x), w = nx.split(' '); return nx === qn ? 3 : nx.startsWith(qn) ? 2 : words.every(q => w.some(v => v.startsWith(q))) ? 1 : 0; };
+  return [...new Set(list)].map(x => [x, fit(x)]).filter(([, f]) => f).sort((a, b) => b[1] - a[1] || a[0].length - b[0].length).slice(0, n).map(([x]) => x);
 }
-function drawHits() {
+const SEARCH_GROUPS = [['genre', 'Styles & scenes'], ['band', 'Bands'], ['person', 'People'], ['album', 'Albums'], ['label', 'Labels'], ['city', 'Places']];
+async function runSearch() {
+  const seq = ++searchSeq, term = q.value.trim(), latin = inLatin(term), qn = norm(term), words = qn.split(' ').filter(Boolean);
+  const named = x => words.every(w => norm(x).includes(w));
+  const byKind = { genre: [], band: [], person: [], album: [], label: [], city: [] };
+  // Instant: the lists we keep.
+  byKind.genre = localMatch([...BROWSE.scene, ...GENRES], term, 2).map(n => ({ kind: 'genre', name: n, desc: 'Style · browse the bands', go: `browse:scene:${encodeURIComponent(n)}` }));
+  byKind.city = localMatch([...BROWSE.city, ...CITIES], term, 2).map(n => ({ kind: 'city', name: n, desc: 'Place · bands from here', go: `browse:city:${encodeURIComponent(n)}` }));
+  byKind.label = localMatch([...BROWSE.label, ...KNOWN_LABELS], term, 2).map(n => ({ kind: 'label', name: n, desc: 'Label · its roster', go: `browse:label:${encodeURIComponent(n)}` }));
+  let waiting = true;
+  const show = () => { if (seq !== searchSeq) return; hits = SEARCH_GROUPS.flatMap(([k]) => byKind[k]); sel = 0; drawHits(waiting); };
+  show();
+  // Bands and people.
+  const data = await mb(`artist?query=${encodeURIComponent(term)}&limit=15`, { priority: true }).catch(() => ({}));
+  if (seq !== searchSeq) return;
+  const all = data.artists || [], top = all[0]?.score || 0;
+  const thin = a => !a.disambiguation && !(a.tags || []).length && !a.area && !a['life-span']?.begin;
+  const keep = all.filter(a => (a.score || 0) >= Math.min(85, top * .9) || named(a.name))
+    .filter(a => !latin || mostlyLatin(a.name))                       // typed in Latin letters: skip names in other scripts
+    .filter(a => !thin(a) || norm(a.name) === qn)                     // nothing known about it: only if the name is exact
+    .sort((x, y) => named(y.name) - named(x.name) || (y.score || 0) - (x.score || 0));
+  byKind.band = keep.filter(a => !a.type || kindOf(a.type) === 'band').slice(0, 4).map(a => ({ kind: 'band', name: a.name, desc: mbDesc(a), id: a.id }));
+  byKind.person = keep.filter(a => a.type && kindOf(a.type) !== 'band').slice(0, 2).map(a => ({ kind: 'person', name: a.name, desc: mbDesc(a), id: a.id }));
+  show();
+  // Albums, then labels MusicBrainz knows beyond our list.
+  const rg = await mb(`release-group?query=${encodeURIComponent(`releasegroup:(${term})`)}&limit=10`).catch(() => ({}));
+  if (seq !== searchSeq) return;
+  byKind.album = (rg['release-groups'] || []).filter(g => (g.score || 0) >= 90 && ['Album', 'EP'].includes(g['primary-type']) && !(g['secondary-types'] || []).length)
+    .filter(g => !latin || mostlyLatin(g.title)).filter(g => named(g.title)).slice(0, 2)
+    .map(g => ({ kind: 'album', name: g.title, desc: [g['primary-type'], (g['artist-credit'] || []).map(c => c.name + (c.joinphrase || '')).join(''), (g['first-release-date'] || '').slice(0, 4)].filter(Boolean).join(' · '), go: 'album:' + g.id }));
+  if (byKind.label.length >= 2) { waiting = false; return show(); }
+  show();
+  const lb = await mb(`label?query=${encodeURIComponent(`label:(${term})`)}&limit=8`).catch(() => ({}));
+  if (seq !== searchSeq) return;
+  const have = new Set(byKind.label.map(x => norm(x.name)));
+  byKind.label.push(...(lb.labels || []).filter(l => (l.score || 0) >= 95 && (!latin || mostlyLatin(l.name)) && named(l.name) && !have.has(norm(l.name)) && (l.type || l.country))
+    .slice(0, 2 - byKind.label.length).map(l => ({ kind: 'label', name: l.name, desc: ['Label', l.area?.name || l.country, l['life-span']?.begin?.slice(0, 4)].filter(Boolean).join(' · '), go: `browse:label:${encodeURIComponent(l.name)}` })));
+  waiting = false; show();
+}
+function drawHits(waiting) {
   const term = q.value.trim();
-  results.innerHTML = (hits.length ? hits.map((a, i) =>
-    `<div class="${i === sel && arrowed ? 'sel' : ''}" data-i="${i}"><b>${esc(a.name)}</b><small>${esc(mbDesc(a))}</small></div>`).join('')
-    : '<div class="muted">No matches</div>') +
+  let html = '';
+  for (const [k, label] of SEARCH_GROUPS) {
+    const list = hits.filter(h => h.kind === k);
+    if (!list.length) continue;
+    html += `<h6>${label}</h6>` + list.map(h => { const i = hits.indexOf(h);
+      return `<div class="${i === sel && arrowed ? 'sel' : ''}" data-i="${i}"><b>${esc(h.name)}</b><small>${esc(h.desc || '')}</small></div>`; }).join('');
+  }
+  results.innerHTML = (html || `<div class="muted">${waiting ? 'Searching…' : 'No matches'}</div>`) + (waiting && html ? '<div class="muted srch">Looking for more…</div>' : '') +
     `<div class="dgrow" data-dg>Search further for “${esc(term)}” ›</div>`;
   results.style.display = 'block';
   results.querySelectorAll('[data-i]').forEach(el => el.onclick = () => pick(hits[+el.dataset.i]));
   results.querySelector('[data-dg]').onclick = () => { results.style.display = 'none'; discogsSearchPicker(term); };
 }
-function pick(a) { results.style.display = 'none'; goFresh(a.id); }
+function pick(a) { results.style.display = 'none'; goFresh(a.go || a.id); }
 function goFresh(id) { q.value = ''; q.blur(); results.style.display = 'none'; freshTrail = true; go(id); }
 const searchAndGo = name => resolveSearch(name);
 
@@ -2416,7 +2487,6 @@ function bandHead(id, on, o = {}) {
     tab(band ? 'Members' : 'Bands', `href="#members:${id}"`, 'members'),
     band ? '' : tab('Timeline', `data-bjump="lowerTimeline" data-id="${esc(id)}"`, 'lineup'),
     tab('Records', `data-bjump="lowerDisco" data-id="${esc(id)}"`, 'records'),
-    band && (ms || (st && treeWorthy(st))) ? tab('Band tree', `href="#tree:${id}"`, 'tree') : '',
     ...PATHS.filter(p => p.root === id).map(p => tab(`Path: ${esc(p.title)}`, `href="#path:${p.id}"`, p.id, 'path')),
   ].join('');
   return `<div class="bh${on === 'story' ? ' tall' : ''}${img ? '' : ' none'}">${img ? `<img ${isrc(img)} alt="" onerror="this.parentElement.classList.add('none'); this.remove()">` : ''}${by ? `<span class="mcr">${esc(by)}</span>` : ''}
@@ -2945,7 +3015,6 @@ function renderHome() {
       <h1>Every band.<br>Every member.<br><em>Every band they've been in.</em></h1>
       <p>Search any band to see every member who has passed through, where they all went next, and the full discography. Click through as deep as you like.</p>
       <div id="heroSearch"></div>
-      <a class="herobrowse" href="#browse">or browse by label, city or scene ›</a>
       <div class="lineup"><h2>Try one</h2><div class="names">${picks.map(p =>
         `<a data-n="${esc(p)}">${esc(p)}</a>`).join('&nbsp;<span class="sl">/</span> ')}</div></div>
       ${pathsHTML()}${msListHTML()}
