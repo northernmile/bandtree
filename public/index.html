@@ -3678,7 +3678,9 @@ async function lineupWhenReleased(st) {
 function sortCredits(st, list) {
   const bst = stages.get(st.album.band?.id), bandRels = bst?.rels || [], bc = bst?.bandCredits;
   for (const p of list) {
-    const m = bandRels.find(r => r.id === p.id || sameName(r.name, p.name));
+    // Records often credit members by nickname or stage name ("Porcell", "Sam", "Mike Judge"), sometimes linked to
+    // the wrong person on MusicBrainz: match them to the band page's members the same way the band's credits do.
+    const m = bandRels.find(r => r.id === p.id || sameName(r.name, p.name)) || (bst ? bandRels.find(r => r.id === creditKey(bst, p)) : null);
     if (!m) continue;
     p.member = true; p.order = bandRels.indexOf(m); p.name = m.name;
     if (!list.some(q => q !== p && q.id === m.id)) p.id = m.id;
@@ -3832,6 +3834,11 @@ const creditKey = (st, p) => {
   const one = norm(p.name).split(' ');
   if (!m && one.length === 1) {
     const hits = st.rels.filter(r => { const f = norm(r.name).split(' ')[0]; return f === one[0] || (NICK[f] && NICK[f] === NICK[one[0]]); });
+    if (hits.length === 1) m = hits[0];
+  }
+  // A surname only ("Porcell"): that member, if exactly one member has it.
+  if (!m && one.length === 1 && one[0].length > 3) {
+    const hits = st.rels.filter(r => norm(r.name).split(' ').at(-1) === one[0]);
     if (hits.length === 1) m = hits[0];
   }
   // A stage name built from the band's name ("Mike Judge" of Judge is Mike Ferraro): the member with that first name.
