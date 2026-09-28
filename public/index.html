@@ -621,6 +621,10 @@
   .mvp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 54px; height: 54px; border-radius: 50%; background: #e0322bdd; color: #fff; display: grid; place-items: center; font-size: 24px; padding-left: 4px; box-shadow: 0 6px 24px #0008; }
   .mv.on { cursor: default; } .mv iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .mvf { border-radius: 10px; overflow: hidden; margin: 0 0 12px; }
+  .mvchip { display: flex; align-items: center; gap: 10px; max-width: 100%; margin: 10px 0 2px; padding: 4px 12px 4px 4px; background: #ffffff08; border: 1px solid var(--line); border-radius: 10px; color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+  .mvchip:hover { background: #ffffff12; } .mvci { position: relative; flex: none; width: 88px; aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; background: #000; }
+  .mvci img { width: 100%; height: 100%; object-fit: cover; display: block; } .mvci b { position: absolute; inset: 0; margin: auto; width: 26px; height: 26px; border-radius: 50%; background: #e62117; color: #fff; font-size: 11px; display: grid; place-items: center; }
+  .mvcl { color: #c9ccd4; line-height: 1.3; } .mvf { margin-top: 10px; }
   .mfeat.side { flex-direction: row; } .mfeat.side .mimg { width: 210px; height: auto; min-height: 160px; flex: none; }
   .mquote { background: linear-gradient(135deg, #231a22, #171920); border-color: #ff5d7344; }
   .mbig { font-size: 26px; line-height: 1.2; letter-spacing: -.02em; font-weight: 700; margin: 6px 0 8px; } .mbig span { color: var(--band); }
@@ -2529,21 +2533,22 @@ async function renderMilestones(id) {
     const a = [];
     if (e.play) a.push(`<button class="mplay" data-mplay="${esc(e.play.join('|'))}">▶ ${esc(e.play[1])}</button>`);
     if (e.album) a.push(`<a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a>`);
-    if (e.yt && e.k !== 'vid') a.push(`<button class="mplay" data-yt="${esc(e.yt[0])}" data-ys="${+e.yt[2] || 0}">▶ Watch${+e.yt[2] ? ` · from ${Math.floor(e.yt[2] / 60)}:${String(e.yt[2] % 60).padStart(2, '0')}` : ''}</button>`);
     if (e.xp) a.push(`<button class="mbtn mmore" data-mx>More ▾</button>`);
     return a.length ? `<div class="macts">${a.join('')}</div>` : '';
   };
   const xp = e => e.xp ? `<div class="mxp"><div>${msLinks(e.xp)}${e.q ? `<blockquote>${esc(e.q[0])}<cite>${esc(e.q[1])}</cite></blockquote>` : ''}${e.src ? `<div class="msrc">Sources: ${esc(e.src)}</div>` : ''}</div>
     <div class="mside"><b>Go deeper</b>${e.playX ? `<a data-mplay="${esc(e.playX.join('|'))}">▶ Hear “${esc(e.playX[1])}”</a>` : ''}${(e.go || []).map(k => `<a data-go="${esc(m.people[k][1])}"><span class="p">${esc(m.people[k][0])}</span> ›</a>`).join('')}${PATHS.filter(p => p.root === id).map(p => `<a href="#path:${p.id}"><em>Path</em> · ${esc(p.title)} ›</a>`).join('')}</div></div>` : '';
+  // A moment with a video shows its thumbnail; one click plays it right there (from the relevant minute, if we know it).
+  const vthumb = e => e.yt && e.k !== 'vid' ? `<button class="mvchip" data-yt="${esc(e.yt[0])}" data-ys="${+e.yt[2] || 0}"><span class="mvci"><img src="https://i.ytimg.com/vi/${esc(e.yt[0])}/mqdefault.jpg" alt="" loading="lazy"><b>▶</b></span><span class="mvcl">${esc(e.yt[1] || 'Watch')}</span></button>` : '';
   const head = e => `<div class="md">${esc(e.d || '')}${tag(e.tag)}${who(e.who)}</div><h3>${msLinks(e.h)}</h3>`;
   const ev = e => {
     const xa = e.xp ? ' data-xp' : '';
-    if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${esc(e.d || '')}</span><div class="mrb"><h3>${msLinks(e.h)}${tag(e.tag)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${e.album && !e.play ? `<div class="macts"><a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a></div>` : ''}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
+    if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${esc(e.d || '')}</span><div class="mrb"><h3>${msLinks(e.h)}${tag(e.tag)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${vthumb(e)}${e.album && !e.play ? `<div class="macts"><a class="mbtn" data-go="album:${esc(e.album)}">Album ›</a></div>` : ''}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
     if ((e.k === 'feat' || e.k === 'side') && !e.img) e = { ...e, k: 'card' };
-    if (e.k === 'card') return `<div class="mcard"${xa}>${e.img ? `<img class="mcv" ${isrc(e.img)} alt="" loading="lazy" onerror="this.remove()">` : ''}<div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
+    if (e.k === 'card') return `<div class="mcard"${xa}>${e.img ? `<img class="mcv" ${isrc(e.img)} alt="" loading="lazy" onerror="this.remove()">` : ''}<div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${vthumb(e)}${acts(e)}${xp(e)}</div></div>`;
     if (e.k === 'vid' && e.yt) return `<div class="mcard mfeat mvid"${xa}><div class="mimg mv" data-yt="${esc(e.yt[0])}" data-ys="${+e.yt[2] || 0}"><img src="https://i.ytimg.com/vi/${esc(e.yt[0])}/hqdefault.jpg" alt="" loading="lazy"><b class="mvp">▶</b></div><div class="mbd"><div class="md"><span class="mtag vid">Video</span> ${esc(e.cap || 'YouTube')}</div><h3>${msLinks(e.h)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${acts(e)}${xp(e)}</div></div>`;
-    if (e.k === 'feat' || e.k === 'side') return `<div class="mcard mfeat ${e.k}"${xa}><div class="mimg${e.fit ? ' fit' : ''}"><img ${isrc(e.img)} alt="" loading="lazy" onerror="this.closest('.mfeat').classList.add('noimg'); this.parentElement.remove()"><span>${esc(e.cap || '')}</span></div><div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
-    if (e.k === 'quote') return `<div class="mcard mquote"${xa}><div class="mbd">${head(e)}<div class="mbig">${e.big}</div><p>${msLinks(e.p)}</p>${acts(e)}${xp(e)}</div></div>`;
+    if (e.k === 'feat' || e.k === 'side') return `<div class="mcard mfeat ${e.k}"${xa}><div class="mimg${e.fit ? ' fit' : ''}"><img ${isrc(e.img)} alt="" loading="lazy" onerror="this.closest('.mfeat').classList.add('noimg'); this.parentElement.remove()"><span>${esc(e.cap || '')}</span></div><div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${vthumb(e)}${acts(e)}${xp(e)}</div></div>`;
+    if (e.k === 'quote') return `<div class="mcard mquote"${xa}><div class="mbd">${head(e)}<div class="mbig">${e.big}</div><p>${msLinks(e.p)}</p>${vthumb(e)}${acts(e)}${xp(e)}</div></div>`;
     return '';
   };
   main.innerHTML = `<div class="ms">${bandHead(id, 'story', { name: m.name, img: m.hero?.src, by: m.hero?.by, lede: m.lede })}
@@ -2562,7 +2567,7 @@ async function renderMilestones(id) {
     if (yt) { const src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(yt.dataset.yt)}?autoplay=1&rel=0${+yt.dataset.ys ? '&start=' + (+yt.dataset.ys) : ''}`;
       const f = `<iframe src="${src}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Video"></iframe>`;
       if (yt.classList.contains('mv')) { yt.innerHTML = f; yt.classList.add('on'); yt.removeAttribute('data-yt'); }
-      else { const bd = yt.closest('.mbd'); if (!bd.querySelector('.mvf')) bd.insertAdjacentHTML('afterbegin', `<div class="mimg mv on mvf">${f}</div>`); yt.remove(); }
+      else yt.outerHTML = `<div class="mimg mv on mvf">${f}</div>`;
       return; }
     if (g && g.dataset.go) { freshTrail = true; return go(g.dataset.go); }
     if (ev2.target.closest('a[href]')) return;
