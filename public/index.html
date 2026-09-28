@@ -4536,8 +4536,8 @@ function layoutStage(i) {
   if (!el) return;
   const sub = el.querySelector('.col.sub .rows'), selRow = el.querySelector('.col.list .row.sel');
   const listRows = el.querySelector('.col.list .rows');
-  if (sub && selRow && !document.getElementById('nav').classList.contains('mobile')) {
-    sub.style.paddingTop = '0px';
+  if (sub) sub.style.paddingTop = '0px';   // band pages: the other-bands list always starts at the top, right beside the header
+  if (sub && selRow && !el.classList.contains('band2') && !document.getElementById('nav').classList.contains('mobile')) {
     const R = x => x.getBoundingClientRect();   // screen positions: the member list can sit inside the band's own column now
     const room = R(listRows).bottom - R(sub).bottom;
     sub.style.paddingTop = Math.max(0, Math.min(R(selRow).top - R(sub).top, room)) + 'px';
