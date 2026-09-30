@@ -809,6 +809,20 @@
 // gets their own allowance (about 25 a minute) and answers are still kept in this browser for three weeks.
 const PROXY_HOSTS = ['musicbrainz.org', 'www.wikidata.org', 'query.wikidata.org', 'en.wikipedia.org', 'itunes.apple.com'];
 const HOSTED = /^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+
+// Broken photos (Sept 30): when a photo on a Milestones page or a band header fails to load on the live site,
+// log it to /api/imgerr so it shows up on #review for fixing. Once per image per visit; never on localhost.
+if (HOSTED) {
+  const badSeen = new Set();
+  addEventListener('error', ev => {
+    const t = ev.target; if (!t || t.tagName !== 'IMG') return;
+    const src = t.currentSrc || t.src; if (!/^https?:/.test(src) || badSeen.has(src) || !t.closest('.ms, .bh')) return;
+    badSeen.add(src);
+    const where = (t.closest('.mev')?.querySelector('h3')?.textContent || (t.closest('.bh') ? 'Header photo' : '')).slice(0, 200);
+    fetch('/api/imgerr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+      body: JSON.stringify({ src, page: location.hash, where }) }).catch(() => {});
+  }, true);
+}
 if (HOSTED) {
   const direct = window.fetch.bind(window);
   window.fetch = (input, init) => {
@@ -2740,16 +2754,26 @@ async function renderReview() {
   const r = await fetch('/api/feedback', { headers: { 'X-Admin-Key': key } }).catch(() => null);
   if (!r || !r.ok) { try { localStorage.removeItem('bt-admin'); } catch {} return ask(r?.status === 401 ? 'That key didn’t work.' : 'Couldn’t load feedback.'); }
   const { items } = await r.json();
+  // Broken photos reported by the live site (/api/imgerr)
+  const bad = await fetch('/api/imgerr', { headers: { 'X-Admin-Key': key } }).then(x => x.ok ? x.json() : { items: [] }).catch(() => ({ items: [] }));
+  const badList = () => (bad.items || []).filter(x => x.status === 'open');
+  const badHtml = () => { const l = badList(); return `<h2 class="rvbad">Broken photos · ${l.length}</h2>${l.length ? l.map(x => `<div class="rvitem"><div class="rvhead"><b>${esc(x.place || 'Photo')}</b><small>${new Date(x.last).toLocaleString()} · ${x.n}×</small></div>
+      <p><a href="${esc(x.page ? '/' + x.page : '#')}">${esc(x.page || '')}</a></p><small class="muted"><a href="${esc(x.src)}" target="_blank" rel="noopener">${esc(x.src.slice(0, 120))}</a></small>
+      <div class="rvacts">${['fixed', 'ignored'].map(s => `<button data-bsrc="${esc(x.src)}" data-bst="${s}">${s}</button>`).join('')}</div></div>`).join('') : '<p class="muted">None right now.</p>'}<h2>Comments</h2>`; };
   let show = 'new';
   const draw = () => {
     const list = items.filter(x => show === 'all' || x.status === show);
-    main.innerHTML = `<div class="browse rv"><h1>Feedback</h1><div class="rvtabs">${['new', 'done', 'ignored', 'all'].map(s =>
+    main.innerHTML = `<div class="browse rv"><h1>Feedback</h1>${badHtml()}<div class="rvtabs">${['new', 'done', 'ignored', 'all'].map(s =>
       `<a data-show="${s}" class="${s === show ? 'on' : ''}">${s} · ${s === 'all' ? items.length : items.filter(x => x.status === s).length}</a>`).join('')}</div>
       ${list.length ? list.map(x => `<div class="rvitem"><div class="rvhead"><b>${esc(x.kind || 'Note')}</b><small>${new Date(x.ts).toLocaleString()}</small></div>
         <p>${esc(x.comment)}</p><small class="muted">${esc(x.page || '')}${x.email ? ` · ${esc(x.email)}` : ''}</small>
         <div class="rvacts">${['new', 'done', 'ignored'].map(s => `<button data-id="${x.id}" data-st="${s}" class="${x.status === s ? 'on' : ''}">${s}</button>`).join('')}</div></div>`).join('')
       : '<p class="muted">Nothing here.</p>'}</div>`;
     main.querySelectorAll('[data-show]').forEach(a => a.onclick = () => { show = a.dataset.show; draw(); });
+    main.querySelectorAll('[data-bst]').forEach(b => b.onclick = () => {
+      const it = bad.items.find(x => x.src === b.dataset.bsrc); if (it) it.status = b.dataset.bst; draw();
+      fetch('/api/imgerr', { method: 'PATCH', headers: { 'X-Admin-Key': key, 'Content-Type': 'application/json' }, body: JSON.stringify({ src: b.dataset.bsrc, status: b.dataset.bst }) });
+    });
     main.querySelectorAll('[data-st]').forEach(b => b.onclick = async () => {
       const it = items.find(x => x.id === +b.dataset.id); it.status = b.dataset.st; draw();
       fetch('/api/feedback', { method: 'PATCH', headers: { 'X-Admin-Key': key, 'Content-Type': 'application/json' }, body: JSON.stringify({ id: it.id, status: it.status }) });
