@@ -5034,6 +5034,18 @@ const ftStints = r => {
     if (last && last[1] !== 'now' && last[1] != null && b <= last[1] + 1) { if (e === 'now' || (e != null && e > last[1])) last[1] = e; } else out.push([b, e]); }
   return out.map(([b, e]) => e === 'now' ? `${b}–<span class="now">now</span>` : e == null ? `${b}–?` : e === b ? `${b}` : `${b}–${e}`).join(', ');
 };
+const storyPhotoCache = new Map();
+async function storyPhoto(id, r) {
+  if (!storyPhotoCache.has(id)) storyPhotoCache.set(id, (async () => {
+    await msReady;
+    const m = MILESTONES[id] || (msInfo(id) ? await fetch(`data/milestones/${id}.json`, {cache: 'no-cache'}).then(x => x.ok ? x.json() : null).catch(() => null) : null);
+    const map = new Map();
+    for (const v of Object.values(m?.people || {})) if (Array.isArray(v) && v[3]) { if (v[1]) map.set(v[1], v[3]); map.set('n:' + norm(v[0]), v[3]); }
+    return map;
+  })().catch(() => new Map()));
+  const map = await storyPhotoCache.get(id);
+  return map.get(r.id) || map.get('n:' + norm(r.name)) || null;
+}
 function famTree(st) {
   // Active band: the current line-up up top, everyone who left behind "Show former members". Split band: the core
   // members up top, everyone else behind "Show all members".
@@ -5043,8 +5055,11 @@ function famTree(st) {
   const others = st.rels.filter(r => !core.includes(r));
   const openId = [...(st.open || [])][0], openR = st.rels.find(r => r.id === openId), col = ftCollab(st);
   st.photos ??= new Map();
+  // Oct 1: no photo anywhere else: use the member's photo from our story page (people[key][3]).
   for (const r of [...core, ...(st.showAllMem ? others : [])]) if (!st.photos.has(r.id)) { st.photos.set(r.id, null);
-    artistImage(r.id).then(p => { if (p) { st.photos.set(r.id, p.src.replace(/\/\d+px-/, '/330px-')); scheduleRefresh(st.id); } }).catch(() => {}); }
+    (r.id.startsWith('wd:ms-') ? Promise.resolve(null) : artistImage(r.id).catch(() => null))
+      .then(p => p ? p.src.replace(/\/\d+px-/, '/330px-') : storyPhoto(st.id, r))
+      .then(src => { if (src) { st.photos.set(r.id, src); scheduleRefresh(st.id); } }).catch(() => {}); }
   const shown = r => (st.links.get(r.id) || []).filter(l => FT_RG.get(l.id)?.n !== 0);
   const card = r => { const L = st.links.get(r.id), n = L ? shown(r).length : null, ph = st.photos.get(r.id);
     return `<div class="ftm${r.id === openId ? ' on' : ''}" data-sel="${r.id}" style="--rc:${ftColor(r)}"><div class="ftp">${ph ? `<img src="${esc(ph)}" alt="" loading="lazy" data-mono="${esc(ftInit(r.name))}" onerror="ftFail(this, '')">` : `<span>${esc(ftInit(r.name))}</span>`}</div>
