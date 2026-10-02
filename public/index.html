@@ -702,7 +702,8 @@
   .fbkinds label { cursor: pointer; } .fbkinds input { display: none; }
   .fbkinds span { display: inline-block; font-size: 12.5px; padding: 6px 12px; border-radius: 99px; border: 1px solid #ffffff26; background: #ffffff0a; }
   .fbkinds input:checked + span { background: var(--text); color: var(--bg); border-color: var(--text); }
-  .fbform textarea, .fbform input[type=email] { width: 100%; box-sizing: border-box; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; resize: vertical; }
+  .fbmoment { display: none; gap: 10px; grid-template-columns: 1fr; } .fbform.moment .fbmoment { display: grid; }
+  .fbform textarea, .fbform input[type=email], .fbform input[type=url], .fbform input[type=text] { width: 100%; box-sizing: border-box; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; resize: vertical; }
   .fbform textarea:focus, .fbform input:focus { outline: none; border-color: var(--accent); }
   .fbhp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
   .fbfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -3046,32 +3047,45 @@ async function renderMilestones(id, target) {
 /* ---------- Help make it better ----------
    A short form anyone can send from any page (the page they were on comes along). Comments land in our database;
    #review lists them for us, behind the admin key. */
-const FB_KINDS = ['Something’s wrong', 'Missing band or person', 'An idea', 'Other'];
+const FB_KINDS = ['Add a moment', 'Something’s wrong', 'Missing band or person', 'An idea', 'Other'];
 document.addEventListener('click', e => {
   if (!e.target.closest('[data-tlfix]')) return;
-  openFeedback();
-  setTimeout(() => { const t = document.querySelector('#fbform textarea'); if (t && !t.value) { t.value = `${state.artist?.name || document.querySelector('.bh h1')?.textContent || 'This band'}: `; t.focus(); } }, 50);
+  openFeedback('Add a moment');
 });
-function openFeedback() {
+function openFeedback(start = 'Something’s wrong') {
   const where = document.querySelector('main h1')?.textContent?.trim() || document.title;
-  openTool(`<h3>Help make it better</h3><p class="muted">Spot a wrong date, a missing band, or have an idea? Tell us. We read every one.</p>
+  const band = state.artist?.name || document.querySelector('.bh h1')?.textContent?.trim() || '';
+  openTool(`<h3>Help make it better</h3><p class="muted">Know a moment we’re missing, spot a wrong date, or have an idea? Tell us, and add a link if there’s more to read, watch or hear. We read every one.</p>
     <form class="fbform" id="fbform">
-      <div class="fbkinds">${FB_KINDS.map((k, i) => `<label><input type="radio" name="kind" value="${esc(k)}"${i === 0 ? ' checked' : ''}><span>${esc(k)}</span></label>`).join('')}</div>
+      <div class="fbkinds">${FB_KINDS.map(k => `<label><input type="radio" name="kind" value="${esc(k)}"${k === start ? ' checked' : ''}><span>${esc(k)}</span></label>`).join('')}</div>
+      <div class="fbmoment">
+        <input name="band" type="text" placeholder="Band or artist" value="${esc(band)}">
+        <input name="when" type="text" placeholder="When (a year or a date, e.g. March 1994)">
+      </div>
       <textarea name="comment" rows="5" placeholder="What should we know?" required></textarea>
+      <div class="fbmoment">
+        <input name="link" type="url" placeholder="Link to more (an article, video, photo, Bandcamp…)" inputmode="url">
+        <input name="link2" type="url" placeholder="Another link (optional)" inputmode="url">
+      </div>
       <input name="email" type="email" placeholder="Your email (optional, if you’d like to hear back)" autocomplete="email">
       <input name="hp" class="fbhp" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="fbfoot"><small class="muted">About: ${esc(where)}</small><button class="cgo" type="submit">Send</button></div>
       <p class="fbmsg" id="fbmsg"></p>
     </form>`);
-  const f = document.getElementById('fbform'), msg = document.getElementById('fbmsg');
-  f.querySelector('textarea').focus();
+  const f = document.getElementById('fbform'), msg = document.getElementById('fbmsg'), ta = f.querySelector('textarea');
+  const mode = () => { const m = f.querySelector('input[name=kind]:checked')?.value === 'Add a moment'; f.classList.toggle('moment', m);
+    ta.placeholder = m ? 'What happened? (a show, a record, a line-up change, a story worth telling)' : 'What should we know?'; };
+  f.querySelectorAll('input[name=kind]').forEach(r => r.onchange = () => { mode(); ta.focus(); });
+  mode(); ta.focus();
   f.onsubmit = async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(f));
-    const btn = f.querySelector('button'); btn.disabled = true; msg.textContent = 'Sending…';
+    let comment = d.comment.trim();
+    if (d.kind === 'Add a moment') comment = [`${d.band ? d.band + ' · ' : ''}${d.when ? d.when + ' · ' : ''}${comment}`, d.link && `More: ${d.link}`, d.link2 && `More: ${d.link2}`].filter(Boolean).join('\n');
+    const body = { kind: d.kind, comment, email: d.email, hp: d.hp, page: `${where} · ${location.href}` };
+    const btn = f.querySelector('button[type=submit]'); btn.disabled = true; msg.textContent = 'Sending…';
     try {
-      const r = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...d, page: `${where} · ${location.href}` }) });
+      const r = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error || 'Couldn’t send just now. Please try again.');
       f.innerHTML = `<div class="fbthanks"><b>Thank you.</b><p>Got it. We go through every note, and this is exactly how the site gets better.</p><button class="cgo" type="button" id="fbclose">Close</button></div>`;
@@ -3102,7 +3116,7 @@ async function renderReview() {
     main.innerHTML = `<div class="browse rv"><h1>Feedback</h1>${badHtml()}<div class="rvtabs">${['new', 'done', 'ignored', 'all'].map(s =>
       `<a data-show="${s}" class="${s === show ? 'on' : ''}">${s} · ${s === 'all' ? items.length : items.filter(x => x.status === s).length}</a>`).join('')}</div>
       ${list.length ? list.map(x => `<div class="rvitem"><div class="rvhead"><b>${esc(x.kind || 'Note')}</b><small>${new Date(x.ts).toLocaleString()}</small></div>
-        <p>${esc(x.comment)}</p><small class="muted">${esc(x.page || '')}${x.email ? ` · ${esc(x.email)}` : ''}</small>
+        <p style="white-space:pre-line">${esc(x.comment).replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`)}</p><small class="muted">${esc(x.page || '')}${x.email ? ` · ${esc(x.email)}` : ''}</small>
         <div class="rvacts">${['new', 'done', 'ignored'].map(s => `<button data-id="${x.id}" data-st="${s}" class="${x.status === s ? 'on' : ''}">${s}</button>`).join('')}</div></div>`).join('')
       : '<p class="muted">Nothing here.</p>'}</div>`;
     main.querySelectorAll('[data-show]').forEach(a => a.onclick = () => { show = a.dataset.show; draw(); });
