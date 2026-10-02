@@ -1266,6 +1266,7 @@ const kindOf = type => type === 'Person' || type === 'Character' ? 'person' : 'b
 async function getArtist(id, opts) {
   if (id.startsWith('discogs:')) return discogsArtist(id.slice(8), opts);
   if (id.startsWith('wd:')) return { id, src: 'wd', name: '', type: 'Person', members: [], bands: [] };
+  if (id.startsWith('ms-')) return msArtist(id);
   const a = await lookup(id, opts);
   if (!a.src) {
     a.src = 'mb';
@@ -1274,6 +1275,26 @@ async function getArtist(id, opts) {
     a.discogsId = (a.relations || []).map(r => r.type === 'discogs' && r.url?.resource?.match(/\/artist\/(\d+)/)?.[1]).find(Boolean) || null;
   }
   return a;
+}
+// Oct 1: a band only bandlines has (not on MusicBrainz yet): the artist comes from our own story page.
+async function msArtist(id) {
+  await msReady;
+  const name = MILESTONES[id]?.name || MS_INDEX[id]?.name;
+  if (!name) throw new Error('Not found');
+  return { id, src: 'ms', name, type: 'Group', 'life-span': {}, disambiguation: '', genres: [], members: [], bands: [], relations: [], aliases: [] };
+}
+// Oct 1: a band nobody else lists members for takes its line-up (people + years) from our story page.
+async function storyRels(id) {
+  await msReady;
+  const m = MILESTONES[id] || (msInfo(id) ? await fetch(`data/milestones/${id}.json`, {cache: 'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null) : null);
+  const out = [];
+  for (const [k, v] of Object.entries(m?.people || {})) {
+    if (!Array.isArray(v) || !v[0]) continue;
+    const stints = Array.isArray(v[2]) ? v[2] : [];
+    out.push({ id: v[1] || 'wd:ms-' + id + '-' + k, name: v[0], type: 'Person', disambiguation: '', attrs: new Set(), note: '',
+      periods: stints.map(([a, b]) => ({ begin: a ? String(a) : '', end: b ? String(b) : '', ended: !!b, attrs: [] })) });
+  }
+  return finalizeRels(out);
 }
 const cleanDgName = n => (n || '').replace(/\s\(\d+\)$/, '');   // Discogs disambiguates with "Name (2)"
 // Discogs profiles use BBCode-style markup: [a=Name], [a12345], [l=Label], [url=…]text[/url], [b]…[/b]
@@ -3494,7 +3515,7 @@ function stageFor(id) {
         if (a.image) preload(a.image).then(src => { st.image = { src, credit: a.url, by: 'Discogs' }; refreshStage(id); }).catch(() => {});
       }
       // Nobody listed on MusicBrainz: look for the lineup elsewhere.
-      if (a.src === 'mb' && !st.rels.length) enrichStage(st);
+      if ((a.src === 'mb' || a.src === 'ms') && !st.rels.length) enrichStage(st);
       // Listed: add anyone Discogs / Wikipedia knows that MusicBrainz doesn't, then fill in missing dates.
       else mergeMembers(st).catch(() => {}).then(() => fillDates(st)).catch(() => {}).finally(() => { st.datesChecked = true; maybeBandCredits(st); });
       loadNames(st).catch(() => {});
@@ -3503,7 +3524,7 @@ function stageFor(id) {
       return st;
     });
     // Only needs the ID, so fetch the photo alongside the MusicBrainz lookup.
-    if (!id.includes(':')) artistImage(id).then(img => { if (img) { st.image = img; st.ready.then(() => refreshStage(id)); } }).catch(() => {});
+    if (!id.includes(':') && !id.startsWith('ms-')) artistImage(id).then(img => { if (img) { st.image = img; st.ready.then(() => refreshStage(id)); } }).catch(() => {});
     st.ready.catch(() => stages.delete(id));
     stages.set(id, st);
   }
@@ -3584,7 +3605,8 @@ async function enrichStage(st) {
   st.enrich = 'running'; refreshStage(st.id);
   const band = st.kind === 'band';
   let rels = [], source = null;
-  try { rels = await wikidataRels(st.id, band); if (rels.length) source = 'Wikidata'; } catch {}
+  if (band) try { rels = await storyRels(st.id); if (rels.length) source = 'bandlines'; } catch {}
+  if (!rels.length && st.artist.src === 'mb') try { rels = await wikidataRels(st.id, band); if (rels.length) source = 'Wikidata'; } catch {}
   if (!rels.length) {
     let did = st.discogsId;
     if (!did) {
@@ -5474,6 +5496,10 @@ function renderReleases() {
   const el = document.getElementById('releases'); if (!el) return;
   const counts = Object.fromEntries(TYPES.map(t => [t, t === 'All' ? state.releases.length : state.releases.filter(r => relType(r) === t).length]));
   document.getElementById('relCount').textContent = state.releases.length;
+  // Oct 1: nothing on record anywhere: hide the section and its tab
+  const none = !state.releases.length;
+  const sec = document.getElementById('lowerDisco'); if (sec) sec.style.display = none ? 'none' : '';
+  document.querySelectorAll('[data-bjump="lowerDisco"]').forEach(b => b.style.display = none ? 'none' : '');
   document.getElementById('filters').innerHTML = TYPES.filter(t => counts[t]).map(t =>
     `<button class="${t === state.filter ? 'on' : ''}" data-t="${t}">${LABELS[t]} ${counts[t]}</button>`).join('');
   document.querySelectorAll('#filters button').forEach(b => b.onclick = () => { state.filter = b.dataset.t; renderReleases(); });
