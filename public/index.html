@@ -895,6 +895,12 @@
   .ms .mrow.open .mplus { transform: none; }
   .ms .mrow.open .mplus::after { content: '−'; } .ms .mrow.open .mplus { font-size: 0; } .ms .mrow.open .mplus::after { font-size: 15px; }
   .ms .mev.k-row .mplus { top: 9px; right: 10px; } .ms .mev.k-row .mrow { padding-right: 52px; }
+  /* Oct 1: "↗" pill: the thing itself is online (archive, Bandcamp, review). Same red pill as "+". */
+  .ms .mlink { display: inline-grid; place-items: center; min-width: 30px; height: 22px; padding: 0 8px; box-sizing: border-box; border: 1px solid var(--band); border-radius: 99px; color: var(--text); font-size: 14px; font-weight: 600; line-height: 1; text-decoration: none; transition: background .15s; }
+  .ms .mlink:hover { background: color-mix(in srgb, var(--band) 16%, transparent); }
+  .ms .mev.k-row .mrow > .mlink { position: absolute; top: 9px; right: 10px; } .ms .mev.k-row .mrow.can > .mlink { right: 48px; }
+  .ms .mev.k-row .mrow.can:has(> .mlink) { padding-right: 90px; }
+  .mpop .mpc .mlink { display: none; }
   /* Tag pills: same type spec as the date beside them, 20px off it, sharing its baseline; a touch more air above the headline */
   .ms .md { font-size: 11px; font-weight: 400; letter-spacing: .1em; line-height: 1.6; }
   .ms .mtag { font-size: 11px; font-weight: 400; letter-spacing: .1em; line-height: 1.6; vertical-align: baseline; padding: 0 8px; margin-left: 20px; }
@@ -1032,8 +1038,8 @@
   .ftb b { padding: 10px 2px 0; } .ftb small { padding: 2px 2px 0; } .ftb i { padding: 6px 2px 0; }
   .ftbands { margin-top: 64px; }
   #msin .ms.teaser { cursor: pointer; }
-  #msin .ms.teaser .myears { transform: translateY(calc(var(--par, 0) * -70px)); will-change: transform; }
-  #msin .ms.teaser .mebox { transform: translateY(calc(var(--par, 0) * 36px)); }
+  #msin .ms.teaser .myears { transform: translateY(calc(var(--par, 0) * -160px)); will-change: transform; }
+  #msin .ms.teaser .mebox { transform: translateY(calc(var(--par, 0) * 80px)); }
   #msin .ms.teaser:hover ~ .msmorebar .msopen, .msopen:hover { background: color-mix(in srgb, var(--band) 16%, transparent); }
   body:has(.stage.band2) .tlegend { justify-content: center; }
   body:has(.stage.band2) .timewrap { background: transparent; border: 0; border-radius: 0; padding-left: 0; padding-right: 0; }
@@ -2857,7 +2863,7 @@ function bandHead(id, on, o = {}) {
   ].join('');
   return `<div class="bh${on === 'story' ? ' tall' : ''}${img ? '' : ' none'}">${img ? `<img ${isrc(img)} alt="" onload="heroFit(this)" onerror="this.parentElement.classList.add('none'); this.remove()">` : ''}
     <div class="ov"><div class="kicker">${esc(kicker)}</div><h1>${esc(name)}</h1>${lede ? `<p class="lede">${esc(lede).replace(/&lt;(\/?)i&gt;/g, '<$1i>')}</p>` : ''}<div class="facts">${bandFacts(st)}</div></div></div>
-    <nav class="bht">${tabs}<a class="bfix" data-tlfix>Suggest a fix</a></nav>`;
+    <nav class="bht">${tabs}<a class="bfix" data-tlfix>Update this page</a></nav>`;
 }
 // Lineup / Records from a page that doesn't have them (Story): open the band page, then scroll there.
 function bandJump(id, where) {
@@ -2962,10 +2968,12 @@ async function renderMilestones(id, target) {
   const whoOld = list => list?.length ? `<span class="mwho">${list.map(k => { const out = k[0] === '-', key = out ? k.slice(1) : k, [n, pid] = m.people[key] || [key];
     return `<i class="${out ? 'out' : ''}" style="background:${LIN_COLORS[Object.keys(m.people).indexOf(key) % LIN_COLORS.length]}" title="${esc(n)}${out ? ' leaves' : ''}" data-go="${esc(pid || '')}">${esc(key)}</i>`; }).join('')}</span>` : '';
   const tag = t => t ? `<span class="mtag ${t}">${MS_TAG[t]}</span>` : '';
+  const lnk = e => e.ln ? `<a class="mlink" href="${esc(e.ln[0])}" target="_blank" rel="noopener" title="${esc(e.ln[1] || 'Open')}" aria-label="${esc(e.ln[1] || 'Open')}">↗</a>` : '';
   const acts = e => {
     const a = [];
     if (e.play) a.push(`<button class="mplay" data-mplay="${esc(e.play.join('|'))}"><svg class="mspk" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Listen: ${esc(e.play[1])}</span></button>`);
     if (e.xp) a.push(`<button class="mbtn mmore" data-mx>+ More</button>`);
+    if (e.ln) a.push(lnk(e));
     return a.length ? `<div class="macts">${a.join('')}</div>` : '';
   };
   const xp = e => e.xp ? `<div class="mxp"><div>${msLinks(e.xp)}${e.q ? `<blockquote>${esc(e.q[0])}<cite>${esc(e.q[1])}</cite></blockquote>` : ''}${e.src ? msRead(e.src, m.sources) : ''}</div>
@@ -2975,7 +2983,7 @@ async function renderMilestones(id, target) {
   const head = e => `<div class="md">${e.d ? `<span class="mdt">${esc(e.d)}</span>` : ''}${tag(e.tag)}${who(e.who)}</div><h3>${msLinks(e.h)}</h3>`;
   const ev = (e, y) => {
     const xa = e.xp ? ' data-xp' : '';
-    if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${e.d && e.d !== y ? `<span class="mdt">${esc(e.d)}</span>` : ''}${tag(e.tag)}</span><div class="mrb"><h3>${msLinks(e.h)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${vthumb(e)}${xp(e)}</div>${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
+    if (e.k === 'row') return `<div class="mrow${e.xp ? ' can' : ''}"${xa}><span class="md">${e.d && e.d !== y ? `<span class="mdt">${esc(e.d)}</span>` : ''}${tag(e.tag)}</span><div class="mrb"><h3>${msLinks(e.h)}${who(e.who)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${vthumb(e)}${xp(e)}</div>${lnk(e)}${e.xp ? '<span class="mplus">+</span>' : ''}</div>`;
     if ((e.k === 'feat' || e.k === 'side') && !e.img) e = { ...e, k: 'card' };
     if (e.k === 'card') return `<div class="mcard"${xa}>${e.img ? `<img class="mcv" ${isrc(e.img)} alt="" loading="lazy" onerror="this.remove()">` : ''}<div class="mbd">${head(e)}<p>${msLinks(e.p)}</p>${vthumb(e)}${acts(e)}${xp(e)}</div></div>`;
     if (e.k === 'vid' && e.yt) return `<div class="mcard mfeat mvid"${xa}><div class="mimg mv" data-yt="${esc(e.yt[0])}" data-ys="${+e.yt[2] || 0}"><img src="https://i.ytimg.com/vi/${esc(e.yt[0])}/hqdefault.jpg" alt="" loading="lazy"><b class="mvp">▶</b></div><div class="mbd"><div class="md"><span class="mtag vid">Video</span> ${esc(e.cap || 'YouTube')}</div><h3>${msLinks(e.h)}</h3>${e.p ? `<p>${msLinks(e.p)}</p>` : ''}${acts(e)}${xp(e)}</div></div>`;
