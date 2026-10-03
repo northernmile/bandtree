@@ -678,6 +678,7 @@
   .mgap::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed #2c303b; }
   .mgap span { position: relative; background: var(--bg); padding: 0 10px; }
   .mhero.none { height: 220px; background: linear-gradient(135deg, #2a1a22, #151820); }
+  .homefeat .msgrid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); } .homeall { display: inline-block; margin-top: 14px; color: var(--text); font-weight: 600; border-bottom: 1px solid var(--band); text-decoration: none; }
   .msgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; max-width: 1150px; }
   .msmini { display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; border-radius: 10px; border: 1px solid #ffffff1a; background: #171920cc; text-decoration: none; color: var(--text); }
   .msmini:hover { border-color: var(--accent); } .msmini img { width: 44px; height: 44px; border-radius: 7px; object-fit: cover; filter: grayscale(.3); flex: none; background: #0003; }
@@ -2876,6 +2877,17 @@ const lightReady = fetch('data/light/index.json', {cache: 'no-cache'}).then(r =>
 const lightInfo = id => (!msInfo(id) && LIGHT_INDEX[id]) || null;
 const msInfo = id => MILESTONES[id] ? { name: MILESTONES[id].name, hero: MILESTONES[id].hero.src, n: msCount(MILESTONES[id]), span: msSpan(MILESTONES[id]) } : MS_INDEX[id] || null;
 // Browse / home: every band that has milestones, as small photo cards.
+// Oct 2: the home page shows 8 story pages picked at random from the most influential 48, plus a way into the rest.
+const FEATURED = ["e919b253-da5b-4aae-a444-6a368376a2d6", "9941a936-196a-4a62-ae53-a69cbc33f20e", "fa31e7d4-a03a-4110-98fc-f8826e95ec25", "77c167d2-4965-4421-830a-9815e4956475", "233fc3f3-6de2-465c-985e-e721dbabbace", "dfebd6c0-dae7-4cc8-a8e9-0dbaa382209f", "9ccfbc94-a4f4-42f7-b6f5-d903ab77cccb", "5b11f4ce-a62d-471e-81fc-a69a8278c7da", "36bfa85f-737b-41db-a8fc-b8825850ffc3", "1d3da898-4fb4-4445-b704-cd7315e01789", "3285dc48-9505-469d-ad8a-bdf2d3dba632", "d5da1841-9bc8-4813-9f89-11098090148e", "e0953daa-860f-4dc8-9f1a-b12587cdaf17", "5cbef01b-cc35-4f52-af7b-d0df0c4f61b9", "f035837e-4117-438d-a524-cacf43500e68", "9ca27db4-f127-4aeb-ae87-29e21f558c13", "5e521e8c-0ab2-44c4-8fd8-14d8d3321265", "37c78aeb-d196-42b5-b991-6afb4fc9bc2e", "87c5dedd-371d-4a53-9f7f-80522fb7f3cb", "5c4c90a4-539f-4101-83cf-301bc6a94e06", "9ffa627f-32c2-4cb1-bfad-00cf348abc70", "d4ad0149-d8ae-4105-8009-0221fce9ff35", "a9416fb3-4d28-4575-abae-f0d160be83ed", "f1df0431-9250-4ec8-95d8-f19ce7cf7fb6", "6c85f4c3-026c-4c16-9a7c-f546f42ed0fb", "86b24e8f-a4d9-4c84-83ee-fde0d14ad9fa", "b2ff1a6d-9198-4646-b068-8965242d245b", "2869c510-2679-4a3f-bf15-e5e8b49f2f28", "149e6720-4e4a-41a4-afca-6d29083fc091", "dc0d05ce-2f47-4962-b4fa-8631a0a51987", "9463868f-edc8-427e-ac07-ea89698e5f15", "2339bc21-aa92-4850-86f0-4bb9433910c8", "db9d25d7-a85b-4a29-b2ff-8f5b69ed691e", "e204ed91-3684-4561-b29b-d0b53f8459a7", "3648db01-b29d-4ab9-835c-83f6a5068fe4", "153c9281-268f-4cf3-8938-f5a4593e5df4", "9d1ad8e3-8740-429a-bdc5-52f96a9c4431", "582fee78-d934-4603-9f5c-1729e0ca36b7", "608c9da7-d3ef-4661-828b-24bb6ae20cd6", "381086ea-f511-4aba-bdf9-71c753dc5077", "1397d045-1603-41fc-80b9-712c18360145", "88a6037e-87ba-492a-a54c-c927aa620cb8", "016fba14-1fc6-4986-86c2-2113ec9b28de", "42faad37-8aaa-42e4-a300-5a7dae79ed24", "3c9f8bef-a658-4204-9ee8-7e95d2535b32", "60dd41cf-8f9d-46d8-bc19-dc7e5acb24c8", "ec88cdc3-0517-4951-b5ef-7323e7316db0", "61653550-fd9b-4401-8248-44f2d064d384"];
+function featuredHTML() {
+  const pool = FEATURED.filter(id => msInfo(id)?.name), pick = [];
+  while (pool.length && pick.length < 8) pick.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  if (!pick.length) return '';
+  const total = Object.keys(MS_INDEX).length;
+  return `<section class="trails homefeat"><h2>Start with a story</h2><div class="msgrid">${pick.map(id => { const x = msInfo(id); return `<a class="msmini" href="#${id}">
+    <img src="${esc(x.hero || '')}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span><b>${esc(x.name)}</b><small>${x.n} flashpoints · ${esc(x.span)}</small></span></a>`; }).join('')}</div>
+    ${total ? `<a class="homeall" href="#browse">Browse all ${total} bands ›</a>` : ''}</section>`;
+}
 function msListHTML() {
   const all = [...Object.keys(MILESTONES), ...Object.keys(MS_INDEX).filter(k => !MILESTONES[k])].map(id => ({ id, ...msInfo(id) })).filter(x => x.name)
     .sort((a, b) => a.name.replace(/^the /i, '').localeCompare(b.name.replace(/^the /i, '')));
@@ -3602,14 +3614,13 @@ function renderHome() {
   main.innerHTML = `<div class="hero-bg">${still ? '<img src="hero.jpg" alt="">'
       : '<video src="hero.mp4" poster="hero.jpg" autoplay muted loop playsinline></video>'}</div>
     <div class="home-hero">
-      <h1>Every band.<br>Every member.<br><em>Every story worth telling.</em></h1>
+      <h1>Bands, members,<br><em>and the stories in between.</em></h1>
       <p>Search any band to see every member who has passed through, where they all went next, and the full discography. Click through as deep as you like.</p>
       <div id="heroSearch"></div>
-      <div class="lineup"><h2>Try one</h2><div class="names">${picks.map(p =>
-        `<a data-n="${esc(p)}">${esc(p)}</a>`).join('&nbsp;<span class="sl">/</span> ')}</div></div>
-      ${pathsHTML()}${msListHTML()}
+      <div class="homefeat-slot">${featuredHTML()}</div>
     </div>`;
   document.getElementById('heroSearch').appendChild(searchBox);
+  msReady.then(() => { const el = main.querySelector('.homefeat-slot'); if (el && !el.children.length) el.innerHTML = featuredHTML(); });
   main.querySelectorAll('[data-n]').forEach(el => el.onclick = () => searchAndGo(el.dataset.n));
 }
 
