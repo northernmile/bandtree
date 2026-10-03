@@ -1,0 +1,125 @@
+{
+ "name": "Sleepyhead",
+ "slug": "sleepyhead",
+ "mb": "4433327d-23ea-4168-8537-8d5e413fb5da",
+ "kicker": {
+  "label": "Homestead Records",
+  "place": "New York",
+  "span": "1989-present"
+ },
+ "lede": "Sleepyhead started in a basement room of an NYU dorm in 1989: Rachael McNally on drums, Michael Galinsky on bass, Chris O'Rourke on guitar. Their tours fed Half-Cocked, the indie road movie Galinsky co-made.",
+ "hero": {
+  "src": "https://bigtakeover.com/images/19834.jpg",
+  "by": "Photo: via The Big Takeover (2018)"
+ },
+ "facts": [
+  {
+   "h": "The first 7-inch, \"Play,\" was produced by Kramer",
+   "p": "It came out on Picture Book Artifact in 1991. Albums followed on Slumberland (Punk Rock City USA), Homestead (Starduster, Communist Love Songs) and Sealed Fate (The Brighter Shore).",
+   "src": {
+    "title": "Sleepyhead (Discogs)",
+    "url": "https://www.discogs.com/artist/336852-Sleepyhead"
+   }
+  },
+  {
+   "h": "Summer 1990: three dorm-mates move to Providence to become a band",
+   "p": "Galinsky writes that they spent it living together, \"trying to figure out how to be a band.\" The first real tour, in summer 1992, was seven or eight shows in two weeks, ending in Chapel Hill.",
+   "src": {
+    "title": "Half-Cocked: a personal look back (rumur)",
+    "url": "https://rumur.com/half-cocked-a-personal-look-back/"
+   }
+  },
+  {
+   "h": "Half-Cocked grew out of their tours",
+   "p": "Galinsky and Suki Hawley wrote the 1994 film about kids who steal a van full of gear and pretend to be a band. McNally produced it, kept the shoot on schedule and cooked all the meals.",
+   "src": {
+    "title": "Half-Cocked: a personal look back (rumur)",
+    "url": "https://rumur.com/half-cocked-a-personal-look-back/"
+   }
+  }
+ ],
+ "fit": {
+  "labels": [
+   {
+    "name": "Homestead Records",
+    "mates": [
+     {
+      "name": "Squirrel Bait",
+      "id": "5dbf117b-c076-4d3b-b7ae-13517c25b2cf"
+     },
+     {
+      "name": "Antietam",
+      "id": "39cb09fb-0a41-4f76-a616-62d1d65304c9"
+     },
+     {
+      "name": "Big Dipper",
+      "id": "0ec95aa0-d79b-4d02-946c-bf8867f7e054"
+     },
+     {
+      "name": "Great Plains",
+      "id": "337c6e9f-4d6a-49ae-907e-78af6a52a6ee"
+     },
+     {
+      "name": "Volcano Suns",
+      "id": "4837e8d3-a13f-4670-9684-82970411f4bc"
+     },
+     {
+      "name": "Naked Raygun",
+      "id": "85d2e30c-92fd-4c7f-a2dc-f988a70e234d"
+     }
+    ]
+   }
+  ],
+  "scene": {
+   "name": "New York, early 1990s",
+   "bands": [
+    {
+     "name": "Dungbeetle",
+     "id": "365b5b7f-e9e5-4054-892b-2322e9519efe"
+    },
+    {
+     "name": "Yo La Tengo",
+     "id": "3f542031-b054-454d-b57b-812fa2a81b11"
+    },
+    {
+     "name": "Versus",
+     "id": "ee7db106-6996-42a9-981d-b2d55a9b8366"
+    },
+    {
+     "name": "Two Dollar Guitar",
+     "id": "1e65faae-99a8-4a95-bec8-02080015da8f"
+    }
+   ]
+  },
+  "related": [
+   {
+    "name": "Dungbeetle",
+    "id": "365b5b7f-e9e5-4054-892b-2322e9519efe",
+    "why": "toured with Sleepyhead, c. 1993"
+   },
+   {
+    "name": "Drop Ceiling",
+    "id": "c4ed3885-58ea-4aa8-b9f4-e4babbb3e212",
+    "why": "shared member Michael Galinsky"
+   }
+  ]
+ },
+ "video": {
+  "id": "cqj7dtuDqq4",
+  "label": "\"Starduster\" (Starduster, Homestead, 1994)"
+ },
+ "sources": [
+  {
+   "title": "Sleepyhead (Discogs)",
+   "url": "https://www.discogs.com/artist/336852-Sleepyhead"
+  },
+  {
+   "title": "Half-Cocked: a personal look back (rumur)",
+   "url": "https://rumur.com/half-cocked-a-personal-look-back/"
+  },
+  {
+   "title": "Song Premiere: \"Go West!\" by Sleepyhead (The Big Takeover)",
+   "url": "https://bigtakeover.com/news/song-premiere-go-west-by-sleepyhead"
+  }
+ ]
+}

@@ -1,0 +1,141 @@
+{
+ "name": "Pailhead",
+ "slug": "pailhead",
+ "mb": "9714bcae-da69-4189-84a3-6e226802eddb",
+ "kicker": {
+  "label": "Wax Trax! Records",
+  "place": "Chicago",
+  "span": "1987-1988"
+ },
+ "lede": "Pailhead was Ian MacKaye singing over Ministry's Al Jourgensen, Paul Barker and Bill Rieflin, on Wax Trax! in 1987 and 1988. A handful of singles, the Trait EP, and that was it.",
+ "hero": {
+  "src": "",
+  "by": ""
+ },
+ "facts": [
+  {
+   "h": "Jourgensen was nervous about the straight-edge icon",
+   "p": "He and MacKaye met in a London studio in 1986. From Jourgensen's memoir: \"I was a little nervous about working with Ian, who is this real straight-edge icon.\"",
+   "src": {
+    "title": "An unlikely collaboration produced Pailhead's ferocious \"I Will Refuse\" (The A.V. Club)",
+    "url": "https://www.avclub.com/an-unlikely-collaboration-produced-pailhead-s-ferocious-1798257625"
+   }
+  },
+  {
+   "h": "Chris Connelly sang \"I Will Refuse\" first",
+   "p": "MacKaye's vocal replaced his. Connelly, in his own memoir: \"It was an honor to be erased by Ian.\"",
+   "src": {
+    "title": "An unlikely collaboration produced Pailhead's ferocious \"I Will Refuse\" (The A.V. Club)",
+    "url": "https://www.avclub.com/an-unlikely-collaboration-produced-pailhead-s-ferocious-1798257625"
+   }
+  },
+  {
+   "h": "Three singles in about a year, then Trait",
+   "p": "\"I Will Refuse\" b/w \"No Bunny\" came out in 1987, \"Don't Stand In Line\" and \"Man Should Surrender\" in 1988. Naked Raygun drummer Eric Spicer is in the lineup too.",
+   "src": {
+    "title": "Run It Back: Ian MacKaye & Al Jourgensen's short-lived Pailhead (The Witzard)",
+    "url": "https://www.thewitzard.com/archives/2019/04/run-it-back-ian-mackaye-al-jourgensens.html"
+   }
+  }
+ ],
+ "fit": {
+  "labels": [
+   {
+    "name": "Wax Trax! Records",
+    "mates": [
+     {
+      "name": "Ministry",
+      "id": "13df2a46-f72f-40e7-aa63-26fcf62c7048"
+     },
+     {
+      "name": "Revolting Cocks",
+      "id": "2865730a-5757-4005-875e-84d6274cb1c0"
+     },
+     {
+      "name": "Front 242",
+      "id": "8fb6c00f-61d8-4f27-98f9-53e1ba481626"
+     },
+     {
+      "name": "KMFDM",
+      "id": "45074d7c-5307-44a8-854f-ae072e1622ae"
+     },
+     {
+      "name": "1000 Homo DJs",
+      "id": "4c44479c-8fde-4754-b9e2-5129eb6fb28d"
+     }
+    ]
+   }
+  ],
+  "scene": {
+   "name": "Chicago, late 1980s",
+   "bands": [
+    {
+     "name": "Big Black",
+     "id": "9463868f-edc8-427e-ac07-ea89698e5f15"
+    },
+    {
+     "name": "Rapeman",
+     "id": "899dea17-b403-42e0-9673-2623c40081af"
+    },
+    {
+     "name": "Naked Raygun",
+     "id": "85d2e30c-92fd-4c7f-a2dc-f988a70e234d"
+    }
+   ]
+  },
+  "related": [
+   {
+    "name": "Ministry",
+    "id": "13df2a46-f72f-40e7-aa63-26fcf62c7048",
+    "why": "Al Jourgensen, Paul Barker, Bill Rieflin"
+   },
+   {
+    "name": "Lard",
+    "id": "4430600b-0fdb-43a1-be52-c81aa7ab1682",
+    "why": "Jourgensen, Barker and Rieflin again"
+   },
+   {
+    "name": "Fugazi",
+    "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+    "why": "Ian MacKaye"
+   },
+   {
+    "name": "Minor Threat",
+    "id": "09037f07-42bc-46ac-a1ee-37f834451fee",
+    "why": "Ian MacKaye"
+   },
+   {
+    "name": "Embrace",
+    "id": "9d1ad8e3-8740-429a-bdc5-52f96a9c4431",
+    "why": "Ian MacKaye"
+   },
+   {
+    "name": "Naked Raygun",
+    "id": "85d2e30c-92fd-4c7f-a2dc-f988a70e234d",
+    "why": "shared member Eric Spicer"
+   }
+  ]
+ },
+ "video": {
+  "id": "f5Mq84Y3NLw",
+  "label": "\"I Will Refuse\" (Wax Trax!, 1987)"
+ },
+ "sources": [
+  {
+   "title": "An unlikely collaboration produced Pailhead's ferocious \"I Will Refuse\" (The A.V. Club)",
+   "url": "https://www.avclub.com/an-unlikely-collaboration-produced-pailhead-s-ferocious-1798257625"
+  },
+  {
+   "title": "Run It Back: Ian MacKaye & Al Jourgensen's short-lived Pailhead (The Witzard)",
+   "url": "https://www.thewitzard.com/archives/2019/04/run-it-back-ian-mackaye-al-jourgensens.html"
+  },
+  {
+   "title": "Pailhead (Discogs)",
+   "url": "https://www.discogs.com/artist/35044-Pailhead"
+  },
+  {
+   "title": "Pailhead (Wikipedia, background)",
+   "url": "https://en.wikipedia.org/wiki/Pailhead"
+  }
+ ]
+}

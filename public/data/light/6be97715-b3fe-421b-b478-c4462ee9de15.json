@@ -1,0 +1,141 @@
+{
+ "name": "Bitch Magnet",
+ "slug": "bitch-magnet",
+ "mb": "6be97715-b3fe-421b-b478-c4462ee9de15",
+ "kicker": {
+  "label": "Communion Records",
+  "place": "Oberlin, Ohio",
+  "span": "1986-1990, 2011-2012"
+ },
+ "lede": "Sooyoung Park and Jon Fine started Bitch Magnet at Oberlin College in late 1986. Three albums came out between 1988 and 1990; a 2011 reissue brought the original trio back for one more run of shows.",
+ "hero": {
+  "src": "",
+  "by": ""
+ },
+ "facts": [
+  {
+   "h": "Two Oberlin students, then a drummer in spring 1987",
+   "p": "Park (bass, vocals) and Fine (guitar) formed the band in late 1986, and Orestes Morfín joined that spring. Star Booty, Umber and Ben Hur followed between 1988 and 1990.",
+   "src": {
+    "title": "Bitch Magnet (LPR)",
+    "url": "https://lpr.com/lpr_artists/bitch-magnet/"
+   }
+  },
+  {
+   "h": "Mojo put Umber on its \"Lost Albums You Must Own\" list",
+   "p": "Temporary Residence says so in its notes for the 2011 reissue, which also name Don Caballero, Mogwai, Rodan, June of 44 and Battles among the bands Bitch Magnet influenced.",
+   "src": {
+    "title": "Bitch Magnet, by Bitch Magnet (Bandcamp)",
+    "url": "https://bitchmagnet.bandcamp.com/album/bitch-magnet"
+   }
+  },
+  {
+   "h": "The reunion was pitched to Park in a pub near his office",
+   "p": "The trio hadn't played together since 1989 when his bandmates caught him out drinking and proposed All Tomorrow's Parties in Minehead, where Battles had invited them. Park told Giant Robot he was \"starting from scratch\" on bass.",
+   "src": {
+    "title": "Interview with Sooyoung Park on the Bitch Magnet Reunion (Giant Robot)",
+    "url": "https://www.giantrobot.com/blogs/giant-robot-store-and-gr2-news/15808883-interview-with-sooyoung-park-on-the-bitch-magnet-reunion"
+   }
+  }
+ ],
+ "fit": {
+  "labels": [
+   {
+    "name": "Temporary Residence",
+    "mates": [
+     {
+      "name": "Moss Icon",
+      "id": "5617ff4f-8fb5-46e7-a498-cb055f087bb3"
+     },
+     {
+      "name": "Explosions in the Sky",
+      "id": "4236acde-2ce2-441c-a3d4-38d55f1b5474"
+     },
+     {
+      "name": "Mono",
+      "id": "ffe02aed-ef7e-4736-a186-c2f1dd55ce8d"
+     }
+    ]
+   }
+  ],
+  "scene": {
+   "name": "American underground, late 1980s",
+   "bands": [
+    {
+     "name": "Squirrel Bait",
+     "id": "5dbf117b-c076-4d3b-b7ae-13517c25b2cf"
+    },
+    {
+     "name": "Bastro",
+     "id": "cfc5b1bf-a46c-4504-bcb6-a820416a1894"
+    },
+    {
+     "name": "Slint",
+     "id": "2869c510-2679-4a3f-bf15-e5e8b49f2f28"
+    },
+    {
+     "name": "Big Black",
+     "id": "9463868f-edc8-427e-ac07-ea89698e5f15"
+    },
+    {
+     "name": "Codeine",
+     "id": "cecd5f91-cfdd-45d1-879f-3920c7c76e58"
+    }
+   ]
+  },
+  "related": [
+   {
+    "name": "Seam",
+    "id": "24d2e33e-6493-49c9-a5b1-fc82eb2f7d4d",
+    "why": "shared member Sooyoung Park"
+   },
+   {
+    "name": "Ee",
+    "id": "359f136d-4d05-4ae3-90df-32fa3b1dc757",
+    "why": "shared member Sooyoung Park"
+   },
+   {
+    "name": "Squirrel Bait",
+    "id": "5dbf117b-c076-4d3b-b7ae-13517c25b2cf",
+    "why": "shared member David Grubbs"
+   },
+   {
+    "name": "Gastr del Sol",
+    "id": "8f54d90b-f322-4e5d-a0fd-bdc960f2d20f",
+    "why": "shared member David Grubbs"
+   },
+   {
+    "name": "Bastro",
+    "id": "cfc5b1bf-a46c-4504-bcb6-a820416a1894",
+    "why": "shared member David Grubbs"
+   },
+   {
+    "name": "Codeine",
+    "id": "cecd5f91-cfdd-45d1-879f-3920c7c76e58",
+    "why": "shared member David Grubbs"
+   }
+  ]
+ },
+ "video": {
+  "id": "aztc2sEEnLo",
+  "label": "\"Mesentery\" (Ben Hur, 1990), 2011 remaster"
+ },
+ "sources": [
+  {
+   "title": "Bitch Magnet (LPR)",
+   "url": "https://lpr.com/lpr_artists/bitch-magnet/"
+  },
+  {
+   "title": "Bitch Magnet, by Bitch Magnet (Bandcamp)",
+   "url": "https://bitchmagnet.bandcamp.com/album/bitch-magnet"
+  },
+  {
+   "title": "Interview with Sooyoung Park on the Bitch Magnet Reunion (Giant Robot)",
+   "url": "https://www.giantrobot.com/blogs/giant-robot-store-and-gr2-news/15808883-interview-with-sooyoung-park-on-the-bitch-magnet-reunion"
+  },
+  {
+   "title": "Bitch Magnet (Wikipedia, background)",
+   "url": "https://en.wikipedia.org/wiki/Bitch_Magnet"
+  }
+ ]
+}

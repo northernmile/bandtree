@@ -942,6 +942,37 @@
   #results h6.k-label { --kc: #7fd6a8; } #results h6.k-genre { --kc: #ff8a9a; } #results h6.k-city { --kc: #9aa3b5; }
   #results h6 + div[data-i] { border-top: 0; } #results div[data-i] { border-bottom: 0; padding: 8px 14px 8px 30px; }
   #results div[data-i] + h6 { margin-top: 6px; } #results h6:first-child { margin-top: 0; }
+  #results .lt-hit b::after { content: 'Overview'; margin-left: 8px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 1px 7px; vertical-align: 2px; font-weight: 600; }
+  /* Oct 2 prototype: light page (a band with no Milestones story): Things to know · Where they fit · Watch */
+  .lt { padding: 54px 20px 48px; }
+  .lt .ltsec + .ltsec { margin-top: 96px; }
+  .lt .sech { margin-bottom: 30px; }
+  .ltcards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; max-width: 1180px; margin: 0 auto; }
+  .ltcards.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 790px; }
+  .ltcard { display: flex; flex-direction: column; background: #ffffff08; border: 1px solid var(--line); border-radius: 12px; padding: 22px 22px 18px; }
+  .ltcard h3 { margin: 0 0 10px; font-size: 19px; line-height: 1.25; letter-spacing: -.01em; color: var(--text); }
+  .ltcard p { margin: 0 0 16px; color: #c9ccd4; font-size: 15px; line-height: 1.5; flex: 1; }
+  .lt .mlink { align-self: flex-start; display: inline-grid; place-items: center; min-width: 30px; height: 22px; padding: 0 8px; box-sizing: border-box; border: 1px solid var(--band); border-radius: 99px; color: var(--text); font-size: 14px; font-weight: 600; line-height: 1; text-decoration: none; transition: background .15s; }
+  .lt .mlink:hover { background: color-mix(in srgb, var(--band) 16%, transparent); }
+  .ltfit { max-width: 820px; margin: 0 auto; display: grid; gap: 14px; }
+  .ltrow { display: grid; grid-template-columns: 200px 1fr; gap: 14px; align-items: baseline; }
+  .ltrow > b { font-size: 13px; font-weight: 600; color: var(--muted); text-align: right; }
+  .ltrow .chips { margin-top: 0; gap: 6px 6px; }
+  .lt .chip { font-size: 13px; padding: 3px 11px; color: var(--text); text-decoration: none; }
+  .lt .chip.plain { cursor: default; background: #ffffff08; border-color: var(--line); }
+  .lt .chip.plain:hover { border-color: var(--line); }
+  .ltrel { display: inline-flex; align-items: baseline; gap: 6px; } .ltrel small { color: var(--muted); font-size: 12px; }
+  .ltv { position: relative; max-width: 720px; margin: 0 auto; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: #000; cursor: pointer; }
+  .ltv img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ltv b { position: absolute; inset: 0; margin: auto; width: 64px; height: 64px; border-radius: 50%; background: #e62117; color: #fff; font-size: 22px; display: grid; place-items: center; }
+  .ltv iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .ltvl { text-align: center; color: #c9ccd4; font-size: 14px; margin-top: 10px; }
+  .ltadd { text-align: center; color: var(--muted); font-size: 14px; margin: 64px 0 0; }
+  .ltadd a { color: var(--text); text-decoration: underline; text-decoration-color: #ffffff40; text-underline-offset: 3px; cursor: pointer; } .ltadd a:hover { color: var(--accent); }
+  @media (max-width: 760px) {
+    .ltcards, .ltcards.n2 { grid-template-columns: 1fr; }
+    .ltrow { grid-template-columns: 1fr; gap: 6px; } .ltrow > b { text-align: left; }
+  }
   #results .ms-hit b::after { content: 'Milestones'; margin-left: 8px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); border: 1px solid #ffcf5c55; border-radius: 99px; padding: 1px 7px; vertical-align: 2px; font-weight: 600; }
 
   /* ---- Oct 1: one page per band (header · Milestones teaser · Members · Line-up · Discography) ---- */
@@ -1258,11 +1289,14 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 function memberships(artist, direction) {
   const byId = new Map();
   for (const r of artist.relations || []) {
-    if (r.type !== 'member of band' || r.direction !== direction || !r.artist) continue;
+    // Oct 2: a musician's own project filed on MusicBrainz as a performance name ("is person", e.g. Adam Pierce -> Mice Parade) counts as one of their bands
+    const own = direction === 'forward' && r.type === 'is person';
+    if ((r.type !== 'member of band' && !own) || r.direction !== direction || !r.artist) continue;
     const e = byId.get(r.artist.id) || { id: r.artist.id, name: r.artist.name, type: r.artist.type,
       disambiguation: r.artist.disambiguation, periods: [], attrs: new Set() };
     e.periods.push({ begin: r.begin, end: r.end, ended: r.ended, attrs: r.attributes || [] });
     (r.attributes || []).forEach(a => e.attrs.add(a));
+    if (own) e.attrs.add('own project');
     byId.set(r.artist.id, e);
   }
   return finalizeRels([...byId.values()]);
@@ -1303,8 +1337,8 @@ async function getArtist(id, opts) {
 }
 // Oct 1: a band only bandlines has (not on MusicBrainz yet): the artist comes from our own story page.
 async function msArtist(id) {
-  await msReady;
-  const name = MILESTONES[id]?.name || MS_INDEX[id]?.name;
+  await Promise.all([msReady, lightReady]);
+  const name = MILESTONES[id]?.name || MS_INDEX[id]?.name || LIGHT_INDEX[id]?.name;
   if (!name) throw new Error('Not found');
   return { id, src: 'ms', name, type: 'Group', 'life-span': {}, disambiguation: '', genres: [], members: [], bands: [], relations: [], aliases: [] };
 }
@@ -1424,9 +1458,13 @@ async function runSearch() {
   const msRows = [...Object.entries(MS_INDEX), ...Object.entries(MILESTONES)].map(([id, v]) => [v.name, id, v.label]).filter(x => x[0]);
   const msHit = localMatch(msRows.map(x => x[0]), term, 3).map(n => msRows.find(x => x[0] === n)).filter(Boolean);
   const msBands = msHit.map(([n, id, lab]) => ({ kind: 'band', name: n, desc: lab ? 'Band · ' + lab : 'Band', id, ms: true }));
-  byKind.band = msBands.slice();
+  // Oct 2: bands with a light page (no Milestones story) come right after the story bands
+  const ltRows = Object.entries(LIGHT_INDEX).filter(([id]) => !msInfo(id)).map(([id, v]) => [v.name, id, v.label]).filter(x => x[0]);
+  const ltBands = localMatch(ltRows.map(x => x[0]), term, 3).map(n => ltRows.find(x => x[0] === n)).filter(Boolean)
+    .map(([n, id, lab]) => ({ kind: 'band', name: n, desc: lab ? 'Band · ' + lab : 'Band', id, lt: true }));
+  byKind.band = [...msBands, ...ltBands];
   const BASE = ['band', 'person', 'genre', 'album', 'label', 'city'];
-  const rel = h => { const n = norm(h.name); return (n === qn ? 3 : n.startsWith(qn) ? 2 : named(h.name) ? 1 : 0) + ((h.ms || (h.kind === 'band' && (MS_INDEX[h.id] || MILESTONES[h.id]))) ? 2 : 0); };
+  const rel = h => { const n = norm(h.name); return (n === qn ? 3 : n.startsWith(qn) ? 2 : named(h.name) ? 1 : 0) + ((h.ms || (h.kind === 'band' && (MS_INDEX[h.id] || MILESTONES[h.id]))) ? 2 : (h.lt || (h.kind === 'band' && LIGHT_INDEX[h.id])) ? 1.5 : 0); };
   let waiting = true;
   const show = () => { if (seq !== searchSeq) return;
     const order = SEARCH_GROUPS.map(g => [g, Math.max(0, ...byKind[g[0]].map(rel)) + ({ band: 1, person: .5 }[g[0]] || 0) * (byKind[g[0]].length ? 1 : 0), BASE.indexOf(g[0])]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(o => o[0]);
@@ -1442,8 +1480,9 @@ async function runSearch() {
     .filter(a => !latin || mostlyLatin(a.name))                       // typed in Latin letters: skip names in other scripts
     .filter(a => !thin(a) || norm(a.name) === qn)                     // nothing known about it: only if the name is exact
     .sort((x, y) => named(y.name) - named(x.name) || (y.score || 0) - (x.score || 0));
-  const msIds = new Set(msBands.map(b => b.id));
-  byKind.band = [...msBands, ...keep.filter(a => (!a.type || kindOf(a.type) === 'band') && !msIds.has(a.id)).map(a => ({ kind: 'band', name: a.name, desc: mbDesc(a), id: a.id, ms: !!(MS_INDEX[a.id] || MILESTONES[a.id]) }))].slice(0, 5);
+  const msIds = new Set([...msBands, ...ltBands].map(b => b.id));
+  byKind.band = [...msBands, ...ltBands, ...keep.filter(a => (!a.type || kindOf(a.type) === 'band') && !msIds.has(a.id)).map(a => { const ms = !!(MS_INDEX[a.id] || MILESTONES[a.id]);
+    return { kind: 'band', name: a.name, desc: mbDesc(a), id: a.id, ms, lt: !ms && !!LIGHT_INDEX[a.id] }; })].slice(0, 5);
   byKind.person = keep.filter(a => a.type && kindOf(a.type) !== 'band').slice(0, 2).map(a => ({ kind: 'person', name: a.name, desc: mbDesc(a), id: a.id }));
   show();
   // Albums, then labels MusicBrainz knows beyond our list.
@@ -1468,7 +1507,7 @@ function drawHits(waiting) {
     const list = hits.filter(h => h.kind === k);
     if (!list.length) continue;
     html += `<h6 class="k-${k}">${label}</h6>` + list.map(h => { const i = hits.indexOf(h);
-      return `<div class="${i === sel && arrowed ? 'sel' : ''}${h.ms ? ' ms-hit' : ''}" data-i="${i}"><b>${esc(h.name)}</b><small>${esc(h.desc || '')}</small></div>`; }).join('');
+      return `<div class="${i === sel && arrowed ? 'sel' : ''}${h.ms ? ' ms-hit' : h.lt ? ' lt-hit' : ''}" data-i="${i}"><b>${esc(h.name)}</b><small>${esc(h.desc || '')}</small></div>`; }).join('');
   }
   results.innerHTML = (html || `<div class="muted">${waiting ? 'Searching…' : 'No matches'}</div>`) + (waiting && html ? '<div class="muted srch">Looking for more…</div>' : '') +
     `<div class="dgrow" data-dg>Search further for “${esc(term)}” ›</div>`;
@@ -2828,6 +2867,13 @@ const msReady = fetch('data/milestones/index.json', {cache: 'no-cache'}).then(r 
   const id = trail[cur]?.id; if (id && MS_INDEX[id] && stages.has(id)) refreshStage(id);
   document.querySelectorAll('[data-mslist]').forEach(el => el.outerHTML = msListHTML());
 }).catch(() => {});
+// Oct 2 prototype: light pages (bands with no Milestones story): data/light/index.json + data/light/<id>.json
+let LIGHT_INDEX = {};
+const lightReady = fetch('data/light/index.json', {cache: 'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})).then(d => {
+  LIGHT_INDEX = d || {};
+  const id = trail[cur]?.id; if (id && LIGHT_INDEX[id] && stages.has(id)) refreshStage(id);
+}).catch(() => {});
+const lightInfo = id => (!msInfo(id) && LIGHT_INDEX[id]) || null;
 const msInfo = id => MILESTONES[id] ? { name: MILESTONES[id].name, hero: MILESTONES[id].hero.src, n: msCount(MILESTONES[id]), span: msSpan(MILESTONES[id]) } : MS_INDEX[id] || null;
 // Browse / home: every band that has milestones, as small photo cards.
 function msListHTML() {
@@ -2866,15 +2912,15 @@ function heroFit(img) {
 const GROUP_GENRES = /hip ?hop|rap|trap|drill|grime|r&b|rhythm and blues|soul|funk|pop|dance|electronic|house|techno|reggaeton|afrobeat|dancehall/i;
 const groupWord = st => (st.artist?.genres || []).slice().sort((x, y) => (y.count || 0) - (x.count || 0)).slice(0, 3).some(g => GROUP_GENRES.test(g.name)) ? 'groups' : 'bands';
 function bandHead(id, on, o = {}) {
-  const st = stages.get(id), a = st?.artist, ms = msInfo(id), band = !a || st.kind === 'band';
-  const name = o.name || a?.name || ms?.name || '';
-  const img = o.img || ms?.hero || st?.image?.src || '';
-  const by = o.img ? o.by || '' : ms?.hero ? '' : st?.image?.by ? 'Photo: ' + st.image.by : '';
+  const st = stages.get(id), a = st?.artist, ms = msInfo(id), lt = ms ? null : lightInfo(id), band = !a || st.kind === 'band';
+  const name = o.name || a?.name || ms?.name || lt?.name || '';
+  const img = o.img || ms?.hero || lt?.hero || st?.image?.src || '';
+  const by = o.img ? o.by || '' : ms?.hero || lt?.hero ? '' : st?.image?.by ? 'Photo: ' + st.image.by : '';
   const place = a ? (st.place || (a['begin-area'] || a.area)?.name || '') : '';
   // Oct 1: a band with Milestones shows the same kicker and our written intro on every tab
-  const msLede = o.lede ?? MILESTONES[id]?.lede ?? MS_INDEX[id]?.lede;
+  const msLede = o.lede ?? MILESTONES[id]?.lede ?? MS_INDEX[id]?.lede ?? lt?.lede;
   const solo = !band && ms && st?.kind === 'person';
-  const kicker = [band ? 'Band' : solo ? 'Artist' : 'Musician', ms ? '' : place, ms?.label].filter(Boolean).join(' · ');
+  const kicker = [band ? 'Band' : solo ? 'Artist' : 'Musician', ms || lt ? '' : place, ms?.label || lt?.label].filter(Boolean).join(' · ');
   const lede = msLede ?? (a ? artistBlurb(st) : '');
   const tab = (label, attrs, key, cls = '') => `<a ${attrs} class="${[on === key ? 'on' : '', cls].join(' ').trim()}">${label}</a>`;
   const co = solo ? soloCoList(st) : null;
@@ -2885,7 +2931,7 @@ function bandHead(id, on, o = {}) {
     st.releases && !st.releases.length ? '' : tab('Discography', `data-bjump="lowerDisco" data-id="${esc(id)}"`, 'records'),
     ...PATHS.filter(p => p.root === id).map(p => tab(`Path: ${esc(p.title)}`, `href="#path:${p.id}"`, p.id, 'path')),
   ].join('') : [
-    ms ? tab(`Milestones`, `data-bjump="msin" data-id="${esc(id)}"`, 'story') : '',
+    ms ? tab(`Milestones`, `data-bjump="msin" data-id="${esc(id)}"`, 'story') : lt ? tab(`Overview`, `data-bjump="msin" data-id="${esc(id)}"`, 'story') : '',
     tab(band ? 'Members' : 'Bands', band ? `data-bjump="membersSec" data-id="${esc(id)}"` : `href="#members:${id}"`, 'members'),
     band ? '' : tab('Timeline', `data-bjump="lowerTimeline" data-id="${esc(id)}"`, 'lineup'),
     tab('Discography', `data-bjump="lowerDisco" data-id="${esc(id)}"`, 'records'),
@@ -2908,13 +2954,15 @@ function renderBandHead() {
   const t = trail[cur], st = t && stages.get(t.id);
   document.querySelectorAll('#track .stage.headed').forEach(x => x.classList.remove('headed'));
   if (!st?.artist || st.kind === 'album') { el.innerHTML = ''; el.dataset.k = ''; return; }
-  const html = bandHead(t.id, msInfo(t.id) ? 'story' : 'members'), key = html.replace(/<div class="facts">[\s\S]*?<\/div><\/div><\/div>/, '');
+  const html = bandHead(t.id, msInfo(t.id) || lightInfo(t.id) ? 'story' : 'members'), key = html.replace(/<div class="facts">[\s\S]*?<\/div><\/div><\/div>/, '');
   if (el.dataset.k !== key) { el.innerHTML = html; el.dataset.k = key; toneHead(el.querySelector('.bh')); }
   else { const f = el.querySelector('.facts'), nf = bandFacts(st); if (f && f.innerHTML !== nf) f.innerHTML = nf; }
   document.getElementById('track')?.children[cur]?.classList.add('headed');
   const mi = document.getElementById('msin');
-  if (mi && mi.dataset.id !== t.id) { mi.dataset.id = t.id; mi.innerHTML = '';
-    if (msInfo(t.id)) renderMilestones(t.id, mi).then(() => { if (msOpenNext === t.id) { msOpenNext = null; mi.querySelector('.msopen')?.click(); } }); }
+  const mk = msInfo(t.id) ? 'ms:' + t.id : lightInfo(t.id) ? 'lt:' + t.id : '';   // a light index that arrives late still fills the section
+  if (mi && mi.dataset.k !== mk) { mi.dataset.k = mk; mi.dataset.id = mk ? t.id : ''; mi.innerHTML = '';
+    if (mk.startsWith('ms:')) renderMilestones(t.id, mi).then(() => { if (msOpenNext === t.id) { msOpenNext = null; mi.querySelector('.msopen')?.click(); } });
+    else if (mk) renderLight(t.id, mi); }
 }
 function bandTabs(id, name, on) {
   const ps = PATHS.filter(p => p.root === id);
@@ -2986,6 +3034,30 @@ async function toneHead(bh) {
   const t = await msTone(bh.querySelector('img')?.getAttribute('src'));
   if (bh.isConnected) bh.style.setProperty('--hbg', toneCss(t, 9));
   return t;
+}
+/* Oct 2 prototype: light page. A band with no Milestones story gets three checked facts, where it fits
+   (label mates, scene, related bands), one video, and an invitation to add a moment, in place of the teaser. */
+async function renderLight(id, target) {
+  const d = await fetch(`data/light/${id}.json`, {cache: 'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null);
+  if (!d || target.dataset.id !== id) return;
+  const chip = x => x.id ? `<a class="chip" data-go="${esc(x.id)}">${esc(x.name)}</a>` : `<span class="chip plain">${esc(x.name)}</span>`;
+  const facts = (d.facts || []).slice(0, 3);
+  const fit = d.fit || {}, rows = [];
+  for (const l of fit.labels || []) if (l?.mates?.length) rows.push(`<div class="ltrow"><b>Also on ${esc(l.name)}</b><div class="chips">${l.mates.map(chip).join('')}</div></div>`);
+  if (fit.scene?.bands?.length) rows.push(`<div class="ltrow"><b>${esc(fit.scene.name || 'Scene')}</b><div class="chips">${fit.scene.bands.map(chip).join('')}</div></div>`);
+  if (fit.related?.length) rows.push(`<div class="ltrow"><b>Related</b><div class="chips">${fit.related.map(x => `<span class="ltrel">${chip(x)}${x.why ? `<small>(${esc(x.why)})</small>` : ''}</span>`).join('')}</div></div>`);
+  const v = d.video?.id ? d.video : null;
+  target.innerHTML = `<div class="lt">
+    ${facts.length ? `<section class="ltsec"><h2 class="sech">Things to know</h2><div class="ltcards n${facts.length}">${facts.map(f => `<div class="ltcard"><h3>${esc(f.h)}</h3><p>${esc(f.p)}</p>${f.src?.url ? `<a class="mlink" href="${esc(f.src.url)}" target="_blank" rel="noopener" title="${esc(f.src.title || 'Open')}" aria-label="${esc(f.src.title || 'Open')}">↗</a>` : ''}</div>`).join('')}</div></section>` : ''}
+    ${rows.length ? `<section class="ltsec"><h2 class="sech">Where they fit</h2><div class="ltfit">${rows.join('')}</div></section>` : ''}
+    ${v ? `<section class="ltsec"><h2 class="sech">Watch</h2><div class="ltv" data-yt="${esc(v.id)}" role="button" aria-label="Play ${esc(v.label || 'video')}"><img src="https://i.ytimg.com/vi/${esc(v.id)}/hqdefault.jpg" alt="" loading="lazy"><b>▶</b></div>${v.label ? `<div class="ltvl">${esc(v.label)}</div>` : ''}</section>` : ''}
+    <p class="ltadd">Know a story about ${esc(d.name || '')}? <a data-ltadd>Add a moment</a></p></div>`;
+  target.querySelector('.lt').onclick = e => {
+    if (e.target.closest('[data-ltadd]')) return openFeedback('Add a moment');
+    const g = e.target.closest('[data-go]'); if (g?.dataset.go) { freshTrail = true; return go(g.dataset.go); }
+    const yt = e.target.closest('.ltv[data-yt]');
+    if (yt) { yt.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(yt.dataset.yt)}?autoplay=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Video"></iframe>`; yt.removeAttribute('data-yt'); }
+  };
 }
 let msOpenNext = null;
 async function renderMilestones(id, target) {
@@ -3582,13 +3654,22 @@ function stageFor(id) {
   return stages.get(id);
 }
 // The other side of a row: a member's other bands, or a band's other members.
+// Oct 2: real memberships MusicBrainz misses (checked against Wikidata, then hand-filtered: core members only, no touring/session).
+let EXTRA_LINKS = {};
+const extraReady = fetch('data/extra_links.json', {cache: 'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})).then(d => { EXTRA_LINKS = d || {}; });
 function loadLinks(st, rel, opts = {}) {
   if (!st.linkP.has(rel.id)) {
-    const p = getArtist(rel.id, opts).then(a => {
+    const p = Promise.all([getArtist(rel.id, opts), extraReady]).then(([a]) => {
       // "Clyde Battin" (MusicBrainz) and "Skip Battin" (Discogs) are one person when MusicBrainz links that Discogs entry.
       const dup = a.discogsId && st.rels.find(r => r !== rel && r.id === 'discogs:' + a.discogsId);
       if (dup) { st.rels = st.rels.filter(r => r !== dup); if (trail[cur]?.id === st.id) { state.rels = st.rels; renderTimeline(); } scheduleRefresh(st.id); }
-      const list = (st.kind !== 'person' ? a.bands : a.members).filter(x => !st.altIds.has(x.id));
+      let base = st.kind !== 'person' ? a.bands : a.members;
+      if (st.kind !== 'person' && EXTRA_LINKS[rel.id]) {
+        const have = new Set(base.map(x => x.id));
+        const add = EXTRA_LINKS[rel.id].filter(x => x.id && !have.has(x.id)).map(x => ({ id: x.id, name: x.name, type: 'Group', disambiguation: '', periods: [], attrs: new Set() }));
+        if (add.length) base = finalizeRels([...base, ...add]);
+      }
+      const list = base.filter(x => !st.altIds.has(x.id));
       st.links.set(rel.id, list);
       if (st.kind !== 'person') fetchBandYears(list).then(got => got && scheduleRefresh(st.id)).catch(() => {});
       return list;

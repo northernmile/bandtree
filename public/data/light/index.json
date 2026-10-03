@@ -1,0 +1,72 @@
+{
+ "4ec4a033-ba44-41ca-8e09-3bf94fc08523": {
+  "name": "Swirlies",
+  "label": "Taang! Records",
+  "lede": "Swirlies came together in Cambridge in 1990: two guitarists in odd tunings, a pile of effects pedals, and tapes and AM radio static filling the gaps. Damon Tutunjian has kept the band going ever since.",
+  "hero": "https://upload.wikimedia.org/wikipedia/commons/2/2b/Swirlies_in_1992.jpg",
+  "span": "1990-present"
+ },
+ "6be97715-b3fe-421b-b478-c4462ee9de15": {
+  "name": "Bitch Magnet",
+  "label": "Communion Records",
+  "lede": "Sooyoung Park and Jon Fine started Bitch Magnet at Oberlin College in late 1986. Three albums came out between 1988 and 1990; a 2011 reissue brought the original trio back for one more run of shows.",
+  "hero": "",
+  "span": "1986-1990, 2011-2012"
+ },
+ "4433327d-23ea-4168-8537-8d5e413fb5da": {
+  "name": "Sleepyhead",
+  "label": "Homestead Records",
+  "lede": "Sleepyhead started in a basement room of an NYU dorm in 1989: Rachael McNally on drums, Michael Galinsky on bass, Chris O'Rourke on guitar. Their tours fed Half-Cocked, the indie road movie Galinsky co-made.",
+  "hero": "https://bigtakeover.com/images/19834.jpg",
+  "span": "1989-present"
+ },
+ "f1f6eb49-69da-4d43-afe0-d45b88f4fd02": {
+  "name": "Rail",
+  "label": "Red Dawg Records",
+  "lede": "Rail were an emo-punk band from Rochester, New York: four 7-inches between 1994 and 1997, the last a split on a Japanese label. Jamie Kennard sang and played guitar, and later played in The Capital Suite.",
+  "hero": "",
+  "span": "1994-1997"
+ },
+ "266f5184-d8ab-40c3-9af2-b0c615b37b53": {
+  "name": "Drop Nineteens",
+  "label": "Caroline Records",
+  "lede": "Drop Nineteens started at Boston University in 1990, made two albums and were done by 1995. Their song \"Delaware\" plays over the end of Pete & Pete, and in 2023 the band came back with Hard Light.",
+  "hero": "https://www.nme.com/wp-content/uploads/2023/08/Drop-Nineteens-press.jpg",
+  "span": "1990-1995, 2022-present"
+ },
+ "07ea84a5-34aa-4766-b6d4-e9462a6220c2": {
+  "name": "Bedhead",
+  "label": "Trance Syndicate",
+  "lede": "Brothers Matt and Bubba Kadane led Bedhead out of Dallas with three guitars and slow, methodical songs, three albums of them on Trance Syndicate. They quit in 1998, a few months after Transaction de Novo.",
+  "hero": "https://numerogroup.com/cdn/shop/articles/BHStudioCMYK_CD_-1.jpg",
+  "span": "1991-1998"
+ },
+ "5617ff4f-8fb5-46e7-a498-cb055f087bb3": {
+  "name": "Moss Icon",
+  "label": "Vermiform Records",
+  "lede": "Moss Icon were mostly high schoolers in Annapolis when they started in 1986, and barely played outside Maryland and DC. Their one LP came out two years after they split, and has been filed among emo's forebears ever since.",
+  "hero": "https://f4.bcbits.com/img/0032070647_0.jpg",
+  "span": "1986-1991"
+ },
+ "2c808bed-d6a9-478c-af0c-ab8253c22342": {
+  "name": "Chisel",
+  "label": "Gern Blandsten",
+  "lede": "Ted Leo, John Dugan and Chris Infante started Chisel at Notre Dame in 1990, hardcore kids going back to the Clash, Buzzcocks and the Jam. They moved to DC, made two albums and split in 1997.",
+  "hero": "https://lede-admin.stereogum.com/wp-content/uploads/sites/64/2023/02/Chisel-1676642759.jpg",
+  "span": "1990-1997"
+ },
+ "9714bcae-da69-4189-84a3-6e226802eddb": {
+  "name": "Pailhead",
+  "label": "Wax Trax! Records",
+  "lede": "Pailhead was Ian MacKaye singing over Ministry's Al Jourgensen, Paul Barker and Bill Rieflin, on Wax Trax! in 1987 and 1988. A handful of singles, the Trait EP, and that was it.",
+  "hero": "",
+  "span": "1987-1988"
+ },
+ "ms-half-man": {
+  "name": "Half Man",
+  "label": "The Mountain Collective",
+  "lede": "Half Man were a hardcore band from New York State, part of the Mountain C.I.A. collective, with records from 1993 to 1996. Dan Crowell, later of The Capital Suite and Matt Pond PA, played drums.",
+  "hero": "",
+  "span": "1993-1996"
+ }
+}

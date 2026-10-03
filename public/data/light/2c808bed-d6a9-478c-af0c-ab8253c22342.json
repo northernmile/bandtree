@@ -1,0 +1,135 @@
+{
+ "name": "Chisel",
+ "slug": "chisel",
+ "mb": "2c808bed-d6a9-478c-af0c-ab8253c22342",
+ "kicker": {
+  "label": "Gern Blandsten",
+  "place": "Washington, DC",
+  "span": "1990-1997"
+ },
+ "lede": "Ted Leo, John Dugan and Chris Infante started Chisel at Notre Dame in 1990, hardcore kids going back to the Clash, Buzzcocks and the Jam. They moved to DC, made two albums and split in 1997.",
+ "hero": {
+  "src": "https://lede-admin.stereogum.com/wp-content/uploads/sites/64/2023/02/Chisel-1676642759.jpg",
+  "by": "Photo: via Stereogum (2023)"
+ },
+ "facts": [
+  {
+   "h": "Two hardcore kids at Notre Dame went back to the Clash and Buzzcocks",
+   "p": "Leo came from Citizens Arrest and Dugan from Indian Summer, and the plan was to \"get back to what originally got us into punk in the first place.\" Mod records like the Jam and Small Faces came next.",
+   "src": {
+    "title": "Chisel broke up in 1997, but its punk songs were (Washington Post)",
+    "url": "https://www.washingtonpost.com/music/2023/05/10/chisel-reunion-black-cat-dc/"
+   }
+  },
+  {
+   "h": "In DC they landed next to the Make-Up and the Dismemberment Plan",
+   "p": "Their second album, Set You Free, came out in 1997, months before the band broke up.",
+   "src": {
+    "title": "Chisel broke up in 1997, but its punk songs were (Washington Post)",
+    "url": "https://www.washingtonpost.com/music/2023/05/10/chisel-reunion-black-cat-dc/"
+   }
+  },
+  {
+   "h": "First show in 26 years, at the Empty Bottle",
+   "p": "Chisel played Chicago on February 16, 2023, a warm-up for the Numero Twenty festival in Los Angeles, with Numero reissuing Set You Free.",
+   "src": {
+    "title": "Watch Ted Leo's Chisel, Reunited At Last, Play Their First Show Since 1997 (Stereogum)",
+    "url": "https://www.stereogum.com/2214273/watch-ted-leos-chisel-reunited-at-last-play-their-first-show-since-1997/news"
+   }
+  }
+ ],
+ "fit": {
+  "labels": [
+   {
+    "name": "Gern Blandsten",
+    "mates": [
+     {
+      "name": "Rye Coalition",
+      "id": "7e6b3645-2a39-403f-b82e-31cd73d691e3"
+     }
+    ]
+   },
+   {
+    "name": "Numero Group",
+    "mates": [
+     {
+      "name": "Bedhead",
+      "id": "07ea84a5-34aa-4766-b6d4-e9462a6220c2"
+     },
+     {
+      "name": "Codeine",
+      "id": "cecd5f91-cfdd-45d1-879f-3920c7c76e58"
+     },
+     {
+      "name": "Unwound",
+      "id": "9434776a-bdd7-4f58-b719-b5d95b9d2a11"
+     }
+    ]
+   }
+  ],
+  "scene": {
+   "name": "Washington, DC, mid-1990s",
+   "bands": [
+    {
+     "name": "The Make-Up",
+     "id": "26cad87d-5be0-467f-955f-b3ccecce007a"
+    },
+    {
+     "name": "The Dismemberment Plan",
+     "id": "1131e5da-dfdf-46c9-b6ff-b7ac552c2a3c"
+    },
+    {
+     "name": "Jawbox",
+     "id": "016fba14-1fc6-4986-86c2-2113ec9b28de"
+    },
+    {
+     "name": "Smart Went Crazy",
+     "id": "d9c78028-a30b-470b-b964-2f85cab51cc2"
+    },
+    {
+     "name": "Shudder to Think",
+     "id": "5a6e19e0-3ff0-4b3d-869e-3c539d6d8707"
+    }
+   ]
+  },
+  "related": [
+   {
+    "name": "Ted Leo and the Pharmacists",
+    "id": "31095622-5a1e-4f22-8ad1-b08eb6255f37",
+    "why": "Ted Leo"
+   },
+   {
+    "name": "Citizens Arrest",
+    "id": "9ddfdd7a-9f64-4389-aca1-a00236cefb23",
+    "why": "shared member Ted Leo"
+   },
+   {
+    "name": "The Both",
+    "id": "ceeaa939-d794-404b-a25b-c71fd098cef3",
+    "why": "shared member Ted Leo"
+   }
+  ]
+ },
+ "video": {
+  "id": "xubn_17Odw8",
+  "label": "Full set, Mind Over Matter Fest, Michigan, March 8, 1997"
+ },
+ "sources": [
+  {
+   "title": "Chisel broke up in 1997, but its punk songs were (Washington Post)",
+   "url": "https://www.washingtonpost.com/music/2023/05/10/chisel-reunion-black-cat-dc/"
+  },
+  {
+   "title": "Watch Ted Leo's Chisel, Reunited At Last, Play Their First Show Since 1997 (Stereogum)",
+   "url": "https://www.stereogum.com/2214273/watch-ted-leos-chisel-reunited-at-last-play-their-first-show-since-1997/news"
+  },
+  {
+   "title": "Ted Leo's Ever-Changing Lanes (SPIN)",
+   "url": "https://www.spinmagazine.com/2023/01/ted-leo-chisel-interview/"
+  },
+  {
+   "title": "Chisel (Wikipedia, background)",
+   "url": "https://en.wikipedia.org/wiki/Chisel_(band)"
+  }
+ ]
+}

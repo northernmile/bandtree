@@ -1,0 +1,112 @@
+{
+ "name": "Half Man",
+ "slug": "half-man",
+ "mb": "",
+ "kicker": {
+  "label": "The Mountain Collective",
+  "place": "New York State",
+  "span": "1993-1996"
+ },
+ "lede": "Half Man were a hardcore band from New York State, part of the Mountain C.I.A. collective, with records from 1993 to 1996. Dan Crowell, later of The Capital Suite and Matt Pond PA, played drums.",
+ "hero": {
+  "src": "",
+  "by": ""
+ },
+ "facts": [
+  {
+   "h": "Force Field came with a silk-screened sleeve and a 24-page booklet",
+   "p": "The 1993 7-inch, pressed in 1,000 copies on The Mountain Collective For Independent Artists (MR 002), was recorded and mixed at Dare Studios that April.",
+   "src": {
+    "title": "Half Man - Force Field (Discogs)",
+    "url": "https://www.discogs.com/master/472866"
+   }
+  },
+  {
+   "h": "Their side of the Conniption split came from a house session",
+   "p": "Conniption recorded at Don Fury's in New York City; Half Man's songs came from a six-song, eight-track session at Tom K.'s house. The 7-inch came out in 1994.",
+   "src": {
+    "title": "Conniption / Half Man (Discogs)",
+    "url": "https://www.discogs.com/master/2850460"
+   }
+  },
+  {
+   "h": "As Everything Fell Apart samples Dario Argento",
+   "p": "The 1996 LP, on Frame Work and Luddite Records, was recorded in Arlington, Virginia, on August 18-22, 1995, with Crowell on drums. The samples on the first and last tracks come from Argento's Phenomena.",
+   "src": {
+    "title": "Half Man - As Everything Fell Apart (Discogs)",
+    "url": "https://www.discogs.com/release/2139806"
+   }
+  }
+ ],
+ "fit": {
+  "labels": [
+   {
+    "name": "The Mountain Collective",
+    "mates": []
+   }
+  ],
+  "scene": {
+   "name": "New York hardcore, mid-1990s",
+   "bands": [
+    {
+     "name": "Black Army Jacket",
+     "id": "815e2aa6-75a2-437d-844a-000c43f676c5"
+    },
+    {
+     "name": "Hail Mary",
+     "id": "d4baa58a-26b4-4380-ad0a-f1d852f2cd4b"
+    }
+   ]
+  },
+  "related": [
+   {
+    "name": "Black Army Jacket",
+    "id": "815e2aa6-75a2-437d-844a-000c43f676c5",
+    "why": "shared member Dan Crowell"
+   },
+   {
+    "name": "Hail Mary",
+    "id": "d4baa58a-26b4-4380-ad0a-f1d852f2cd4b",
+    "why": "shared member Dan Crowell"
+   },
+   {
+    "name": "The Capital Suite",
+    "id": "9bfdd332-bfe5-4333-bb59-0882b5253b5c",
+    "why": "shared member Dan Crowell"
+   },
+   {
+    "name": "Matt Pond PA",
+    "id": "d4a9be59-13e5-481b-8c68-833c5c1fd458",
+    "why": "shared member Dan Crowell"
+   },
+   {
+    "name": "Celebrity Murders",
+    "id": "18268058-fe21-4f9f-8c14-31fc87f89efa",
+    "why": "shared member Dan Crowell"
+   }
+  ]
+ },
+ "video": null,
+ "sources": [
+  {
+   "title": "Half Man (Discogs)",
+   "url": "https://www.discogs.com/artist/313205"
+  },
+  {
+   "title": "Half Man - Force Field (Discogs)",
+   "url": "https://www.discogs.com/master/472866"
+  },
+  {
+   "title": "Conniption / Half Man (Discogs)",
+   "url": "https://www.discogs.com/master/2850460"
+  },
+  {
+   "title": "Half Man - As Everything Fell Apart (Discogs)",
+   "url": "https://www.discogs.com/release/2139806"
+  },
+  {
+   "title": "Dan Crowell (Discogs)",
+   "url": "https://www.discogs.com/artist/423117"
+  }
+ ]
+}

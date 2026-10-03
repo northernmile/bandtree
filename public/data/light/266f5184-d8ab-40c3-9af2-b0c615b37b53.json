@@ -1,0 +1,130 @@
+{
+ "name": "Drop Nineteens",
+ "slug": "drop-nineteens",
+ "mb": "266f5184-d8ab-40c3-9af2-b0c615b37b53",
+ "kicker": {
+  "label": "Caroline Records",
+  "place": "Boston",
+  "span": "1990-1995, 2022-present"
+ },
+ "lede": "Drop Nineteens started at Boston University in 1990, made two albums and were done by 1995. Their song \"Delaware\" plays over the end of Pete & Pete, and in 2023 the band came back with Hard Light.",
+ "hero": {
+  "src": "https://www.nme.com/wp-content/uploads/2023/08/Drop-Nineteens-press.jpg",
+  "by": "Photo: press, via NME"
+ },
+ "facts": [
+  {
+   "h": "They started out as In April Rain",
+   "p": "Greg Ackell led the band at Boston University in 1990 with Chris Roof, Steve Zimmerman and Motohiro Yasue, and Paula Kelley joined as co-vocalist. The Mayfield demo got the British music press interested.",
+   "src": {
+    "title": "Five ex-Drop Nineteens tell their story (Boston Hassle)",
+    "url": "https://bostonhassle.com/five-ex-drop-nineteens-tell-their-story/"
+   }
+  },
+  {
+   "h": "\"Delaware\" plays out the last Pete & Pete",
+   "p": "KEXP's Dusty Henry notes the song's guitar line swirling under the closing moments of the series finale, \"Saturday.\"",
+   "src": {
+    "title": "\"Get a Life, Jerk Weed!\" or: How I Became a Music Fan Through The Adventures of Pete & Pete (KEXP)",
+    "url": "https://www.kexp.org/read/2018/11/28/get-life-jerk-weed-or-how-i-became-music-fan-through-adventures-pete-pete/"
+   }
+  },
+  {
+   "h": "Zimmerman overnighted Ackell a Jazzmaster",
+   "p": "That got Ackell writing again. Hard Light, made with Kelley, Zimmerman, Yasue and drummer Pete Koeplin, came out on Wharf Cat on November 3, 2023.",
+   "src": {
+    "title": "Drop Everything, There's A New Drop Nineteens Album (Stereogum)",
+    "url": "https://www.stereogum.com/2231913/drop-nineteens-reunion-new-album-hard-light/music/"
+   }
+  }
+ ],
+ "fit": {
+  "labels": [
+   {
+    "name": "Caroline Records",
+    "mates": [
+     {
+      "name": "The Smashing Pumpkins",
+      "id": "ba0d6274-db14-4ef5-b28d-657ebde1a396"
+     },
+     {
+      "name": "Idaho",
+      "id": "8b7480fd-4a90-4ada-b8d2-8061307f49c0"
+     }
+    ]
+   }
+  ],
+  "scene": {
+   "name": "Boston, early 1990s",
+   "bands": [
+    {
+     "name": "Swirlies",
+     "id": "4ec4a033-ba44-41ca-8e09-3bf94fc08523"
+    },
+    {
+     "name": "Belly",
+     "id": "c118bc97-11a7-41dc-a55e-48c3bcf22ac2"
+    },
+    {
+     "name": "Throwing Muses",
+     "id": "b1b9d5cc-7975-43e5-960e-670583da7bc8"
+    },
+    {
+     "name": "Galaxie 500",
+     "id": "4de3cfed-b459-42bd-bfbb-7a843fbc73df"
+    },
+    {
+     "name": "Pixies",
+     "id": "b6b2bb8d-54a9-491f-9607-7b546023b433"
+    }
+   ]
+  },
+  "related": [
+   {
+    "name": "The Paula Kelley Orchestra",
+    "id": "34b5398c-c93f-4730-8a48-22b8009c14d4",
+    "why": "shared member Paula Kelley"
+   },
+   {
+    "name": "Vocokesh",
+    "id": "2461402d-950d-4992-a5ae-8ae9efd938c1",
+    "why": "shared member Steve Zimmerman"
+   },
+   {
+    "name": "Kahoots",
+    "id": "2c3a789a-8ff1-4c47-bfac-7235439ffecb",
+    "why": "shared member Pete Koeplin"
+   }
+  ]
+ },
+ "video": {
+  "id": "sWTZhxnvj7k",
+  "label": "\"Winona\" (official video, 1992)"
+ },
+ "sources": [
+  {
+   "title": "Five ex-Drop Nineteens tell their story (Boston Hassle)",
+   "url": "https://bostonhassle.com/five-ex-drop-nineteens-tell-their-story/"
+  },
+  {
+   "title": "\"Get a Life, Jerk Weed!\" or: How I Became a Music Fan Through The Adventures of Pete & Pete (KEXP)",
+   "url": "https://www.kexp.org/read/2018/11/28/get-life-jerk-weed-or-how-i-became-music-fan-through-adventures-pete-pete/"
+  },
+  {
+   "title": "Drop Everything, There's A New Drop Nineteens Album (Stereogum)",
+   "url": "https://www.stereogum.com/2231913/drop-nineteens-reunion-new-album-hard-light/music/"
+  },
+  {
+   "title": "Drop Nineteens reuniting for first album in nearly three decades (BrooklynVegan)",
+   "url": "https://www.brooklynvegan.com/drop-nineteens-reuniting-for-first-album-in-nearly-three-decades/"
+  },
+  {
+   "title": "Watch Drop Nineteens return for first show in 30 years (NME)",
+   "url": "https://www.nme.com/news/music/watch-drop-nineteens-return-for-first-show-in-30-years-3619667"
+  },
+  {
+   "title": "Drop Nineteens (Wikipedia, background)",
+   "url": "https://en.wikipedia.org/wiki/Drop_Nineteens"
+  }
+ ]
+}

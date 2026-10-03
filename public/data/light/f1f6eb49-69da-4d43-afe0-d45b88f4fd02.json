@@ -1,0 +1,97 @@
+{
+ "name": "Rail",
+ "slug": "rail",
+ "mb": "f1f6eb49-69da-4d43-afe0-d45b88f4fd02",
+ "kicker": {
+  "label": "Red Dawg Records",
+  "place": "Rochester, NY",
+  "span": "1994-1997"
+ },
+ "lede": "Rail were an emo-punk band from Rochester, New York: four 7-inches between 1994 and 1997, the last a split on a Japanese label. Jamie Kennard sang and played guitar, and later played in The Capital Suite.",
+ "hero": {
+  "src": "",
+  "by": ""
+ },
+ "facts": [
+  {
+   "h": "The debut 7-inch, 1994: \"Faith 51\" and two more",
+   "p": "Rolling Little Joe came out on Front Porch Records and Supermang Records (FPR 001 / SM 001), with \"Faith 51\" on side A and \"Mine All Mine\" and \"Transit\" on side B.",
+   "src": {
+    "title": "Rail - Rolling Little Joe (Discogs)",
+    "url": "https://www.discogs.com/release/3068057"
+   }
+  },
+  {
+   "h": "Two singles on Red Dawg",
+   "p": "The Luke & Lauraland 7-inch EP (1995) had four songs, \"Cheerleader On Prozac\" among them. La Sirena followed in 1996 in Red Dawg's Figuritas 45 Singles Series.",
+   "src": {
+    "title": "Rail (Discogs)",
+    "url": "https://www.discogs.com/artist/1425432"
+   }
+  },
+  {
+   "h": "A split with Wisher on Japan's Snuffy Smile",
+   "p": "The 1997 7-inch (snuff 037) gave Rail side B: \"Damaged Goods\" and \"Kill It If I Could.\"",
+   "src": {
+    "title": "Wisher / Rail (Discogs)",
+    "url": "https://www.discogs.com/release/2889604"
+   }
+  }
+ ],
+ "fit": {
+  "labels": [
+   {
+    "name": "Red Dawg Records",
+    "mates": []
+   },
+   {
+    "name": "Snuffy Smile",
+    "mates": [
+     {
+      "name": "Wisher",
+      "id": "040fd621-f03f-434d-9bb9-a41aea6c16ae"
+     }
+    ]
+   }
+  ],
+  "scene": {
+   "name": "Upstate New York, 1990s",
+   "bands": [
+    {
+     "name": "The Capital Suite",
+     "id": "9bfdd332-bfe5-4333-bb59-0882b5253b5c"
+    },
+    {
+     "name": "Hail Mary",
+     "id": "d4baa58a-26b4-4380-ad0a-f1d852f2cd4b"
+    }
+   ]
+  },
+  "related": [
+   {
+    "name": "The Capital Suite",
+    "id": "9bfdd332-bfe5-4333-bb59-0882b5253b5c",
+    "why": "shared member Jamie Kennard"
+   }
+  ]
+ },
+ "video": null,
+ "sources": [
+  {
+   "title": "Rail (Discogs)",
+   "url": "https://www.discogs.com/artist/1425432"
+  },
+  {
+   "title": "Rail - Rolling Little Joe (Discogs)",
+   "url": "https://www.discogs.com/release/3068057"
+  },
+  {
+   "title": "Wisher / Rail (Discogs)",
+   "url": "https://www.discogs.com/release/2889604"
+  },
+  {
+   "title": "The Capital Suite (Discogs)",
+   "url": "https://www.discogs.com/artist/5499499"
+  }
+ ]
+}

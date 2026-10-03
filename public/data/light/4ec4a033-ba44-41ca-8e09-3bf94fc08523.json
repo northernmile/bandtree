@@ -1,0 +1,139 @@
+{
+ "name": "Swirlies",
+ "slug": "swirlies",
+ "mb": "4ec4a033-ba44-41ca-8e09-3bf94fc08523",
+ "kicker": {
+  "label": "Taang! Records",
+  "place": "Boston",
+  "span": "1990-present"
+ },
+ "lede": "Swirlies came together in Cambridge in 1990: two guitarists in odd tunings, a pile of effects pedals, and tapes and AM radio static filling the gaps. Damon Tutunjian has kept the band going ever since.",
+ "hero": {
+  "src": "https://upload.wikimedia.org/wikipedia/commons/2/2b/Swirlies_in_1992.jpg",
+  "by": "Photo: Morganfitzp / Wikimedia Commons (CC BY-SA 4.0), MIT practice space, 1992"
+ },
+ "facts": [
+  {
+   "h": "It started as a plan for a Go-Go's cover band",
+   "p": "Fanzine publisher Rusty Nails brought Seana Carmody and Damon Tutunjian together in spring 1990 to cover the Go-Go's. They learned two songs, switched to originals, and put one track, as Raspberry Bang, on an animal-rights benefit 7-inch.",
+   "src": {
+    "title": "Swirlies (Taang! Records)",
+    "url": "https://www.taang.com/swirlies"
+   }
+  },
+  {
+   "h": "Andy Bernick played AM radio static while the guitarists retuned",
+   "p": "Carmody and Tutunjian played in alternate tunings, so between songs the bassist filled the gaps with tapes or static from an old AM radio.",
+   "src": {
+    "title": "Swirlies (Taang! Records)",
+    "url": "https://www.taang.com/swirlies"
+   }
+  },
+  {
+   "h": "Trouser Press filed them under Boston's \"chimp rock\"",
+   "p": "That informal Boston/Cambridge scene also took in Kudgel and Fat Day. The guide hears My Bloody Valentine, home-taping weirdness and pop in the records, with mellotron, Moog, shortwave radio and feedback in the mix.",
+   "src": {
+    "title": "Swirlies (Trouser Press)",
+    "url": "http://www.trouserpress.com/entry.php?a=swirlies"
+   }
+  }
+ ],
+ "fit": {
+  "labels": [
+   {
+    "name": "Taang! Records",
+    "mates": [
+     {
+      "name": "The Lemonheads",
+      "id": "58a53082-a629-4ff1-a44d-7492d6f6e8fb"
+     },
+     {
+      "name": "Gang Green",
+      "id": "0a73615b-b9e5-4ee0-a6ac-18c6f1783fc0"
+     },
+     {
+      "name": "Slapshot",
+      "id": "efc798e2-3165-49fd-a83b-d659cdb20488"
+     },
+     {
+      "name": "The Mighty Mighty Bosstones",
+      "id": "779353f3-6401-4cda-a8a2-6fd3ec9bc11b"
+     }
+    ]
+   }
+  ],
+  "scene": {
+   "name": "Boston, early 1990s",
+   "bands": [
+    {
+     "name": "Kudgel",
+     "id": "53293f03-4319-49bb-871a-808ed2a2b643"
+    },
+    {
+     "name": "Fat Day",
+     "id": "6707e95d-1252-4d40-bf8b-1b33d1400908"
+    },
+    {
+     "name": "Drop Nineteens",
+     "id": "266f5184-d8ab-40c3-9af2-b0c615b37b53"
+    },
+    {
+     "name": "Belly",
+     "id": "c118bc97-11a7-41dc-a55e-48c3bcf22ac2"
+    },
+    {
+     "name": "Throwing Muses",
+     "id": "b1b9d5cc-7975-43e5-960e-670583da7bc8"
+    },
+    {
+     "name": "Galaxie 500",
+     "id": "4de3cfed-b459-42bd-bfbb-7a843fbc73df"
+    }
+   ]
+  },
+  "related": [
+   {
+    "name": "Syrup USA",
+    "id": "3d00c760-4a91-4f59-8705-d004abed5cde",
+    "why": "shared member Seana Carmody"
+   },
+   {
+    "name": "Victory at Sea",
+    "id": "1e02f0eb-2c10-45a2-84b2-472198984103",
+    "why": "shared member Christina Files"
+   },
+   {
+    "name": "Karate",
+    "id": "7d942b74-f556-49c5-8987-067dc0488c90",
+    "why": "shared member Gavin McCarthy"
+   },
+   {
+    "name": "Lavender Diamond",
+    "id": "c71dd65d-7e23-42ff-a129-4bb7de341e4a",
+    "why": "shared member Ron Regé, Jr."
+   }
+  ]
+ },
+ "video": {
+  "id": "DDxlzKQ9D0Q",
+  "label": "\"Pancake\" (Blonder Tongue Audio Baton, 1993)"
+ },
+ "sources": [
+  {
+   "title": "Swirlies (Taang! Records)",
+   "url": "https://www.taang.com/swirlies"
+  },
+  {
+   "title": "Swirlies (Trouser Press)",
+   "url": "http://www.trouserpress.com/entry.php?a=swirlies"
+  },
+  {
+   "title": "Swirlies in 1992 (Wikimedia Commons)",
+   "url": "https://commons.wikimedia.org/wiki/File:Swirlies_in_1992.jpg"
+  },
+  {
+   "title": "Swirlies (Wikipedia, background)",
+   "url": "https://en.wikipedia.org/wiki/Swirlies"
+  }
+ ]
+}

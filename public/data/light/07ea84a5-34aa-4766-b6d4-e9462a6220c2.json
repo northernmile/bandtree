@@ -1,0 +1,122 @@
+{
+ "name": "Bedhead",
+ "slug": "bedhead",
+ "mb": "07ea84a5-34aa-4766-b6d4-e9462a6220c2",
+ "kicker": {
+  "label": "Trance Syndicate",
+  "place": "Dallas",
+  "span": "1991-1998"
+ },
+ "lede": "Brothers Matt and Bubba Kadane led Bedhead out of Dallas with three guitars and slow, methodical songs, three albums of them on Trance Syndicate. They quit in 1998, a few months after Transaction de Novo.",
+ "hero": {
+  "src": "https://numerogroup.com/cdn/shop/articles/BHStudioCMYK_CD_-1.jpg",
+  "by": "Photo: Numero Group"
+ },
+ "facts": [
+  {
+   "h": "Fort Worth kids lined up with pillows and blankets",
+   "p": "That's how fans waited outside Mad Hatters, the club where Bedhead first took off, says Josh Robertson, the band's de facto manager.",
+   "src": {
+    "title": "Indescribably Epic: The Tale of Bedhead (Numero Group)",
+    "url": "https://numerogroup.com/blogs/stories/indescribably-epic-the-tale-of-bedhead"
+   }
+  },
+  {
+   "h": "4-songEP19:10 was cut on one microphone in an Oak Cliff church",
+   "p": "Engineer Mark Elliott set the band up in the Kessler Church in Dallas. Once they started, he says, \"it took 19 minutes to record.\"",
+   "src": {
+    "title": "Indescribably Epic: The Tale of Bedhead (Numero Group)",
+    "url": "https://numerogroup.com/blogs/stories/indescribably-epic-the-tale-of-bedhead"
+   }
+  },
+  {
+   "h": "A hair-product company had taken the name, and a Dallas one",
+   "p": "Matt Kadane put the 1998 breakup down to his disillusionment with the name \"Bedhead\" and the practical difficulties of keeping the band running.",
+   "src": {
+    "title": "Indescribably Epic: The Tale of Bedhead (Numero Group)",
+    "url": "https://numerogroup.com/blogs/stories/indescribably-epic-the-tale-of-bedhead"
+   }
+  }
+ ],
+ "fit": {
+  "labels": [
+   {
+    "name": "Trance Syndicate",
+    "mates": [
+     {
+      "name": "Pain Teens",
+      "id": "e4e1ee57-0b0d-416a-bc55-61056c95eeee"
+     },
+     {
+      "name": "Cherubs",
+      "id": "6106ec43-8658-4fc3-b8a6-5379831a6cfa"
+     },
+     {
+      "name": "Sixteen Deluxe",
+      "id": "13de07a6-450f-4cd0-b5d7-283217bc18c6"
+     },
+     {
+      "name": "Ed Hall",
+      "id": "2bc1b13f-d9f6-47bb-ae5f-c55f5d9aa8b4"
+     },
+     {
+      "name": "Stars of the Lid",
+      "id": "a1154343-1ea1-4007-97d3-2382482a90cd"
+     }
+    ]
+   }
+  ],
+  "scene": {
+   "name": "Slow, quiet rock, 1990s",
+   "bands": [
+    {
+     "name": "Codeine",
+     "id": "cecd5f91-cfdd-45d1-879f-3920c7c76e58"
+    },
+    {
+     "name": "Low",
+     "id": "42faad37-8aaa-42e4-a300-5a7dae79ed24"
+    },
+    {
+     "name": "Labradford",
+     "id": "7cf7ef41-9637-4bf2-ae99-d8d6611ccdc6"
+    }
+   ]
+  },
+  "related": [
+   {
+    "name": "The New Year",
+    "id": "b3d5b1c9-95df-42ea-83eb-c86b18f61f8d",
+    "why": "Matt and Bubba Kadane"
+   },
+   {
+    "name": "Overseas",
+    "id": "6b863984-7d19-4448-aefb-51d230534781",
+    "why": "shared member Matt Kadane"
+   },
+   {
+    "name": "Animal Chance",
+    "id": "ec43d8ba-21d2-43ca-967f-77a61f392859",
+    "why": "shared member Tench Coxe"
+   }
+  ]
+ },
+ "video": {
+  "id": "9eZsa8xrHQ4",
+  "label": "\"Bedside Table\" (WhatFunLifeWas, 1994)"
+ },
+ "sources": [
+  {
+   "title": "Indescribably Epic: The Tale of Bedhead (Numero Group)",
+   "url": "https://numerogroup.com/blogs/stories/indescribably-epic-the-tale-of-bedhead"
+  },
+  {
+   "title": "Bedhead history (bedheadband.com)",
+   "url": "https://www.bedheadband.com/bedhead_history.php"
+  },
+  {
+   "title": "Bedhead (Wikipedia, background)",
+   "url": "https://en.wikipedia.org/wiki/Bedhead_(band)"
+  }
+ ]
+}

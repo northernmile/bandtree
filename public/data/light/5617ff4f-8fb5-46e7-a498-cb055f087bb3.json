@@ -1,0 +1,140 @@
+{
+ "name": "Moss Icon",
+ "slug": "moss-icon",
+ "mb": "5617ff4f-8fb5-46e7-a498-cb055f087bb3",
+ "kicker": {
+  "label": "Vermiform Records",
+  "place": "Annapolis, MD",
+  "span": "1986-1991"
+ },
+ "lede": "Moss Icon were mostly high schoolers in Annapolis when they started in 1986, and barely played outside Maryland and DC. Their one LP came out two years after they split, and has been filed among emo's forebears ever since.",
+ "hero": {
+  "src": "https://f4.bcbits.com/img/0032070647_0.jpg",
+  "by": "Photo: via Bandcamp Daily"
+ },
+ "facts": [
+  {
+   "h": "Most of them were in high school when it started",
+   "p": "By the time their only LP came out, Bandcamp Daily notes, they were just into their early 20s.",
+   "src": {
+    "title": "Moss Icon Were One of a Kind (Bandcamp Daily)",
+    "url": "https://daily.bandcamp.com/features/moss-icon-lyburnum-wits-end-liberation-fly-interview"
+   }
+  },
+  {
+   "h": "They broke up and got back together \"four or five or six times\"",
+   "p": "That's guitarist Tonie Joy on 1987 to 1991; he calls the band \"pretty dysfunctional.\" Lyburnum Wits End Liberation Fly came out in 1993, two years after the last breakup.",
+   "src": {
+    "title": "Moss Icon Were One of a Kind (Bandcamp Daily)",
+    "url": "https://daily.bandcamp.com/features/moss-icon-lyburnum-wits-end-liberation-fly-interview"
+   }
+  },
+  {
+   "h": "The reissue label's owner met Joy in a Baltimore post office",
+   "p": "Years later, Jeremy deVine's Temporary Residence put out the 30th-anniversary reissue of Lyburnum, remastered by Alan Douches.",
+   "src": {
+    "title": "The Enduring Legacy of Moss Icon: An Interview with Tonie Joy (Post-Trash)",
+    "url": "https://post-trash.com/news/2023/3/23/the-enduring-legacy-of-moss-icon-an-interview-with-tonie-joy-feature-interview"
+   }
+  }
+ ],
+ "fit": {
+  "labels": [
+   {
+    "name": "Vermiform Records",
+    "mates": [
+     {
+      "name": "Born Against",
+      "id": "983825cd-4c25-45c5-adbb-3f9cdced6285"
+     },
+     {
+      "name": "Rorschach",
+      "id": "bfb77d72-8e36-4cf2-be10-7dcdd81d52b4"
+     }
+    ]
+   },
+   {
+    "name": "Temporary Residence",
+    "mates": [
+     {
+      "name": "Bitch Magnet",
+      "id": "6be97715-b3fe-421b-b478-c4462ee9de15"
+     },
+     {
+      "name": "Explosions in the Sky",
+      "id": "4236acde-2ce2-441c-a3d4-38d55f1b5474"
+     },
+     {
+      "name": "Mono",
+      "id": "ffe02aed-ef7e-4736-a186-c2f1dd55ce8d"
+     }
+    ]
+   }
+  ],
+  "scene": {
+   "name": "Maryland and DC, late 1980s",
+   "bands": [
+    {
+     "name": "Rites of Spring",
+     "id": "b2ff1a6d-9198-4646-b068-8965242d245b"
+    },
+    {
+     "name": "Embrace",
+     "id": "9d1ad8e3-8740-429a-bdc5-52f96a9c4431"
+    },
+    {
+     "name": "Lungfish",
+     "id": "5af88bca-9c13-424a-b63c-b5c96c69cb0e"
+    },
+    {
+     "name": "Soulside",
+     "id": "de2e8176-32c2-4abe-b718-9392dffd8ffe"
+    },
+    {
+     "name": "Gray Matter",
+     "id": "c9065214-ba09-4c2c-b341-35713b702264"
+    }
+   ]
+  },
+  "related": [
+   {
+    "name": "Universal Order of Armageddon",
+    "id": "ee20f4be-a184-43e7-a2bc-495371eca5aa",
+    "why": "shared member Tonie Joy"
+   },
+   {
+    "name": "Born Against",
+    "id": "983825cd-4c25-45c5-adbb-3f9cdced6285",
+    "why": "shared member Tonie Joy"
+   },
+   {
+    "name": "The Great Unraveling",
+    "id": "7c92bc74-45f0-44e5-8297-7d4a84b4dec9",
+    "why": "shared member Tonie Joy"
+   },
+   {
+    "name": "Breathing Walker",
+    "id": "59f0b249-0167-4978-969e-9a2654bfbf92",
+    "why": "shared member Jonathan Vance"
+   }
+  ]
+ },
+ "video": {
+  "id": "HZO4TXKkqtk",
+  "label": "\"As Afterwards the Words Still Ring\" (Lyburnum Wits End Liberation Fly, 1993)"
+ },
+ "sources": [
+  {
+   "title": "Moss Icon Were One of a Kind (Bandcamp Daily)",
+   "url": "https://daily.bandcamp.com/features/moss-icon-lyburnum-wits-end-liberation-fly-interview"
+  },
+  {
+   "title": "The Enduring Legacy of Moss Icon: An Interview with Tonie Joy (Post-Trash)",
+   "url": "https://post-trash.com/news/2023/3/23/the-enduring-legacy-of-moss-icon-an-interview-with-tonie-joy-feature-interview"
+  },
+  {
+   "title": "Moss Icon (Wikipedia, background)",
+   "url": "https://en.wikipedia.org/wiki/Moss_Icon"
+  }
+ ]
+}
